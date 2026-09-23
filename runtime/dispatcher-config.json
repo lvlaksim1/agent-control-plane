@@ -8,7 +8,7 @@
   "scheduler_topology": "runtime/dispatcher-pool.json",
   "wake_state": "runtime/dispatcher-health.json#wake",
   "automatic_execution_activation": "registry-per-agent-explicit",
-  "scheduler_model": "event-wake-broker-relay-v2",
+  "scheduler_model": "event-wake-broker-relay-v3",
   "execution_worker": {
     "slot_id": "execution-worker",
     "automation_id": "6aac8b1d8888819180cc4af0c009669e",
@@ -27,7 +27,10 @@
     "worker_arm_allowed": true,
     "self_schedule_update_while_running": false,
     "event_nudge_supported": true,
-    "event_nudge_delay_minutes": 2
+    "event_nudge_delay_minutes": 2,
+    "arm_commit_order": "persist-before-scheduler",
+    "post_scheduler_ack_required": false,
+    "delivery_semantics": "outbox-precommit"
   },
   "authoritative_lease": {
     "repository": "lvlaksim1/agent-control-plane-gateway",
