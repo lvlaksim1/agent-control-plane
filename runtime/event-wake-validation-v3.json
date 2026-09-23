@@ -23,18 +23,11 @@
     "three former polling slots remain disabled."
   ],
   "active_check": {
-    "id": "OUTBOX-BROKER-WORKER-NOOP",
-    "wake_generation": 8,
-    "status": "passed",
-    "initial_state": "desired=8 armed=7 served=7",
-    "evidence": [
-      "Wake Broker durably precommitted armed_generation=8 with last_armed_at=2026-09-23T17:09:34Z before Worker delivery.",
-      "The one-shot Worker was not required to run at its nominal DTSTART; delayed delivery still observed invocation_generation=8 and reconciled generation 8 safely.",
-      "runtime/dispatcher-health.json reached desired_generation=8, armed_generation=8, served_generation=8 with last_worker_run_id=execution-worker-generation-8-no-work.",
-      "Gateway remained idle at generation 44 and no target-agent execution was performed for the no-work probe.",
-      "Execution Worker ended disabled after the one-shot run; Wake Broker / Watchdog remained enabled and recurring."
-    ],
-    "conclusion": "Outbox-style precommit removes the post-scheduler acknowledgement race and tolerates delayed/catch-up one-shot delivery."
+    "id": "FINAL-BROKER-RELAY-E2E",
+    "task_id": "TASK-EVENT-WAKE-RELAY-E2E-001",
+    "status": "running",
+    "phase": "generation-9-worker-delivery",
+    "expected": "Worker Phase A -> durable Phase-B wake -> Broker arm next generation -> later Worker Phase B -> verified completion -> gateway release"
   },
   "remaining": [
     "live Phase A -> durable wake -> Broker -> later Phase B target execution on v3",
@@ -60,5 +53,25 @@
   "updated_at": "2026-09-23T17:21:10Z",
   "notes": [
     "TASK-EVENT-WAKE-E2E-002 was superseded before execution because TASK-EVENT-WAKE-RELAY-E2E-001 had already been durably queued first and already owned wake generation 9."
+  ],
+  "completed_checks": [
+    {
+      "id": "OUTBOX-BROKER-WORKER-NOOP",
+      "status": "passed",
+      "evidence": [
+        "002424653a9c532d7835fdfcd62e9e793e3be9a0 precommitted generation 8 before scheduling",
+        "4a3daf1a31c778d9239e04ea953697e609075776 Worker served generation 8",
+        "desired=armed=served=8; gateway idle generation 44; Worker one-shot disabled"
+      ]
+    },
+    {
+      "id": "FINAL-E2E-BROKER-ARM-9",
+      "status": "running",
+      "evidence": [
+        "9d2302ee1f04b88a06a75565dbf63d8681649719 wake state desired=9 armed=9 served=8",
+        "Broker precommitted generation 9 at 2026-09-23T17:20:29Z",
+        "Worker scheduled as one-shot for 2026-09-23T17:22:43Z"
+      ]
+    }
   ]
 }
