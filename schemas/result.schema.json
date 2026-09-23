@@ -7,8 +7,6 @@
     "task_id",
     "request_digest",
     "request_blob_sha",
-    "execution_id",
-    "generation",
     "outcome",
     "summary",
     "evidence",
@@ -26,11 +24,16 @@
       "pattern": "^sha256:[0-9a-f]{64}$"
     },
     "execution_id": {
-      "type": "string",
-      "minLength": 1
+      "type": [
+        "string",
+        "null"
+      ]
     },
     "generation": {
-      "type": "integer",
+      "type": [
+        "integer",
+        "null"
+      ],
       "minimum": 1
     },
     "outcome": {
@@ -58,6 +61,70 @@
     "request_blob_sha": {
       "type": "string",
       "pattern": "^[0-9a-f]{40}$"
+    },
+    "execution_mode": {
+      "enum": [
+        "autonomous",
+        "live"
+      ]
+    },
+    "carrier_id": {
+      "type": [
+        "string",
+        "null"
+      ]
     }
-  }
+  },
+  "oneOf": [
+    {
+      "anyOf": [
+        {
+          "not": {
+            "required": [
+              "execution_mode"
+            ]
+          }
+        },
+        {
+          "properties": {
+            "execution_mode": {
+              "const": "autonomous"
+            }
+          },
+          "required": [
+            "execution_mode"
+          ]
+        }
+      ],
+      "required": [
+        "execution_id",
+        "generation"
+      ],
+      "properties": {
+        "execution_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "generation": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    {
+      "properties": {
+        "execution_mode": {
+          "const": "live"
+        },
+        "carrier_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "execution_mode",
+        "carrier_id"
+      ]
+    }
+  ]
 }
