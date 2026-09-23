@@ -276,3 +276,95 @@ def gateway_execution_admitted(state:dict[str,Any],request:dict[str,Any],gateway
 def claimed_execution_ready(state:dict[str,Any],request:dict[str,Any],gateway_lease:dict[str,Any])->bool:
     """Allows a later dispatcher to begin target reinstantiation only after a durable activation receipt."""
     return state.get("status")=="claimed" and gateway_execution_admitted(state,request,gateway_lease,require_active_state=False)
+
+WAKE_RECENT_KEY_LIMIT=32
+
+def validate_wake_state(wake:dict[str,Any])->None:
+    base.require_fields(wake,[
+      "desired_generation","armed_generation","served_generation",
+      "recent_request_keys","last_request","last_armed_at","last_served_at","last_worker_run_id"
+    ],"wake state")
+    for key in ("desired_generation","armed_generation","served_generation"):
+        if not isinstance(wake[key],int) or wake[key]<0:
+            raise base.ControlPlaneError(f"{key} must be a non-negative integer")
+    if wake["armed_generation"]>wake["desired_generation"]:
+        raise base.ControlPlaneError("armed generation cannot exceed desired generation")
+    if wake["served_generation"]>wake["desired_generation"]:
+        raise base.ControlPlaneError("served generation cannot exceed desired generation")
+    keys=wake["recent_request_keys"]
+    if not isinstance(keys,list) or len(keys)>WAKE_RECENT_KEY_LIMIT or any(not isinstance(x,str) or not x for x in keys):
+        raise base.ControlPlaneError("invalid recent wake request keys")
+    if len(keys)!=len(set(keys)):
+        raise base.ControlPlaneError("recent wake request keys must be unique")
+    for ts in ("last_armed_at","last_served_at"):
+        if wake[ts] is not None:
+            base.parse_time(wake[ts])
+    req=wake["last_request"]
+    if req is not None:
+        base.require_fields(req,["generation","request_key","reason","requested_by","requested_at"],"wake request")
+        if req["generation"]!=wake["desired_generation"]:
+            raise base.ControlPlaneError("last wake request must match desired generation")
+        if not req["request_key"] or not req["reason"] or not req["requested_by"]:
+            raise base.ControlPlaneError("wake request fields must be non-empty")
+        base.parse_time(req["requested_at"])
+
+def wake_pending(wake:dict[str,Any])->bool:
+    validate_wake_state(wake)
+    return wake["desired_generation"]>wake["served_generation"]
+
+def wake_needs_arming(wake:dict[str,Any])->bool:
+    validate_wake_state(wake)
+    return wake["desired_generation"]>wake["armed_generation"]
+
+def request_wake(wake:dict[str,Any],*,request_key:str,reason:str,requested_by:str,now:datetime):
+    validate_wake_state(wake)
+    if not request_key or not reason or not requested_by:
+        raise base.ControlPlaneError("wake request requires key, reason and requester")
+    if request_key in wake["recent_request_keys"]:
+        return copy.deepcopy(wake),False
+    out=copy.deepcopy(wake)
+    out["desired_generation"]+=1
+    keys=list(out["recent_request_keys"])+[request_key]
+    out["recent_request_keys"]=keys[-WAKE_RECENT_KEY_LIMIT:]
+    out["last_request"]={
+      "generation":out["desired_generation"],
+      "request_key":request_key,
+      "reason":reason,
+      "requested_by":requested_by,
+      "requested_at":base.format_time(now)
+    }
+    return out,True
+
+def mark_wake_armed(wake:dict[str,Any],*,generation:int,now:datetime)->dict[str,Any]:
+    validate_wake_state(wake)
+    if generation<1 or generation>wake["desired_generation"]:
+        raise base.ControlPlaneError("cannot arm unknown wake generation")
+    out=copy.deepcopy(wake)
+    out["armed_generation"]=max(out["armed_generation"],generation)
+    out["last_armed_at"]=base.format_time(now)
+    validate_wake_state(out)
+    return out
+
+def mark_wake_served(wake:dict[str,Any],*,generation:int,now:datetime,worker_run_id:str)->dict[str,Any]:
+    validate_wake_state(wake)
+    if generation<1 or generation>wake["desired_generation"]:
+        raise base.ControlPlaneError("cannot serve unknown wake generation")
+    if not worker_run_id:
+        raise base.ControlPlaneError("worker_run_id is required")
+    out=copy.deepcopy(wake)
+    out["served_generation"]=max(out["served_generation"],generation)
+    out["last_served_at"]=base.format_time(now)
+    out["last_worker_run_id"]=worker_run_id
+    validate_wake_state(out)
+    return out
+
+def stale_armed_wake(wake:dict[str,Any],*,now:datetime,stale_after_minutes:int)->bool:
+    validate_wake_state(wake)
+    if stale_after_minutes<1:
+        raise base.ControlPlaneError("stale_after_minutes must be positive")
+    if wake["armed_generation"]<=wake["served_generation"]:
+        return False
+    if wake["last_armed_at"] is None:
+        return True
+    return now>=base.parse_time(wake["last_armed_at"])+timedelta(minutes=stale_after_minutes)
+
