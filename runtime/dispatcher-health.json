@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "last_dispatch_at": "2026-09-23T12:40:17Z",
-  "last_slot_id": "probe-1",
-  "last_outcome": "recovered",
-  "last_observed_head": "bf852731a47b65644fe470904cda9c945fa9d785",
-  "last_reason": "Recovered the already-owned TASK-INT-AUDITOR-002 execution after pre-projection runtime loss under gateway fence execution_id a154c14f-c9b1-4259-963e-4230b4e74ce3 generation 11. Repaired queued to claimed with attempt=1 and runtime_loss_count=1, reinstantiated project-manager-auditor, independently verified TASK-INT-PM-002 against live read-only Context Capsule evidence, published canonical audit report audits/ACP-TASK-INT-AUDITOR-002.md, wrote strict success result, and made completed state durable with claim=null. Gateway release Issue #10 was accepted and committed idle generation 12 at commit 1a3fe7f710a419a64b8365dd67db5196ba691bfe. A later unrelated gateway claim advanced the current lease to generation 13; no new claim was created by this execution and Context Capsule was not modified."
+  "last_dispatch_at": "2026-09-23T12:46:37Z",
+  "last_slot_id": "dispatcher-48",
+  "last_outcome": "no-ready-work",
+  "last_observed_head": "df1206e7e766ab41ce08e41ac9d130f7923499fa",
+  "last_reason": "Authoritative gateway lease was idle at generation 16. Reconciled registered task projections: existing executable task states are terminal (completed or superseded), while staged request-only task directories have no state.json and therefore are not READY. No target-agent execution, gateway claim, target change, or scheduler mutation was performed."
 }
