@@ -1,5 +1,5 @@
 {
-  "schema_version": 4,
+  "schema_version": 5,
   "lease_minutes": 45,
   "runtime_loss_quarantine_after": 3,
   "one_target_agent_per_dispatch": true,
@@ -9,7 +9,7 @@
   "wake_state": "runtime/dispatcher-health.json#wake",
   "execution_mode_state": "runtime/execution-mode.json",
   "automatic_execution_activation": "registry-per-agent-explicit",
-  "scheduler_model": "event-wake-broker-relay-v6-presence-lease",
+  "scheduler_model": "event-wake-broker-relay-v7-presence-park",
   "execution_mode_policy": {
     "file": "runtime/execution-mode.json",
     "schema": "schemas/execution-mode.schema.json",
@@ -19,7 +19,10 @@
     "expired_presence_allows_fallback_if_configured": true,
     "explicit_owner_hold_blocks_without_expiry": true,
     "autonomous_mode_requires_explicit_handoff_or_expired_presence": true,
-    "scheduler_is_fallback_transport": true
+    "scheduler_is_fallback_transport": true,
+    "interactive_broker_parking": "park Broker next occurrence at presence.lease_until; refresh when live carrier renews lease",
+    "worker_during_fresh_interactive": "disabled or not scheduled",
+    "no_scheduled_execution_while_presence_fresh": true
   },
   "execution_worker": {
     "slot_id": "execution-worker",
