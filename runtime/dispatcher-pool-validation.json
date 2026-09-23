@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "validation": "five-slot-shared-dispatcher-pool",
-  "result": "PASS",
+  "validation": "event-wake-scheduler-redesign",
+  "result": "IN_PROGRESS",
   "scheduler_slots": [
     {
       "slot_id": "dispatcher-00",
@@ -63,5 +63,25 @@
       "final_release_generation": 16
     }
   },
-  "invariant": "maximum one autonomous target-agent execution globally"
+  "invariant": "maximum one autonomous target-agent execution globally",
+  "historical_five_slot_validation": "PASS",
+  "event_wake_candidate": {
+    "branch": "event-wake-redesign",
+    "execution_worker_automation_id": "6aac8b1d8888819180cc4af0c009669e",
+    "watchdog_automation_id": "6aac8b23fff4819180fb12916df071a8",
+    "retired_polling_automation_ids": [
+      "6aac85d181108191bb95bfe823f18edc",
+      "6aac8b3402048191b4fc6d735aa8f38c",
+      "6aac8b15fd088191a4a2b169de4dd3be"
+    ],
+    "required_validation": [
+      "wake request persisted before scheduler arm",
+      "watchdog arms reusable worker",
+      "worker serves no-work wake without rearming",
+      "duplicate wake request suppressed",
+      "lost armed wake recoverable by watchdog",
+      "phase A creates later phase B wake",
+      "legacy gateway one-runtime invariant preserved"
+    ]
+  }
 }
