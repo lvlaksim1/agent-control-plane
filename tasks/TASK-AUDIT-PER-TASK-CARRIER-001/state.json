@@ -7,5 +7,14 @@
   "runtime_loss_count": 0,
   "claim": null,
   "latest_checkpoint": null,
-  "request_blob_sha": "09893bdfa973ef1b1b573aa3ad1b7bacb0f5e355"
+  "request_blob_sha": "09893bdfa973ef1b1b573aa3ad1b7bacb0f5e355",
+  "carrier": {
+    "mode": "live",
+    "carrier_id": "owner-live-runtime-per-task-carrier-audit-001",
+    "set_by": "ecosystem-supervisor",
+    "reason": "Owner is online; Auditor engagement is carried directly in the current live runtime from GitHub handoff.",
+    "heartbeat_at": "2026-09-23T22:09:28Z",
+    "lease_until": "2026-09-23T23:09:28Z",
+    "fallback_after_expiry": true
+  }
 }
