@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-SUP-CLOSURE-001",
+  "status": "queued",
+  "request_digest": "sha256:4263ff868147ad5500ffe69c353c376d5d257c61731541b35933ca689c0fdcf4",
+  "attempt": 0,
+  "runtime_loss_count": 0,
+  "claim": null,
+  "latest_checkpoint": null,
+  "request_blob_sha": "404a07474c15967578764aa5ebd75207394bdf73"
+}
