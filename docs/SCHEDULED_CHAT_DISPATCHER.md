@@ -38,8 +38,9 @@ At every Execution Worker invocation use a **lease-first fast path**:
 2. validate wake state and capture the exact `armed_generation` that caused this invocation as `invocation_generation`; never treat a newer unarmed desired generation as served;
 3. if the gateway is `reserved` or `active`, fetch only the exact referenced task request/state/runtime/gates plus contract files needed to reconcile that execution;
 4. reconcile that exact execution before considering a new claim;
-5. only when the gateway is idle may the worker scan queued task states and compute READY deterministically;
-6. execute at most one bounded control-plane cycle.
+5. when the gateway is idle, first inspect the captured wake's `last_request.request_key`; if it has the exact form `task-ready:<task_id>`, fetch and validate that exact task first and select it directly when it is still queued and READY;
+6. only if no exact wake-addressed READY task is available may the worker scan unrelated queued task states and compute READY deterministically;
+7. execute at most one bounded control-plane cycle.
 
 ## Two-phase target execution
 
