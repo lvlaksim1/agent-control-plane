@@ -20,7 +20,7 @@ Constraints:
 - persistent agent identity and memory remain in each agent's home repository;
 - tool access never grants authority.
 
-This repository implements plan items 1–13. Scheduled Chat activation is a separate runtime step; registered agents remain disabled for automatic execution until live integration is deliberately enabled.
+This repository has proven items 1–17, including real persistent Project Manager → Auditor routing. Direct Owner↔agent conversations remain first-class and do not use dispatcher slots.
 
 ## Implemented foundation
 
@@ -31,7 +31,12 @@ This repository implements plan items 1–13. Scheduled Chat activation is a sep
 5. Deterministic dependency graph / READY selection with cycle rejection, priority aging, FIFO tie-breaks.
 6. Global GitHub-CAS ownership lease: one autonomous runtime maximum.
 7. Fencing token (generation + execution_id) checked before consequential writes.
-8. Immutable checkpoints plus deterministic stale-runtime recovery and quarantine threshold.\n9. Execution-failure retry/backoff/quarantine metadata.\n10. Explicit durable Gate engine.\n11. Deterministic persistent-agent invocation package.\n12. Evidence-backed completion verifier.\n13. Automatic DAG continuation through READY recomputation.
+8. Immutable checkpoints plus deterministic stale-runtime recovery and quarantine threshold.
+9. Execution-failure retry/backoff/quarantine metadata.
+10. Explicit durable Gate engine.
+11. Deterministic persistent-agent invocation package.
+12. Evidence-backed completion verifier.
+13. Automatic DAG continuation through READY recomputation.
 
 ## Repository layout
 
@@ -70,3 +75,15 @@ There is intentionally no OS/Python matrix and no always-on CI requirement: the 
 ## Transactional gateway
 
 Live Scheduled Chat E2E showed that direct private-repository lease acquisition can be declined by the Scheduled Chat tool safety layer. The solution does not weaken fencing: an isolated public GitHub Actions gateway now performs only serialized lease state transitions. It stores no private task content. The Chat runtime requests claim/release and verifies the committed lease before acting.
+
+
+## Proven real-agent integration
+
+The strict workflow `WF-REAL-PM-AUDITOR-002` proved:
+
+- the existing Context Capsule Project Manager can be reinstantiated by a dispatcher and execute a bounded read-only task;
+- a committed gateway claim can survive Scheduled Chat runtime loss and be resumed with the same execution token;
+- strict result envelopes and terminal `claim=null` are enforced;
+- the Project Manager can issue a dependent task directly to the persistent Auditor without Supervisor as issuer;
+- the Auditor can reinstate independently, verify the PM evidence read-only, publish its own audit evidence, and complete under the same fencing rules;
+- direct human project-development chat remains separate from autonomous dispatcher latency.
