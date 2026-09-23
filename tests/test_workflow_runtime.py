@@ -186,7 +186,12 @@ class EventWakeTests(unittest.TestCase):
    wr.mark_wake_armed(w,generation=1,now=NOW)
   w,_=wr.request_wake(w,request_key="x",reason="ready",requested_by="owner",now=NOW)
   with self.assertRaises(cp.ControlPlaneError):
-   wr.mark_wake_served(w,generation=2,now=NOW,worker_run_id="run-x")
+   wr.mark_wake_served(w,generation=1,now=NOW,worker_run_id="run-unarmed")
+  w=wr.mark_wake_armed(w,generation=1,now=NOW)
+  w,_=wr.request_wake(w,request_key="y",reason="newer-ready",requested_by="owner",now=NOW)
+  self.assertEqual((w["desired_generation"],w["armed_generation"]),(2,1))
+  with self.assertRaises(cp.ControlPlaneError):
+   wr.mark_wake_served(w,generation=2,now=NOW,worker_run_id="run-too-new")
 
 
 if __name__=="__main__": unittest.main()
