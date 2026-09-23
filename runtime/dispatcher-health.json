@@ -7,7 +7,7 @@
   "last_reason": "Second event-wake validation requested after hardening re-arm to require enabled future worker.",
   "wake": {
     "desired_generation": 2,
-    "armed_generation": 1,
+    "armed_generation": 2,
     "served_generation": 0,
     "recent_request_keys": [
       "validation-wake-001",
@@ -20,7 +20,7 @@
       "requested_by": "ecosystem-supervisor",
       "requested_at": "2026-09-23T16:04:00Z"
     },
-    "last_armed_at": "2026-09-23T16:00:30Z",
+    "last_armed_at": "2026-09-23T16:05:08Z",
     "last_served_at": null,
     "last_worker_run_id": null
   }
