@@ -1,5 +1,5 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "lease_minutes": 45,
   "runtime_loss_quarantine_after": 3,
   "one_target_agent_per_dispatch": true,
@@ -9,11 +9,16 @@
   "wake_state": "runtime/dispatcher-health.json#wake",
   "execution_mode_state": "runtime/execution-mode.json",
   "automatic_execution_activation": "registry-per-agent-explicit",
-  "scheduler_model": "event-wake-broker-relay-v5-interactive-first",
+  "scheduler_model": "event-wake-broker-relay-v6-presence-lease",
   "execution_mode_policy": {
+    "file": "runtime/execution-mode.json",
+    "schema": "schemas/execution-mode.schema.json",
     "interactive_first": true,
-    "interactive_mode_blocks_scheduler_progress": true,
-    "autonomous_mode_requires_explicit_handoff_or_no_live_carrier": true,
+    "deterministic_runtime_admission": true,
+    "interactive_presence_is_bounded_lease": true,
+    "expired_presence_allows_fallback_if_configured": true,
+    "explicit_owner_hold_blocks_without_expiry": true,
+    "autonomous_mode_requires_explicit_handoff_or_expired_presence": true,
     "scheduler_is_fallback_transport": true
   },
   "execution_worker": {
@@ -51,5 +56,9 @@
     "request_issue_title": "[ACP_LEASE]",
     "transition_mode": "github-actions-serialized"
   },
-  "private_lease_status": "legacy-foundation-reference-not-runtime-authority"
+  "private_lease_status": "legacy-foundation-reference-not-runtime-authority",
+  "result_time_semantics": {
+    "completed_at": "execution-local metadata; not authoritative for lifecycle ordering",
+    "lifecycle_order": "derive from durable Git commit chronology and gateway commits"
+  }
 }
