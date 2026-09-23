@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-INT-PM-002",
+  "request_digest": "sha256:fae2cfb252ef0cb0440086ee0351bc5188618e2c24d731459f674134671e5e7e",
+  "request_blob_sha": "3ff4eed2cba5754738f50721e21f49874885a692",
+  "execution_id": "exec-task-int-pm-002-20260923T122045Z-probe1",
+  "generation": 9,
+  "outcome": "success",
+  "summary": "Reinstantiated the existing Context Capsule Project Manager under the strict dispatcher contract and performed the authorized read-only attestation. The authoritative manager-state branch v2-manager-runtime remains at ebefc10e3cb16535d9672daa8c4911d635020757. Current lifecycle state says CCPM-R001 remediation and self-verification are complete and the finding remains open pending a separate focused Auditor retest. No target repository mutation was performed.",
+  "evidence": [
+    {
+      "kind": "snapshot",
+      "reference": "lvlaksim1/context-capsule@v2-manager-runtime:ebefc10e3cb16535d9672daa8c4911d635020757;.context/current/state.md blob 8d0c8aff8c8f100bb83624e2873f797363fad8b4",
+      "verified": true,
+      "verified_by": "context-capsule-project-manager",
+      "verified_at": "2026-09-23T12:24:03Z"
+    }
+  ],
+  "completed_at": "2026-09-23T12:24:03Z"
+}
