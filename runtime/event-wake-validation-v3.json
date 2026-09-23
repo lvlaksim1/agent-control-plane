@@ -46,9 +46,13 @@
   "scaling_boundary": "Agent Catalog, Agent Factory and item 20 remain inactive",
   "next_check": {
     "id": "OUTBOX-BROKER-PHASE-A-B-E2E",
-    "task_id": "TASK-EVENT-WAKE-E2E-002",
-    "status": "preparing",
+    "task_id": "TASK-EVENT-WAKE-RELAY-E2E-001",
+    "status": "ready",
+    "wake_generation": 9,
     "expected": "READY task -> durable wake -> Broker precommit/arm -> Worker Phase A activate and STOP -> new durable Phase-B wake -> Broker precommit/arm -> later Worker Phase B reinstate target agent and complete -> release gateway."
   },
-  "updated_at": "2026-09-23T17:18:00Z"
+  "updated_at": "2026-09-23T17:21:30Z",
+  "notes": [
+    "TASK-EVENT-WAKE-E2E-002 was superseded before execution because TASK-EVENT-WAKE-RELAY-E2E-001 had already been durably queued first and already owned wake generation 9."
+  ]
 }
