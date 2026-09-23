@@ -47,11 +47,17 @@
   "next_check": {
     "id": "OUTBOX-BROKER-PHASE-A-B-E2E",
     "task_id": "TASK-EVENT-WAKE-RELAY-E2E-001",
-    "status": "ready",
+    "status": "phase-a-armed",
     "wake_generation": 9,
-    "expected": "READY task -> durable wake -> Broker precommit/arm -> Worker Phase A activate and STOP -> new durable Phase-B wake -> Broker precommit/arm -> later Worker Phase B reinstate target agent and complete -> release gateway."
+    "evidence": [
+      "TASK-EVENT-WAKE-RELAY-E2E-001 is queued and READY.",
+      "Durable wake generation 9 was requested for this task.",
+      "Wake Broker precommitted armed_generation=9 at 2026-09-23T17:20:29Z before scheduling the Worker.",
+      "Execution Worker was armed as an enabled one-shot occurrence for Phase A; direct producer-to-Worker arming was not used."
+    ],
+    "expected": "Worker Phase A reserve/claim/activate and STOP -> Phase-B durable wake -> Broker arm -> later Worker Phase B reinstates ecosystem-supervisor and completes -> gateway release."
   },
-  "updated_at": "2026-09-23T17:21:30Z",
+  "updated_at": "2026-09-23T17:21:10Z",
   "notes": [
     "TASK-EVENT-WAKE-E2E-002 was superseded before execution because TASK-EVENT-WAKE-RELAY-E2E-001 had already been durably queued first and already owned wake generation 9."
   ]
