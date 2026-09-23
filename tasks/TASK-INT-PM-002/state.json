@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-INT-PM-002",
+  "status": "queued",
+  "request_digest": "sha256:fae2cfb252ef0cb0440086ee0351bc5188618e2c24d731459f674134671e5e7e",
+  "attempt": 0,
+  "runtime_loss_count": 0,
+  "claim": null,
+  "latest_checkpoint": null,
+  "request_blob_sha": "3ff4eed2cba5754738f50721e21f49874885a692"
+}
