@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-AUDIT-EVENT-WAKE-RETEST-001",
+  "issuer_agent_id": "ecosystem-supervisor",
+  "target_agent_id": "project-manager-auditor",
+  "objective": "Perform a focused independent read-only retest of EW-001, EW-002 and EW-003 from AUD-2026-09-23-EVENT-WAKE-003 against remediation snapshot lvlaksim1/agent-control-plane@d4e015a856e7710fb830009ffbe3a97220b3d24f. Verify renewable bounded interactive presence lease and explicit Owner hold semantics; deterministic machine-enforced scheduler admission for Broker, READY discovery and Phase-B target reinstantiation; safe same-carrier fresh-lease renewal and expired-carrier behavior; authoritative Git/gateway chronology semantics for completion; updated disabled Scheduled Task prompts; and whether the three findings can be CLOSED. Treat GitHub Actions runs that fail before acquiring a runner (runner_id=0, steps=[]) as infrastructure evidence, not test execution. Publish a canonical focused retest report in Auditor home repository. Do not modify audited targets.",
+  "authority_basis": {
+    "kind": "owner-directive",
+    "reference": "Owner authorized continued remediation and independent audit/retest of ACP item 19.5 in the live interactive chain."
+  },
+  "scope": [
+    "EW-001, EW-002, EW-003 only, plus preservation of previously verified Broker/fencing/two-phase invariants where remediation could regress them",
+    "read-only target lvlaksim1/agent-control-plane@d4e015a856e7710fb830009ffbe3a97220b3d24f",
+    "read-only current Scheduled Task state/prompts for ACP Execution Worker and ACP Wake Broker / Watchdog",
+    "read-only gateway state",
+    "Auditor own-home writes for engagement/report only",
+    "GitHub durable handoff only; no ACP scheduler execution for this Owner-present chain"
+  ],
+  "constraints": [
+    "Interactive-first execution is mandatory: do not use Scheduled Tasks/Wake Broker/Execution Worker to carry this retest.",
+    "Do not modify agent-control-plane, gateway, supervisor, or context-capsule audited evidence.",
+    "Do not remediate findings during retest.",
+    "Do not broaden into Agent Catalog, Agent Factory, or item 20.",
+    "Do not treat non-started GitHub Actions jobs as successful tests.",
+    "Do not use Work."
+  ],
+  "target": {
+    "repository": "lvlaksim1/agent-control-plane",
+    "ref": "d4e015a856e7710fb830009ffbe3a97220b3d24f"
+  },
+  "priority": "high",
+  "dependencies": [
+    {
+      "task_id": "TASK-AUDIT-EVENT-WAKE-003",
+      "relation": "retest_of"
+    }
+  ],
+  "workflow_id": "WF-AUDIT-EVENT-WAKE-003",
+  "parent_task_id": "TASK-AUDIT-EVENT-WAKE-003",
+  "relation": "retest_of",
+  "retry_policy": {
+    "max_attempts": 2,
+    "backoff_minutes": [
+      0,
+      15
+    ],
+    "quarantine_on_exhaustion": true
+  },
+  "completion_contract": {
+    "required_evidence": [
+      {
+        "kind": "audit",
+        "minimum": 1
+      }
+    ]
+  },
+  "created_at": "2026-09-23T21:23:00Z"
+}
