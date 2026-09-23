@@ -19,7 +19,7 @@
       "authority_ref": "v2-manager-runtime",
       "entrypoint": ".context/ENTRYPOINT.md",
       "status": "ready",
-      "automatic_execution_allowed": false
+      "automatic_execution_allowed": true
     },
     {
       "agent_id": "project-manager-auditor",
@@ -29,7 +29,7 @@
       "authority_ref": "main",
       "entrypoint": ".context/ENTRYPOINT.md",
       "status": "ready",
-      "automatic_execution_allowed": false
+      "automatic_execution_allowed": true
     }
   ]
 }
