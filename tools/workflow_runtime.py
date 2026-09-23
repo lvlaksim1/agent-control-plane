@@ -303,10 +303,13 @@ def validate_result(result:dict[str,Any],request:dict[str,Any])->None:
     else:
         raise base.ControlPlaneError("invalid result execution_mode")
 
-def build_live_return_package(registry:dict[str,Any],request:dict[str,Any],result:dict[str,Any])->dict[str,Any]|None:
-    """Resolve deterministic same-runtime return after bounded live delegation."""
+def build_live_return_package(registry:dict[str,Any],request:dict[str,Any],state:dict[str,Any],result:dict[str,Any])->dict[str,Any]|None:
+    """Resolve deterministic same-runtime return only after terminal live delegation."""
     base.validate_request(request)
+    validate_state_carrier(state,request)
     validate_result(result,request)
+    if state.get("status")!="completed" or state.get("claim") is not None or state.get("carrier") is not None:
+        raise base.ControlPlaneError("live return requires terminal completed task with no claim/carrier")
     responsibility=request.get("responsibility")
     if responsibility is None:
         if request.get("issuer_agent_id")!="owner" and result.get("execution_mode")=="live":
