@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "validation_id": "VAL-2026-09-23-ACP-EVENT-WAKE-RELAY-003",
+  "status": "running",
+  "architecture": "event-wake-broker-relay-v3",
+  "branch": "event-wake-redesign",
+  "owner_directive": "OWNER-2026-09-23-EVENT-WAKE-REDESIGN",
+  "supersedes": [
+    "VAL-2026-09-23-ACP-EVENT-WAKE-001",
+    "VAL-2026-09-23-ACP-EVENT-WAKE-RELAY-002"
+  ],
+  "started_at": "2026-09-23T17:07:20Z",
+  "design_change": {
+    "observed_problem": "Broker can successfully enable the one-shot Worker, but the platform may deliver it as immediate catch-up before a post-scheduler repository acknowledgement is committed.",
+    "remediation": "Use outbox-style delivery precommit: Broker persists armed_generation and last_armed_at before enabling the Worker. No post-scheduler repository write is required for correctness. Failed/lost scheduling leaves armed>served and is retried as the same generation after stale timeout.",
+    "slots": 2
+  },
+  "inherited_evidence": [
+    "Gateway globally serializes target execution and is idle generation 44 after safe supersede of stale audit.",
+    "Execution Worker self-rearm is forbidden.",
+    "Only Wake Broker / Hourly Watchdog may arm Execution Worker.",
+    "served_generation <= armed_generation <= desired_generation is enforced.",
+    "three former polling slots remain disabled."
+  ],
+  "active_check": {
+    "id": "OUTBOX-BROKER-WORKER-NOOP",
+    "wake_generation": 8,
+    "status": "pending",
+    "initial_state": "desired=8 armed=7 served=7",
+    "expected": "Broker precommits armed=8 before scheduler update; Worker may start immediately but observes invocation_generation=8 and reconciles served=8; Worker ends disabled."
+  },
+  "remaining": [
+    "live outbox broker relay no-op",
+    "live Phase A -> wake -> Broker -> later Phase B target execution",
+    "lost worker delivery recovery using same precommitted generation",
+    "pin final snapshot",
+    "independent Auditor review"
+  ],
+  "scaling_boundary": "Agent Catalog, Agent Factory and item 20 remain inactive"
+}
