@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-AUDIT-LIVE-RETURN-CHAIN-001",
+  "issuer_agent_id": "ecosystem-supervisor",
+  "target_agent_id": "project-manager-auditor",
+  "objective": "Perform an independent read-only audit of the pre-scaling automatic live return chain. Verify that bounded live delegation preserves caller commitment/responsibility/authority, requires an explicit immutable responsibility contract, returns only after verified terminal child completion, reinstantiates exactly the declared caller in the same live runtime without a user reinvocation, supports nested one-level-at-a-time unwind, and does not make Supervisor a mandatory routing hop. Verify that explicit handoff is a distinct authorized responsibility transfer with no implicit return. Reconcile ACP implementation/tests with Context Capsule Core propagation and green hosted CI. Preserve all previously closed EW/PTC findings unless directly contradicted. Publish a canonical report in the Auditor home repository.",
+  "authority_basis": {
+    "kind": "owner-directive",
+    "reference": "Owner approved pre-Catalog/Factory automatic return-to-caller implementation and requested independent verification."
+  },
+  "scope": [
+    "read-only audit of lvlaksim1/agent-control-plane@b3ee54f1d662d5d051dfcfdcfca75a53f35b525c",
+    "read-only audit of lvlaksim1/context-capsule Core snapshot 41e475dd92a666add9432d21a522ebd216b5f22e and manager-state head 76f97e174ec2aedc05871aee0fe58cd5606bacaf",
+    "verify Context Capsule hosted CI run 35935009570 SUCCESS",
+    "read-only reconciliation with existing task-scoped live-carrier and scheduler invariants",
+    "Auditor own-home writes required to persist engagement and canonical report",
+    "execute immediately in the current live Owner-facing runtime from GitHub handoff"
+  ],
+  "constraints": [
+    "Do not modify audited ACP, Context Capsule, Supervisor, or gateway evidence.",
+    "Do not remediate findings inside the audit engagement.",
+    "Do not use Scheduled Tasks to execute this audit while the live carrier is fresh.",
+    "Do not activate Agent Catalog, Agent Factory, or item 20."
+  ],
+  "target": {
+    "repository": "lvlaksim1/agent-control-plane",
+    "ref": "b3ee54f1d662d5d051dfcfdcfca75a53f35b525c"
+  },
+  "priority": "high",
+  "dependencies": [],
+  "workflow_id": "WF-LIVE-RETURN-CHAIN-001",
+  "parent_task_id": null,
+  "relation": "independent-pre-scaling-audit",
+  "responsibility": {
+    "mode": "bounded_delegation",
+    "commitment_owner_agent_id": "ecosystem-supervisor",
+    "return_to_agent_id": "ecosystem-supervisor"
+  },
+  "retry_policy": {
+    "max_attempts": 2,
+    "backoff_minutes": [
+      0,
+      15
+    ],
+    "quarantine_on_exhaustion": true
+  },
+  "completion_contract": {
+    "required_evidence": [
+      {
+        "kind": "audit",
+        "minimum": 1
+      }
+    ]
+  },
+  "created_at": "2026-09-24T00:00:00Z"
+}
