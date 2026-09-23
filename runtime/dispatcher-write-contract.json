@@ -1,5 +1,5 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "claim": {
     "required_fields": [
       "execution_id",
@@ -98,6 +98,13 @@
       "CAS state=completed with claim=null and carrier=null before carrier expiry",
       "re-read terminal state; expired carrier cannot be used to complete"
     ],
-    "fallback": "if live runtime disappears before terminal completion, expired carrier with fallback_after_expiry=true permits scheduler execution"
+    "fallback": "if live runtime disappears before terminal completion, expired carrier with fallback_after_expiry=true permits scheduler execution",
+    "partial_completion_recovery": [
+      "before scheduler claim of an expired live-carried queued task, explicitly inspect whether result.json exists",
+      "when present, use authoritative Git commit chronology for the current result blob; do not trust result.completed_at for ownership timing",
+      "if result is a valid live success bound to the exact immutable request/blob and exact carrier_id, all completion evidence/gates are satisfied, and the result commit is not later than carrier lease expiry, CAS-repair state=completed with claim=null and carrier=null",
+      "re-read repaired terminal state and do not execute the target",
+      "if result is absent, invalid, mismatched, or committed after lease expiry, ordinary expiry fallback remains eligible"
+    ]
   }
 }
