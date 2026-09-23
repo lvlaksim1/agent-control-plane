@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
-  "state": "active",
-  "generation": 1,
-  "execution_id": "exec-20260923T031732Z-probe1-e2e-supervisor-001",
-  "task_id": "TASK-E2E-SUPERVISOR-001",
-  "agent_id": "ecosystem-supervisor",
-  "slot_id": "probe-1",
-  "claimed_at": "2026-09-23T03:17:32Z",
-  "lease_until": "2026-09-23T04:02:32Z"
+  "state": "idle",
+  "generation": 2,
+  "execution_id": null,
+  "task_id": null,
+  "agent_id": null,
+  "slot_id": null,
+  "claimed_at": null,
+  "lease_until": null
 }
