@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "last_dispatch_at": "2026-09-23T03:14:02Z",
+  "last_dispatch_at": "2026-09-23T03:18:58Z",
   "last_slot_id": "probe-1",
-  "last_outcome": "no-ready-work",
-  "last_observed_head": "f7815111048f8023aef95027d63847c571520717"
+  "last_outcome": "claimed",
+  "last_observed_head": "528aae5e158be4d74a5ddb7a69212c825170bde0"
 }
