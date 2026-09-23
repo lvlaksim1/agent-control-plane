@@ -1,14 +1,14 @@
 {
   "schema_version": 2,
-  "last_dispatch_at": "2026-09-23T16:30:02Z",
+  "last_dispatch_at": "2026-09-23T16:30:19Z",
   "last_slot_id": "execution-worker",
-  "last_outcome": "phase-b-completed-release-pending",
+  "last_outcome": "phase-b-completed-release-pending-armed",
   "last_observed_head": "e1917b250d727a5b75d57895b4ef85488a05e85d",
-  "last_reason": "Completed TASK-EVENT-WAKE-E2E-001 durably and submitted exact gateway release for generation 41; canonical gateway release verification remains pending.",
+  "last_reason": "Completed TASK-EVENT-WAKE-E2E-001 durably; exact gateway release generation 41 is submitted and release-verification wake generation 5 is durably armed.",
   "wake": {
     "desired_generation": 5,
-    "armed_generation": 4,
-    "served_generation": 3,
+    "armed_generation": 5,
+    "served_generation": 4,
     "recent_request_keys": [
       "validation-wake-001",
       "validation-wake-002",
@@ -23,8 +23,8 @@
       "requested_by": "execution-worker",
       "requested_at": "2026-09-23T16:30:02Z"
     },
-    "last_armed_at": "2026-09-23T16:27:15Z",
-    "last_served_at": "2026-09-23T16:27:15Z",
-    "last_worker_run_id": "execution-worker-generation-3"
+    "last_armed_at": "2026-09-23T16:30:19Z",
+    "last_served_at": "2026-09-23T16:30:19Z",
+    "last_worker_run_id": "execution-worker-generation-4"
   }
 }
