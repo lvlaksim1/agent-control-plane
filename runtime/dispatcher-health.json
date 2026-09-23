@@ -7,7 +7,7 @@
   "last_reason": "Independent Auditor task TASK-AUDIT-EVENT-WAKE-001 queued and ready for event-driven dispatch.",
   "wake": {
     "desired_generation": 7,
-    "armed_generation": 6,
+    "armed_generation": 7,
     "served_generation": 6,
     "recent_request_keys": [
       "validation-wake-001",
@@ -25,7 +25,7 @@
       "requested_by": "ecosystem-supervisor",
       "requested_at": "2026-09-23T16:42:30Z"
     },
-    "last_armed_at": "2026-09-23T16:37:38Z",
+    "last_armed_at": "2026-09-23T16:42:26Z",
     "last_served_at": "2026-09-23T16:38:39Z",
     "last_worker_run_id": "execution-worker-generation-6"
   }
