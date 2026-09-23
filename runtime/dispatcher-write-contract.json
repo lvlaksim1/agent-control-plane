@@ -40,10 +40,14 @@
   "completion": {
     "order": [
       "result.json durable",
-      "state=completed durable and re-read",
+      "state=completed with claim=null durable and re-read",
       "gateway release accepted",
       "dispatcher heartbeat"
     ],
-    "lease_must_remain_active_until": "completed state re-read succeeds"
+    "lease_must_remain_active_until": "completed state re-read succeeds",
+    "completed_state_requirements": {
+      "status": "completed",
+      "claim": null
+    }
   }
 }
