@@ -43,3 +43,5 @@ Direct Owner↔Project Manager chat is outside dispatcher scheduling and remains
 ### Pre-projection runtime loss
 
 A gateway claim may commit after the Scheduled Chat invocation that requested it has already ended. This is recoverable without waiting for lease expiry because the protocol forbids target-agent reinstantiation before the private claimed projection is durable. Therefore an exact active gateway lease + matching private `queued` state proves that no authorized target execution could have started under this protocol. A replacement dispatcher may repair `queued → claimed` from that exact lease and continue the same execution token. It must never generate a second claim for that task.
+
+A completed task must have `claim=null`. The gateway lease, not a stale task-state claim projection, is execution authority; leaving claim metadata attached to a terminal task is forbidden projection drift.
