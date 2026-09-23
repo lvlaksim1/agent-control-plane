@@ -64,7 +64,7 @@ Before declaring the live engagement complete:
 
 If the runtime is lost before any valid success result becomes durable, carrier expiry permits ordinary autonomous fallback.
 
-If a valid live `result.json` is already durable but the runtime is lost before step 4 terminalizes `state.json`, that partial completion MUST be reconciled before scheduler claim. Use the authoritative Git commit time for the current result blob, not `result.completed_at`. When the live result is bound to the exact immutable request/blob and exact carrier_id, satisfies all completion evidence/gates, and its Git commit is not later than the carrier lease expiry, CAS-repair `state.json` to `completed`, clear claim/carrier, re-read, and do not execute the target. If the result is absent, invalid, mismatched, or committed after expiry, normal fallback remains eligible.
+If a valid live `result.json` is already durable but the runtime is lost before step 4 terminalizes `state.json`, that partial completion MUST be reconciled before scheduler claim. Use the authoritative Git commit time for the current result blob, not `result.completed_at`. When the live result is bound to the exact immutable request/blob and exact carrier_id, satisfies all completion evidence/gates, and its Git commit is not later than the carrier lease expiry, CAS-repair `state.json` to `completed`, clear claim/carrier, re-read, and do not execute the target. If the result is absent, invalid, mismatched, or authoritatively committed after expiry, normal fallback remains eligible. If a result is present but the authoritative Git commit time for its current blob cannot be established, fail closed: do not claim or execute the task until chronology is resolved.
 
 ## Why the relay exists
 
@@ -99,7 +99,7 @@ At every Execution Worker invocation use a **lease-first fast path**. A natural 
 3. if the gateway is `reserved` or `active`, fetch only the exact referenced task request/state/runtime/gates plus contract files needed to reconcile that execution;
 4. reconcile that exact execution before considering a new claim;
 5. when the gateway is idle, first inspect the captured wake's `last_request.request_key`; if it has the exact form `task-ready:<task_id>`, fetch that task's request/state/runtime/gates and validate its per-task carrier;
-6. before treating any **expired live-carried queued task** as scheduler-eligible, explicitly inspect whether `result.json` exists and obtain the authoritative Git commit time for its current blob. If it is an exact valid pre-expiry live success, CAS-repair the task to `completed` and do not claim it; if absent/invalid/mismatched/post-expiry, normal fallback may proceed;
+6. before treating any **expired live-carried queued task** as scheduler-eligible, explicitly inspect whether `result.json` exists and obtain the authoritative Git commit time for its current blob. If it is an exact valid pre-expiry live success, CAS-repair the task to `completed` and do not claim it; if absent/invalid/mismatched/authoritatively post-expiry, normal fallback may proceed; if a result is present but commit chronology is unavailable, fail closed and do not execute;
 7. only after that reconciliation may the exact wake-addressed task be selected as READY; if none is available, scanning other queued tasks must apply the same expired-live result reconciliation rule and still exclude fresh live carriers and explicit holds;
 8. execute at most one bounded control-plane cycle.
 
