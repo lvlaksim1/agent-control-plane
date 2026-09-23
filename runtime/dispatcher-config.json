@@ -1,5 +1,5 @@
 {
-  "schema_version": 5,
+  "schema_version": 6,
   "lease_minutes": 45,
   "runtime_loss_quarantine_after": 3,
   "one_target_agent_per_dispatch": true,
@@ -7,23 +7,8 @@
   "dispatcher_protocol": "docs/SCHEDULED_CHAT_DISPATCHER.md",
   "scheduler_topology": "runtime/dispatcher-pool.json",
   "wake_state": "runtime/dispatcher-health.json#wake",
-  "execution_mode_state": "runtime/execution-mode.json",
   "automatic_execution_activation": "registry-per-agent-explicit",
-  "scheduler_model": "event-wake-broker-relay-v7-presence-park",
-  "execution_mode_policy": {
-    "file": "runtime/execution-mode.json",
-    "schema": "schemas/execution-mode.schema.json",
-    "interactive_first": true,
-    "deterministic_runtime_admission": true,
-    "interactive_presence_is_bounded_lease": true,
-    "expired_presence_allows_fallback_if_configured": true,
-    "explicit_owner_hold_blocks_without_expiry": true,
-    "autonomous_mode_requires_explicit_handoff_or_expired_presence": true,
-    "scheduler_is_fallback_transport": true,
-    "interactive_broker_parking": "park Broker next occurrence at presence.lease_until; refresh when live carrier renews lease",
-    "worker_during_fresh_interactive": "disabled or not scheduled",
-    "no_scheduled_execution_while_presence_fresh": true
-  },
+  "scheduler_model": "event-wake-broker-relay-v8-per-task-carrier",
   "execution_worker": {
     "slot_id": "execution-worker",
     "automation_id": "6aac8b1d8888819180cc4af0c009669e",
@@ -34,7 +19,7 @@
     "baseline_cadence": "hourly",
     "preserve_rrule": true,
     "no_pending_wake_behavior": "fast-noop-unless-gateway-partial",
-    "interactive_mode_behavior": "no-claim-no-target-execution"
+    "interactive_mode_behavior": "deprecated-global-mode; enforce per-task carrier before claim/phase-B"
   },
   "watchdog": {
     "slot_id": "wake-broker-watchdog",
@@ -50,7 +35,7 @@
     "arm_commit_order": "persist-before-scheduler",
     "post_scheduler_ack_required": false,
     "delivery_semantics": "outbox-precommit-to-recurring-worker",
-    "interactive_mode_behavior": "no-arm-no-nudge"
+    "interactive_mode_behavior": "deprecated-global-mode; Broker remains available for unrelated autonomous tasks"
   },
   "authoritative_lease": {
     "repository": "lvlaksim1/agent-control-plane-gateway",
@@ -63,5 +48,15 @@
   "result_time_semantics": {
     "completed_at": "execution-local metadata; not authoritative for lifecycle ordering",
     "lifecycle_order": "derive from durable Git commit chronology and gateway commits"
+  },
+  "task_carrier_policy": {
+    "metadata_location": "tasks/<task_id>/runtime.json#carrier",
+    "scope": "per-task-or-work-chain",
+    "live_mode": "fresh live carrier lease excludes only that task from scheduler selection/execution",
+    "live_handoff": "while Owner is online, GitHub carries durable handoff and next agent is reinstantiated immediately in the same live runtime",
+    "unrelated_autonomous_tasks": "remain scheduler-eligible",
+    "fallback_after_expiry": true,
+    "explicit_hold": "per-task hold blocks only that task without expiry",
+    "scheduler_global_shutdown_on_owner_presence": false
   }
 }
