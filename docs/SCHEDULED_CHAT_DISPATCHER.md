@@ -62,7 +62,9 @@ Before declaring the live engagement complete:
 4. CAS `state.json` to `completed` with `claim=null` and `carrier=null`;
 5. re-read the terminal state.
 
-If the runtime is lost before this terminalization, it writes no success completion. Carrier expiry then permits autonomous fallback. A successful live task must never remain queued until expiry.
+If the runtime is lost before any valid success result becomes durable, carrier expiry permits ordinary autonomous fallback.
+
+If a valid live `result.json` is already durable but the runtime is lost before step 4 terminalizes `state.json`, that partial completion MUST be reconciled before scheduler claim. Use the authoritative Git commit time for the current result blob, not `result.completed_at`. When the live result is bound to the exact immutable request/blob and exact carrier_id, satisfies all completion evidence/gates, and its Git commit is not later than the carrier lease expiry, CAS-repair `state.json` to `completed`, clear claim/carrier, re-read, and do not execute the target. If the result is absent, invalid, mismatched, or committed after expiry, normal fallback remains eligible.
 
 ## Why the relay exists
 
@@ -96,9 +98,10 @@ At every Execution Worker invocation use a **lease-first fast path**. A natural 
 2. validate wake state and capture the exact `armed_generation` that caused this invocation as `invocation_generation`; never treat a newer unarmed desired generation as served;
 3. if the gateway is `reserved` or `active`, fetch only the exact referenced task request/state/runtime/gates plus contract files needed to reconcile that execution;
 4. reconcile that exact execution before considering a new claim;
-5. when the gateway is idle, first inspect the captured wake's `last_request.request_key`; if it has the exact form `task-ready:<task_id>`, fetch that task's request/state/runtime/gates, validate its per-task carrier, and select it only when it is queued, READY, and scheduler-eligible;
-6. only if no exact wake-addressed scheduler-eligible READY task is available may the worker scan other queued tasks, excluding only tasks with fresh live carriers or explicit holds;
-7. execute at most one bounded control-plane cycle.
+5. when the gateway is idle, first inspect the captured wake's `last_request.request_key`; if it has the exact form `task-ready:<task_id>`, fetch that task's request/state/runtime/gates and validate its per-task carrier;
+6. before treating any **expired live-carried queued task** as scheduler-eligible, explicitly inspect whether `result.json` exists and obtain the authoritative Git commit time for its current blob. If it is an exact valid pre-expiry live success, CAS-repair the task to `completed` and do not claim it; if absent/invalid/mismatched/post-expiry, normal fallback may proceed;
+7. only after that reconciliation may the exact wake-addressed task be selected as READY; if none is available, scanning other queued tasks must apply the same expired-live result reconciliation rule and still exclude fresh live carriers and explicit holds;
+8. execute at most one bounded control-plane cycle.
 
 ## Authoritative gateway requests
 
@@ -224,6 +227,8 @@ An event producer must never schedule the Execution Worker directly. This keeps 
 - reserved + claimed: Worker activates from the exact current claimed projection, records receipt, requests Phase-B wake, nudges Broker, then stops;
 - active + claimed without locally recorded receipt: Worker verifies canonical receipt against the exact historical claimed-state blob, records it, requests Phase-B wake if necessary, nudges Broker, then stops;
 - expired reserved/active lease: fence before requeue/quarantine, then request recovery wake if progress is possible;
+- expired live + queued/unclaimed + exact valid pre-expiry live result: CAS-repair to completed before scheduler claim; never execute twice;
+- expired live + queued/unclaimed + absent/invalid/mismatched/post-expiry result: ordinary fallback eligibility may proceed;
 - completed task with valid result and idle gateway: repair completion projection only; never execute twice.
 
 ## Authority and routing
