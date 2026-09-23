@@ -277,6 +277,84 @@ def claimed_execution_ready(state:dict[str,Any],request:dict[str,Any],gateway_le
     """Allows a later dispatcher to begin target reinstantiation only after a durable activation receipt."""
     return state.get("status")=="claimed" and gateway_execution_admitted(state,request,gateway_lease,require_active_state=False)
 
+EXECUTION_MODES={"interactive","autonomous","hold"}
+
+def validate_execution_mode(state:dict[str,Any])->None:
+    base.require_fields(state,[
+      "schema_version","mode","autonomous_scheduler_allowed",
+      "fallback_after_presence_expiry","set_by","authority","reason","set_at",
+      "presence","owner_hold"
+    ],"execution mode")
+    if state["schema_version"]!=2:
+        raise base.ControlPlaneError("execution mode schema_version must be 2")
+    if state["mode"] not in EXECUTION_MODES:
+        raise base.ControlPlaneError("invalid execution mode")
+    if not isinstance(state["autonomous_scheduler_allowed"],bool):
+        raise base.ControlPlaneError("autonomous_scheduler_allowed must be boolean")
+    if not isinstance(state["fallback_after_presence_expiry"],bool):
+        raise base.ControlPlaneError("fallback_after_presence_expiry must be boolean")
+    if not state["set_by"] or not state["authority"] or not state["reason"]:
+        raise base.ControlPlaneError("execution mode provenance fields must be non-empty")
+    base.parse_time(state["set_at"])
+
+    hold=state["owner_hold"]
+    if not isinstance(hold,dict):
+        raise base.ControlPlaneError("owner_hold must be an object")
+    base.require_fields(hold,["enabled","reason","set_by","set_at"],"owner hold")
+    if not isinstance(hold["enabled"],bool):
+        raise base.ControlPlaneError("owner_hold.enabled must be boolean")
+    if hold["enabled"]:
+        if state["mode"]!="hold":
+            raise base.ControlPlaneError("enabled owner hold requires mode=hold")
+        if not hold["reason"] or not hold["set_by"] or not hold["set_at"]:
+            raise base.ControlPlaneError("enabled owner hold requires provenance")
+        base.parse_time(hold["set_at"])
+    elif state["mode"]=="hold":
+        raise base.ControlPlaneError("mode=hold requires enabled owner hold")
+
+    presence=state["presence"]
+    if state["mode"]=="interactive":
+        if state["autonomous_scheduler_allowed"] is not False:
+            raise base.ControlPlaneError("interactive mode cannot explicitly allow scheduler")
+        if hold["enabled"]:
+            raise base.ControlPlaneError("interactive mode cannot also be owner hold")
+        if not isinstance(presence,dict):
+            raise base.ControlPlaneError("interactive mode requires presence lease")
+        base.require_fields(presence,["carrier_id","heartbeat_at","lease_until"],"interactive presence")
+        if not presence["carrier_id"]:
+            raise base.ControlPlaneError("interactive presence carrier_id is required")
+        heartbeat=base.parse_time(presence["heartbeat_at"])
+        lease_until=base.parse_time(presence["lease_until"])
+        if lease_until<=heartbeat:
+            raise base.ControlPlaneError("interactive presence lease must expire after heartbeat")
+    else:
+        if presence is not None:
+            raise base.ControlPlaneError("non-interactive mode must not carry presence lease")
+
+    if state["mode"]=="autonomous":
+        if state["autonomous_scheduler_allowed"] is not True:
+            raise base.ControlPlaneError("autonomous mode must explicitly allow scheduler")
+        if hold["enabled"]:
+            raise base.ControlPlaneError("autonomous mode cannot carry owner hold")
+    if state["mode"]=="hold" and state["autonomous_scheduler_allowed"] is not False:
+        raise base.ControlPlaneError("owner hold must block scheduler")
+
+def interactive_presence_fresh(state:dict[str,Any],*,now:datetime)->bool:
+    validate_execution_mode(state)
+    if state["mode"]!="interactive":
+        return False
+    return now < base.parse_time(state["presence"]["lease_until"])
+
+def scheduler_admission_allowed(state:dict[str,Any],*,now:datetime)->bool:
+    validate_execution_mode(state)
+    if state["mode"]=="hold":
+        return False
+    if state["mode"]=="autonomous":
+        return True
+    if interactive_presence_fresh(state,now=now):
+        return False
+    return state["fallback_after_presence_expiry"] is True
+
 WAKE_RECENT_KEY_LIMIT=32
 
 def validate_wake_state(wake:dict[str,Any])->None:
@@ -368,9 +446,11 @@ def stale_armed_wake(wake:dict[str,Any],*,now:datetime,stale_after_minutes:int)-
         return True
     return now>=base.parse_time(wake["last_armed_at"])+timedelta(minutes=stale_after_minutes)
 
-def broker_generation_to_arm(wake:dict[str,Any],*,now:datetime,stale_after_minutes:int)->int|None:
-    """Return the wake generation the Broker should schedule on the Worker, if any."""
+def broker_generation_to_arm(wake:dict[str,Any],execution_mode:dict[str,Any],*,now:datetime,stale_after_minutes:int)->int|None:
+    """Return the wake generation the Broker may schedule, after deterministic execution-mode admission."""
     validate_wake_state(wake)
+    if not scheduler_admission_allowed(execution_mode,now=now):
+        return None
     if wake["desired_generation"]>wake["armed_generation"]:
         return wake["desired_generation"]
     if stale_armed_wake(wake,now=now,stale_after_minutes=stale_after_minutes):
