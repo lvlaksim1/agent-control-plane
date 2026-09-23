@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-E2E-SUPERVISOR-001",
+  "outcome": "success",
+  "summary": "Bounded Supervisor dispatcher E2E marker created and independently verified against the resulting GitHub commit.",
+  "evidence": [
+    {
+      "kind": "commit",
+      "reference": "lvlaksim1/agent-control-plane@0e8fe05f2750a844b048bb0b5591310078c9c8b3",
+      "verified": true,
+      "verified_by": "dispatcher-probe-1",
+      "verified_at": "2026-09-23T03:18:42Z"
+    }
+  ],
+  "completed_at": "2026-09-23T03:18:42Z"
+}
