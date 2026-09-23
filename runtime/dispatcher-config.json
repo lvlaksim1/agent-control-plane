@@ -1,5 +1,5 @@
 {
-  "schema_version": 7,
+  "schema_version": 8,
   "lease_minutes": 45,
   "runtime_loss_quarantine_after": 3,
   "one_target_agent_per_dispatch": true,
@@ -8,7 +8,7 @@
   "scheduler_topology": "runtime/dispatcher-pool.json",
   "wake_state": "runtime/dispatcher-health.json#wake",
   "automatic_execution_activation": "registry-per-agent-explicit",
-  "scheduler_model": "event-wake-broker-relay-v9-cas-live-carrier",
+  "scheduler_model": "event-wake-broker-relay-v10-partial-live-recovery",
   "execution_worker": {
     "slot_id": "execution-worker",
     "automation_id": "6aac8b1d8888819180cc4af0c009669e",
@@ -48,7 +48,8 @@
   "result_time_semantics": {
     "completed_at": "execution-local metadata; not authoritative for lifecycle ordering",
     "lifecycle_order": "derive from durable Git commit chronology and gateway commits",
-    "live_result": "execution_mode=live binds result to carrier_id; lifecycle order is durable state/result chronology"
+    "live_result": "execution_mode=live binds result to carrier_id; lifecycle order is durable state/result chronology",
+    "live_partial_recovery": "authoritative Git result commit time must not be later than the carrier lease expiry; result.completed_at is not used for recovery authority"
   },
   "task_carrier_policy": {
     "metadata_location": "tasks/<task_id>/state.json#carrier",
@@ -61,6 +62,13 @@
     "unrelated_autonomous_tasks": "remain scheduler-eligible",
     "fallback_after_expiry": true,
     "explicit_hold": "per-task hold blocks only that task without expiry",
-    "scheduler_global_shutdown_on_owner_presence": false
+    "scheduler_global_shutdown_on_owner_presence": false,
+    "partial_completion_recovery": {
+      "trigger": "expired live carrier + queued/unclaimed state before scheduler claim",
+      "result_check": "inspect result.json and authoritative Git commit time",
+      "valid_result": "execution_mode=live, exact carrier_id/request digest/request blob/evidence, result commit not later than carrier lease expiry",
+      "action": "CAS-repair state=completed with claim=null and carrier=null; do not execute target",
+      "absent_or_invalid_result": "normal expiry fallback remains eligible"
+    }
   }
 }
