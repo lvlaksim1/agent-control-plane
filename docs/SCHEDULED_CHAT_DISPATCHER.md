@@ -1,25 +1,49 @@
 # Scheduled Chat Execution Worker Protocol
 
-The scheduler uses one reusable one-shot Execution Worker plus one hourly Watchdog. Both are infrastructure, not persistent agents. Direct Owner↔agent conversations remain first-class and do not use scheduler transport.
+The scheduler uses two infrastructure automations:
 
-A wake changes only *when* work is reconsidered. It never grants authority.
+1. one reusable one-shot **Execution Worker**; and
+2. one recurring **Wake Broker / Hourly Watchdog**.
+
+Direct Owner↔agent conversations remain first-class and do not use scheduler transport. A wake changes only *when* work is reconsidered. It never grants authority.
+
+## Why the relay exists
+
+Live validation showed that a one-shot Scheduled Task can race with its own completion if it tries to re-arm itself while the current invocation is still active. Re-enabling an expired one-shot may also be delivered as an immediate catch-up run rather than exactly at the requested future DTSTART.
+
+Therefore the Execution Worker **must never schedule itself**.
+
+Continuation uses a cross-task relay:
+
+```
+durable work/wake
+      ↓
+Wake Broker / Watchdog
+      ↓
+arms Execution Worker
+      ↓
+Execution Worker
+      ↓
+if continuation is needed:
+persist new wake → nudge Broker → STOP
+```
+
+The Broker may run immediately or near the requested time; correctness never depends on exact wall-clock delivery. The only required semantic boundary is that Phase B occurs in a later Execution Worker invocation.
 
 ## Entry reconciliation
 
 At every Execution Worker invocation use a **lease-first fast path**:
 
 1. read `runtime/dispatcher-config.json`, `runtime/dispatcher-pool.json`, `runtime/dispatcher-health.json`, Registry, and the authoritative gateway lease;
-2. validate the current wake state and capture the exact `armed_generation` that caused this invocation as `invocation_generation`; never treat a newer unarmed desired generation as already served;
-3. if the gateway is `reserved` or `active`, fetch only the exact referenced task request/state/runtime/gates plus the contract files needed to reconcile that execution; do not scan unrelated tasks;
-4. reconcile that exact partial/current execution before considering any new claim;
+2. validate wake state and capture the exact `armed_generation` that caused this invocation as `invocation_generation`; never treat a newer unarmed desired generation as served;
+3. if the gateway is `reserved` or `active`, fetch only the exact referenced task request/state/runtime/gates plus contract files needed to reconcile that execution;
+4. reconcile that exact execution before considering a new claim;
 5. only when the gateway is idle may the worker scan queued task states and compute READY deterministically;
 6. execute at most one bounded control-plane cycle.
 
-This ordering reduces runtime/tool cost without changing authority or ownership. The gateway lease and exact task state remain authoritative.
-
 ## Two-phase target execution
 
-**A gateway reservation/activation never authorizes target execution in the same invocation.**
+**A gateway reservation/activation never authorizes target execution in the same Execution Worker invocation.**
 
 ### Phase A — reserve and activate, then stop
 
@@ -30,12 +54,14 @@ This ordering reduces runtime/tool cost without changing authority or ownership.
 5. Request gateway `activate` with the exact fence plus `activation_projection_blob_sha`.
 6. Proceed only if canonical gateway lease is `active` and records that exact receipt.
 7. Record the same activation receipt in the private claim and re-read.
-8. Persist a new durable wake request keyed by this exact activated execution, because Phase B must occur in a later invocation.
-9. Re-arm the same Execution Worker for a future one-shot run using the configured minimum delay and set `is_enabled=true`; verify both the future schedule and enabled state before recording the corresponding armed generation.
-10. Mark only the captured armed invocation generation served.
+8. Persist a deterministic durable wake keyed by the activated execution because Phase B requires a later Execution Worker invocation.
+9. Nudge the Wake Broker / Watchdog by scheduling that separate recurring automation for a near-future run while preserving its hourly RRULE; verify it remains enabled.
+10. Mark only `invocation_generation` served.
 11. **STOP. Do not reinstate the target agent and do not perform target writes.**
 
-If re-arm fails, leave the durable wake pending. The hourly Watchdog must recover it.
+The Worker never writes `armed_generation`; only the Broker may acknowledge that a worker generation was actually scheduled.
+
+If the Broker nudge fails, leave the durable wake pending. Its hourly cadence is the guaranteed recovery path.
 
 ### Phase B — execute in a later invocation
 
@@ -64,52 +90,59 @@ While the exact active fence remains valid:
 2. CAS-update task state to `completed` with `claim=null`; re-read;
 3. only after durable completion request exact gateway release and verify canonical gateway idle at a newer generation;
 4. recompute READY/recovery state;
-5. if another durable reason for progress exists, persist a new wake request and re-arm the Execution Worker;
-6. mark only the captured armed invocation generation served;
+5. if another durable reason for progress exists, persist a new wake and nudge the Broker;
+6. mark only `invocation_generation` served;
 7. stop.
 
-A worker invocation never re-arms itself merely because it ran.
+A Worker invocation never schedules the Worker itself.
 
 ## Wake transport contract
 
 Wake state is `runtime/dispatcher-health.json#wake`.
 
 - `desired_generation`: latest requested wake;
-- `armed_generation`: latest successfully scheduled wake;
-- `served_generation`: latest wake reconciled by a worker invocation.
+- `armed_generation`: latest generation the Broker has successfully scheduled on the Worker;
+- `served_generation`: latest armed generation actually reconciled by a Worker invocation.
+
+Invariant:
+
+`served_generation <= armed_generation <= desired_generation`.
 
 Wake requests use deterministic `request_key` values. Recent keys suppress replay.
 
-Re-arm ordering is mandatory:
+## Wake Broker / Hourly Watchdog
 
-1. durable wake request;
-2. scheduler update of the existing Execution Worker with a future one-shot schedule and `is_enabled=true`;
-3. verify the worker is enabled and scheduled in the future;
-4. durable armed-generation acknowledgement.
+The Broker never executes target-agent work and never claims a gateway lease.
 
-Duplicate invocation is safe because task state and the gateway lease remain authoritative.
+It runs in two modes using the same recurring automation:
 
-## Hourly Watchdog
+- **event nudge**: another infrastructure/client runtime moves its next occurrence earlier after persisting a durable wake;
+- **hourly watchdog**: the RRULE guarantees eventual recovery if the nudge or worker delivery is lost.
 
-The Watchdog never executes target-agent work.
+Each Broker run:
 
-Each hourly run:
+1. reconcile Registry, task/gate/runtime metadata, wake state and authoritative gateway lease;
+2. detect READY work, due retry, partial reserved/active transitions, stale/lost wake delivery, or protocol-defined lease recovery;
+3. create a deterministic durable wake if work exists but no sufficient wake is pending;
+4. if `desired_generation > armed_generation`, or an already-armed unserved generation is stale, schedule the existing Execution Worker for a one-shot run and set `is_enabled=true`;
+5. verify the returned scheduler state names the exact Worker and is enabled for a runnable one-shot occurrence; exact wall-clock timing is not a correctness assumption;
+6. only then persist the matching `armed_generation` and `last_armed_at`;
+7. otherwise no-op.
 
-1. reconcile Registry, tasks, gates, runtime metadata, wake state and authoritative gateway lease;
-2. detect READY work, due retries, stale/lost wake delivery, or protocol-defined lease recovery;
-3. create a durable wake request if needed;
-4. if desired > armed, or an outstanding armed generation is stale, re-arm the Execution Worker;
-5. record the matching armed generation after successful scheduler update;
-6. otherwise no-op.
+The Broker never updates its own schedule while it is executing.
 
-The Watchdog is the guaranteed slow recovery path; event wake is the normal fast path.
+## Event producers
+
+After an authorized runtime creates a durable wake it MAY nudge the Broker for fast delivery by moving the Broker's next occurrence earlier while preserving its recurring hourly schedule. If it cannot do so safely, it leaves the wake pending for the next hourly Broker run.
+
+An event producer must never schedule the Execution Worker directly. This keeps all worker arming serialized through one Broker role.
 
 ## Recovery
 
-- reserved + queued: repair the same task to claimed, activate, request Phase-B wake, then stop;
-- reserved + claimed: activate from exact current claimed projection, request Phase-B wake, then stop;
-- active + claimed without locally recorded receipt: verify canonical receipt against a valid historical claimed-state blob, record it, request Phase-B wake if necessary, then stop;
-- expired reserved/active lease: fence before requeue/quarantine, then request a recovery wake if progress is possible;
+- reserved + queued: Worker repairs the same task to claimed, activates it, records the receipt, requests Phase-B wake, nudges Broker, then stops;
+- reserved + claimed: Worker activates from the exact current claimed projection, records receipt, requests Phase-B wake, nudges Broker, then stops;
+- active + claimed without locally recorded receipt: Worker verifies canonical receipt against the exact historical claimed-state blob, records it, requests Phase-B wake if necessary, nudges Broker, then stops;
+- expired reserved/active lease: fence before requeue/quarantine, then request recovery wake if progress is possible;
 - completed task with valid result and idle gateway: repair completion projection only; never execute twice.
 
 ## Authority and routing
