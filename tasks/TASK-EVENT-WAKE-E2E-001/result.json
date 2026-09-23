@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-EVENT-WAKE-E2E-001",
+  "request_digest": "sha256:3f96c919a8ca160012af93f38cc02b6926ac0b4f6a11ec82f49e061eec027171",
+  "request_blob_sha": "0870cb67adabc725b5b240a8abc2fae7796da62a",
+  "execution_id": "TASK-EVENT-WAKE-E2E-001-g41",
+  "generation": 41,
+  "outcome": "success",
+  "summary": "Event-wake Phase B executed in a later invocation after verified Phase A activation. ecosystem-supervisor was reinstantiated from its registered ENTRYPOINT, the Owner-issued task was validated against its mandate, the exact gateway fence/activation receipt remained active, and the redesigned scheduler state was verified without modifying any client project.",
+  "evidence": [
+    {
+      "kind": "state",
+      "reference": "lvlaksim1/agent-control-plane-gateway@main:runtime/lease.json generation 41 active for TASK-EVENT-WAKE-E2E-001-g41 with activation_projection_blob_sha 66550aa4fb4657359c48f10b9c4ed6edb9db2e6e",
+      "verified": true,
+      "verified_by": "ecosystem-supervisor",
+      "verified_at": "2026-09-23T16:29:32Z"
+    },
+    {
+      "kind": "state",
+      "reference": "lvlaksim1/agent-control-plane@event-wake-redesign:runtime/dispatcher-health.json wake desired_generation=4 armed_generation=4 served_generation=3 request_key=phase-b:TASK-EVENT-WAKE-E2E-001-g41",
+      "verified": true,
+      "verified_by": "ecosystem-supervisor",
+      "verified_at": "2026-09-23T16:29:32Z"
+    },
+    {
+      "kind": "state",
+      "reference": "lvlaksim1/agent-control-plane@event-wake-redesign commit ba1269759db49c284d8c8f023a4b7fe2b6d416a7 entered private task state active under the exact generation-41 fence",
+      "verified": true,
+      "verified_by": "ecosystem-supervisor",
+      "verified_at": "2026-09-23T16:29:32Z"
+    }
+  ],
+  "completed_at": "2026-09-23T16:29:32Z"
+}
