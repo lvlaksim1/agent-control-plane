@@ -345,6 +345,24 @@ def interactive_presence_fresh(state:dict[str,Any],*,now:datetime)->bool:
         return False
     return now < base.parse_time(state["presence"]["lease_until"])
 
+def renew_interactive_presence(state:dict[str,Any],*,carrier_id:str,now:datetime,lease_minutes:int)->dict[str,Any]:
+    """Renew only a still-fresh lease owned by the same carrier; expired carriers cannot silently reclaim."""
+    validate_execution_mode(state)
+    if state["mode"]!="interactive":
+        raise base.ControlPlaneError("only interactive presence can be renewed")
+    if not isinstance(lease_minutes,int) or lease_minutes<1:
+        raise base.ControlPlaneError("lease_minutes must be a positive integer")
+    presence=state["presence"]
+    if presence["carrier_id"]!=carrier_id:
+        raise base.ControlPlaneError("interactive presence carrier mismatch")
+    if not interactive_presence_fresh(state,now=now):
+        raise base.ControlPlaneError("expired interactive presence cannot be renewed without reconciliation")
+    out=copy.deepcopy(state)
+    out["presence"]["heartbeat_at"]=base.format_time(now)
+    out["presence"]["lease_until"]=base.format_time(now+timedelta(minutes=lease_minutes))
+    validate_execution_mode(out)
+    return out
+
 def scheduler_admission_allowed(state:dict[str,Any],*,now:datetime)->bool:
     validate_execution_mode(state)
     if state["mode"]=="hold":
