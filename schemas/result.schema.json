@@ -6,6 +6,7 @@
     "schema_version",
     "task_id",
     "request_digest",
+    "request_blob_sha",
     "execution_id",
     "generation",
     "outcome",
@@ -53,6 +54,10 @@
     },
     "completed_at": {
       "type": "string"
+    },
+    "request_blob_sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
     }
   }
 }

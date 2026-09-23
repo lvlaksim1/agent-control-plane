@@ -14,7 +14,7 @@ def request(task_id,target="agent-a",deps=None,max_attempts=3):
  return {"schema_version":1,"task_id":task_id,"issuer_agent_id":"owner","target_agent_id":target,"objective":task_id,"authority_basis":{"kind":"owner-directive"},"scope":["test"],"constraints":[],"target":{"repository":"o/r","ref":"main"},"priority":"normal","dependencies":[{"task_id":d,"relation":"depends_on"} for d in (deps or [])],"completion_contract":{"required_evidence":[{"kind":"commit","minimum":1}]},"created_at":"2026-09-01T00:00:00Z","retry_policy":{"max_attempts":max_attempts,"backoff_minutes":[0,15,60],"quarantine_on_exhaustion":True}}
 
 def state(r,status="queued"):
- return {"schema_version":1,"task_id":r["task_id"],"status":status,"request_digest":cp.request_digest(r),"attempt":0,"runtime_loss_count":0,"claim":None,"latest_checkpoint":None}
+ return {"schema_version":1,"task_id":r["task_id"],"status":status,"request_digest":cp.request_digest(r),"request_blob_sha":"a"*40,"attempt":0,"runtime_loss_count":0,"claim":None,"latest_checkpoint":None}
 
 def idle(g=0):
  return {"schema_version":1,"state":"idle","generation":g,"execution_id":None,"task_id":None,"agent_id":None,"slot_id":None,"claimed_at":None,"lease_until":None}
@@ -24,7 +24,7 @@ def gate(r,status="waiting"):
 
 def result(task_id,kind="commit",req=None,execution_id="e1",generation=1):
  r=req or request(task_id)
- return {"schema_version":1,"task_id":task_id,"request_digest":cp.request_digest(r),"execution_id":execution_id,"generation":generation,"outcome":"success","summary":"done","evidence":[{"kind":kind,"reference":"o/r@abc","verified":True,"verified_by":"ecosystem-supervisor","verified_at":"2026-09-23T00:30:00Z"}],"completed_at":"2026-09-23T00:30:00Z"}
+ return {"schema_version":1,"task_id":task_id,"request_digest":cp.request_digest(r),"request_blob_sha":"a"*40,"execution_id":execution_id,"generation":generation,"outcome":"success","summary":"done","evidence":[{"kind":kind,"reference":"o/r@abc","verified":True,"verified_by":"ecosystem-supervisor","verified_at":"2026-09-23T00:30:00Z"}],"completed_at":"2026-09-23T00:30:00Z"}
 
 class WorkflowRuntimeTests(unittest.TestCase):
  def test_gate_blocks_then_owner_resolves(self):
@@ -68,6 +68,10 @@ class WorkflowRuntimeTests(unittest.TestCase):
   repaired=wr.repair_completed_projection(idle(8),s,r,[],res)
   self.assertEqual(repaired["status"],"completed")
   self.assertEqual(wr.ready_tasks(registry(),[(r,repaired,[],wr.task_runtime("A"))],NOW),[])
+
+ def test_result_blob_mismatch_is_rejected(self):
+  r=request("A"); s=state(r); res=result("A",req=r); res["request_blob_sha"]="b"*40
+  with self.assertRaises(cp.ControlPlaneError): wr.repair_completed_projection(idle(2),s,r,[],res)
 
  def test_result_digest_mismatch_is_rejected(self):
   r=request("A"); res=result("A",req=r); res["request_digest"]="sha256:"+"0"*64

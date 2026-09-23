@@ -143,11 +143,13 @@ def build_invocation(registry:dict[str,Any],request:dict[str,Any],state:dict[str
     }
 
 def validate_result(result:dict[str,Any],request:dict[str,Any])->None:
-    base.require_fields(result,["schema_version","task_id","request_digest","execution_id","generation","outcome","summary","evidence","completed_at"],"result")
+    base.require_fields(result,["schema_version","task_id","request_digest","request_blob_sha","execution_id","generation","outcome","summary","evidence","completed_at"],"result")
     if result["schema_version"]!=1 or result["task_id"]!=request["task_id"] or result["outcome"]!="success":
         raise base.ControlPlaneError("invalid success result")
     if result["request_digest"]!=base.request_digest(request):
         raise base.ControlPlaneError("result/request digest mismatch")
+    if not isinstance(result["request_blob_sha"],str) or len(result["request_blob_sha"])!=40:
+        raise base.ControlPlaneError("result must bind to request blob")
     if not isinstance(result["generation"],int) or result["generation"]<1 or not result["execution_id"]:
         raise base.ControlPlaneError("result must bind to execution fence")
     base.parse_time(result["completed_at"])
@@ -181,6 +183,8 @@ def complete_task(lease:dict[str,Any],state:dict[str,Any],request:dict[str,Any],
     c=state["claim"]
     if not base.fence_valid(lease,task_id=request["task_id"],agent_id=request["target_agent_id"],execution_id=c["execution_id"],generation=c["generation"]):
         raise base.ControlPlaneError("stale execution cannot complete")
+    if result["request_blob_sha"]!=state.get("request_blob_sha"):
+        raise base.ControlPlaneError("result/request blob mismatch")
     if result["execution_id"]!=c["execution_id"] or result["generation"]!=c["generation"]:
         raise base.ControlPlaneError("result does not belong to current execution")
     ok,missing=completion_satisfied(request,result)
@@ -197,6 +201,8 @@ def repair_completed_projection(lease:dict[str,Any],state:dict[str,Any],request:
         validate_gate(gate,request)
         if gate["status"]!="satisfied":
             raise base.ControlPlaneError("cannot repair completion with unsatisfied gate")
+    if result["request_blob_sha"]!=state.get("request_blob_sha"):
+        raise base.ControlPlaneError("cannot repair result/request blob mismatch")
     ok,missing=completion_satisfied(request,result)
     if not ok:
         raise base.ControlPlaneError("cannot repair completion evidence: "+",".join(missing))
