@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-AUDIT-PER-TASK-CARRIER-RETEST-001",
+  "status": "queued",
+  "request_digest": "sha256:0e3da7abee759e1e734922340e9d20486f8416870ac488149888878462bff60b",
+  "attempt": 0,
+  "runtime_loss_count": 0,
+  "claim": null,
+  "latest_checkpoint": null,
+  "request_blob_sha": "2a5055be28d991ea32daea99c2f25f453b946cd2",
+  "carrier": {
+    "mode": "live",
+    "carrier_id": "owner-live-runtime-ptc-retest-001",
+    "set_by": "ecosystem-supervisor",
+    "reason": "Owner is online; Auditor is to execute this focused retest immediately from GitHub handoff in the current live runtime without waiting for a Scheduled Task.",
+    "heartbeat_at": "2026-09-23T22:30:18Z",
+    "lease_until": "2026-09-23T23:30:18Z",
+    "fallback_after_expiry": true
+  }
+}
