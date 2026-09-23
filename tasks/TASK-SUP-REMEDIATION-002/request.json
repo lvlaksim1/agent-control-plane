@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-SUP-REMEDIATION-002",
+  "issuer_agent_id": "owner",
+  "target_agent_id": "ecosystem-supervisor",
+  "objective": "Complete the remaining SUP-002 remediation after AUD-2026-09-23-SUPERVISOR-001-RETEST-001. Reconcile the active ENG-2026-09-23-ACP-9-20 commitment with the newer Owner instruction to stop after Master Plan 6.5 and discuss before Agent Catalog/Factory; ensure item 20 is not represented as active authorized next work; extend the mandatory portfolio reconciliation safeguard to include service-agent engagements; reconcile all affected current/master-plan/handoff/portfolio views. Do not modify the already-closed SUP-001 Core/fencing remediation.",
+  "authority_basis": {
+    "kind": "owner-directive",
+    "reference": "Owner instruction to close Master Plan 6.5 before discussion"
+  },
+  "scope": [
+    "lvlaksim1/supervisor@main",
+    "Supervisor active engagement lifecycle and portfolio reconciliation safeguards"
+  ],
+  "constraints": [
+    "Do not modify Service Agent Core, stable identity, mandate, Supervisor profile, goals, or professional memory except procedural reconciliation memory.",
+    "Preserve SUP-001 closure evidence and all project ownership / direct Owner-to-Project-Manager / Auditor independence boundaries.",
+    "Do not start Agent Catalog or Agent Factory.",
+    "Do not use Work."
+  ],
+  "target": {
+    "repository": "lvlaksim1/supervisor",
+    "ref": "main"
+  },
+  "priority": "high",
+  "dependencies": [
+    {
+      "task_id": "TASK-SUP-RETEST-001",
+      "relation": "depends_on"
+    }
+  ],
+  "workflow_id": "WF-SUPERVISOR-AUDIT-REMEDIATION-001",
+  "parent_task_id": "TASK-SUP-RETEST-001",
+  "relation": "remediation_of",
+  "retry_policy": {
+    "max_attempts": 2,
+    "backoff_minutes": [
+      0,
+      15
+    ],
+    "quarantine_on_exhaustion": true
+  },
+  "completion_contract": {
+    "required_evidence": [
+      {
+        "kind": "commit",
+        "minimum": 1
+      },
+      {
+        "kind": "validation",
+        "minimum": 1
+      }
+    ]
+  },
+  "created_at": "2026-09-23T14:38:00Z"
+}
