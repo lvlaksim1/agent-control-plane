@@ -141,60 +141,100 @@ class WorkflowRuntimeTests(unittest.TestCase):
 
 
 class TaskCarrierTests(unittest.TestCase):
- def live(self,task_id="A",lease_until="2026-09-23T00:30:00Z"):
-  r=request(task_id); m=wr.task_runtime(task_id)
-  m["carrier"]={
+ def live_state(self,task_id="A",lease_until="2026-09-23T00:30:00Z"):
+  r=request(task_id); s=state(r)
+  s["carrier"]={
    "mode":"live","carrier_id":"owner-live-runtime-test","set_by":"owner",
    "reason":"live owner chain","heartbeat_at":"2026-09-23T00:00:00Z",
    "lease_until":lease_until,"fallback_after_expiry":True
   }
-  return r,m
+  return r,s
+
+ def idle_gateway(self):
+  return {"state":"idle","generation":46,"execution_id":None,"task_id":None,"agent_id":None,"slot_id":None}
+
+ def live_result(self,r,s,carrier_id="owner-live-runtime-test"):
+  return {
+   "schema_version":1,"task_id":r["task_id"],"request_digest":cp.request_digest(r),
+   "request_blob_sha":s["request_blob_sha"],"execution_mode":"live","carrier_id":carrier_id,
+   "outcome":"success","summary":"done",
+   "evidence":[{"kind":"audit","reference":"report","verified":True,"verified_by":"agent-a","verified_at":"2026-09-23T00:10:00Z"}],
+   "completed_at":"2026-09-23T00:10:00Z"
+  }
 
  def test_live_carrier_blocks_only_its_task(self):
-  a,ma=self.live("A")
-  b=request("B"); mb=wr.task_runtime("B")
-  ready=wr.scheduler_ready_tasks(registry(),[(a,state(a),[],ma),(b,state(b),[],mb)],NOW)
+  a,sa=self.live_state("A")
+  b=request("B"); sb=state(b)
+  ready=wr.scheduler_ready_tasks(registry(),[(a,sa,[],wr.task_runtime("A")),(b,sb,[],wr.task_runtime("B"))],NOW)
   self.assertEqual([x["task_id"] for x in ready],["B"])
 
  def test_expired_live_carrier_allows_autonomous_fallback(self):
-  a,ma=self.live("A","2026-09-22T23:59:00Z")
-  ready=wr.scheduler_ready_tasks(registry(),[(a,state(a),[],ma)],NOW)
+  a,sa=self.live_state("A","2026-09-22T23:59:00Z")
+  ready=wr.scheduler_ready_tasks(registry(),[(a,sa,[],wr.task_runtime("A"))],NOW)
   self.assertEqual([x["task_id"] for x in ready],["A"])
 
  def test_hold_blocks_only_its_task_without_expiry(self):
-  a=request("A"); ma=wr.task_runtime("A")
-  ma["carrier"]={
+  a=request("A"); sa=state(a)
+  sa["carrier"]={
    "mode":"hold","carrier_id":"owner-hold-A","set_by":"owner","reason":"pause task A",
    "heartbeat_at":None,"lease_until":None,"fallback_after_expiry":False
   }
-  b=request("B"); mb=wr.task_runtime("B")
-  ready=wr.scheduler_ready_tasks(registry(),[(a,state(a),[],ma),(b,state(b),[],mb)],datetime(2027,1,1,tzinfo=timezone.utc))
+  b=request("B"); sb=state(b)
+  ready=wr.scheduler_ready_tasks(registry(),[(a,sa,[],wr.task_runtime("A")),(b,sb,[],wr.task_runtime("B"))],datetime(2027,1,1,tzinfo=timezone.utc))
   self.assertEqual([x["task_id"] for x in ready],["B"])
 
+ def test_live_carrier_acquisition_is_same_state_projection_as_scheduler_claim(self):
+  r=request("A"); s=state(r)
+  acquired=wr.set_live_task_carrier(s,r,carrier_id="owner-live-runtime-test",set_by="owner",reason="live handoff",now=NOW,lease_minutes=45)
+  self.assertEqual(acquired["status"],"queued")
+  self.assertIsNone(acquired["claim"])
+  self.assertEqual(acquired["carrier"]["carrier_id"],"owner-live-runtime-test")
+  claimed=state(r,"claimed"); claimed["claim"]={"execution_id":"e1","generation":2,"slot_id":"execution-worker","claimed_at":"2026-09-23T00:00:00Z"}
+  with self.assertRaises(cp.ControlPlaneError):
+   wr.set_live_task_carrier(claimed,r,carrier_id="owner-live-runtime-test",set_by="owner",reason="too late",now=NOW)
+
  def test_live_carrier_can_be_renewed_by_same_carrier(self):
-  a,ma=self.live("A")
+  r,s=self.live_state("A")
   later=datetime(2026,9,23,0,10,tzinfo=timezone.utc)
-  renewed=wr.renew_live_task_carrier(ma,a,carrier_id="owner-live-runtime-test",now=later,lease_minutes=45)
+  renewed=wr.renew_live_task_carrier(s,r,carrier_id="owner-live-runtime-test",now=later,lease_minutes=45)
   self.assertEqual(renewed["carrier"]["heartbeat_at"],"2026-09-23T00:10:00Z")
   self.assertEqual(renewed["carrier"]["lease_until"],"2026-09-23T00:55:00Z")
 
  def test_other_carrier_cannot_renew(self):
-  a,ma=self.live("A")
+  r,s=self.live_state("A")
   with self.assertRaises(cp.ControlPlaneError):
-   wr.renew_live_task_carrier(ma,a,carrier_id="other-runtime",now=NOW,lease_minutes=45)
+   wr.renew_live_task_carrier(s,r,carrier_id="other-runtime",now=NOW,lease_minutes=45)
 
  def test_claimed_phase_b_blocked_only_for_live_carried_task(self):
-  r=request("F"); m=wr.task_runtime("F")
-  m["carrier"]={
-   "mode":"live","carrier_id":"owner-live","set_by":"owner","reason":"interactive handoff",
-   "heartbeat_at":"2026-09-23T00:00:00Z","lease_until":"2026-09-23T00:30:00Z","fallback_after_expiry":True
-  }
-  s=state(r,"claimed")
+  r,s=self.live_state("F")
+  s["status"]="claimed"
   s["claim"]={"execution_id":"e1","generation":9,"slot_id":"execution-worker","claimed_at":"2026-09-23T00:00:00Z","activation_projection_blob_sha":"b"*40}
   lease={"state":"active","generation":9,"execution_id":"e1","task_id":"F","agent_id":"agent-a","slot_id":"execution-worker","request_blob_sha":"a"*40,"activation_projection_blob_sha":"b"*40}
-  self.assertFalse(wr.scheduler_claimed_execution_ready(m,s,r,lease,now=NOW))
+  self.assertFalse(wr.scheduler_claimed_execution_ready(s,r,lease,now=NOW))
   later=datetime(2026,9,23,0,31,tzinfo=timezone.utc)
-  self.assertTrue(wr.scheduler_claimed_execution_ready(m,s,r,lease,now=later))
+  self.assertTrue(wr.scheduler_claimed_execution_ready(s,r,lease,now=later))
+
+ def test_live_fence_rejects_same_task_gateway_ownership(self):
+  r,s=self.live_state("A")
+  gateway={"state":"reserved","task_id":"A"}
+  self.assertFalse(wr.live_carrier_fence_valid(s,r,gateway,carrier_id="owner-live-runtime-test",now=NOW))
+
+ def test_live_completion_terminalizes_before_expiry(self):
+  r,s=self.live_state("A")
+  result=self.live_result(r,s)
+  completed=wr.complete_live_task(s,r,[],result,self.idle_gateway(),carrier_id="owner-live-runtime-test",now=datetime(2026,9,23,0,10,tzinfo=timezone.utc))
+  self.assertEqual(completed["status"],"completed")
+  self.assertIsNone(completed["carrier"])
+  ready=wr.scheduler_ready_tasks(registry(),[(r,completed,[],wr.task_runtime("A"))],datetime(2026,9,23,1,0,tzinfo=timezone.utc))
+  self.assertEqual(ready,[])
+
+ def test_expired_live_carrier_cannot_complete_and_falls_back(self):
+  r,s=self.live_state("A","2026-09-23T00:05:00Z")
+  later=datetime(2026,9,23,0,10,tzinfo=timezone.utc)
+  with self.assertRaises(cp.ControlPlaneError):
+   wr.complete_live_task(s,r,[],self.live_result(r,s),self.idle_gateway(),carrier_id="owner-live-runtime-test",now=later)
+  ready=wr.scheduler_ready_tasks(registry(),[(r,s,[],wr.task_runtime("A"))],later)
+  self.assertEqual([x["task_id"] for x in ready],["A"])
 
 
 class EventWakeTests(unittest.TestCase):
