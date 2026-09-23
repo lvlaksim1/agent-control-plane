@@ -1,20 +1,12 @@
 {
   "schema_version": 1,
   "task_id": "TASK-AUDIT-LIVE-RETURN-CHAIN-002",
-  "status": "queued",
+  "status": "completed",
   "request_digest": "sha256:c81272e2ee087072528c76417a377ab797a24f41a0eb404884518f78ab48e783",
   "attempt": 0,
   "runtime_loss_count": 0,
   "claim": null,
   "latest_checkpoint": null,
   "request_blob_sha": "ca2328e27b6c4e66fde0de45fbd8df137327481f",
-  "carrier": {
-    "mode": "live",
-    "carrier_id": "owner-live-runtime-live-return-audit-002",
-    "set_by": "ecosystem-supervisor",
-    "reason": "Owner is online; execute final live return audit immediately in the current runtime.",
-    "heartbeat_at": "2026-09-24T00:05:00Z",
-    "lease_until": "2026-09-24T01:05:00Z",
-    "fallback_after_expiry": true
-  }
+  "carrier": null
 }
