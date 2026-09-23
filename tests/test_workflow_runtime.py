@@ -203,6 +203,23 @@ class ExecutionModeTests(unittest.TestCase):
   self.assertFalse(wr.interactive_presence_fresh(m,now=later))
   self.assertTrue(wr.scheduler_admission_allowed(m,now=later))
 
+ def test_live_carrier_can_renew_only_fresh_matching_presence(self):
+  m=self.interactive()
+  renewed=wr.renew_interactive_presence(
+   m,carrier_id="owner-live-runtime-test",
+   now=datetime(2026,9,23,0,10,tzinfo=timezone.utc),lease_minutes=30
+  )
+  self.assertEqual(renewed["presence"]["heartbeat_at"],"2026-09-23T00:10:00Z")
+  self.assertEqual(renewed["presence"]["lease_until"],"2026-09-23T00:40:00Z")
+  with self.assertRaises(cp.ControlPlaneError):
+   wr.renew_interactive_presence(m,carrier_id="other",now=NOW,lease_minutes=30)
+  expired=self.interactive("2026-09-23T00:01:00Z")
+  with self.assertRaises(cp.ControlPlaneError):
+   wr.renew_interactive_presence(
+    expired,carrier_id="owner-live-runtime-test",
+    now=datetime(2026,9,23,0,2,tzinfo=timezone.utc),lease_minutes=30
+   )
+
  def test_owner_hold_blocks_scheduler_without_expiry(self):
   self.assertFalse(wr.scheduler_admission_allowed(self.hold(),now=datetime(2027,1,1,tzinfo=timezone.utc)))
 
