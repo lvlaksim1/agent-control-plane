@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "last_dispatch_at": "2026-09-23T03:24:09Z",
+  "last_dispatch_at": "2026-09-23T03:29:44Z",
   "last_slot_id": "probe-1",
   "last_outcome": "blocked",
-  "last_observed_head": "1ff72fed8e5c3e0170df2afb73a29dff9f1fa2dd",
-  "last_reason": "Blocked reason was not recorded by the previous protocol revision; future runs must record a concrete reason."
+  "last_observed_head": "aa88f107f163b5c96fa6c87074f4a986a23d3695",
+  "last_reason": "TASK-E2E-SUPERVISOR-002 is READY and request blob identity matches state.request_blob_sha, but mandatory CAS lease acquisition was blocked by the tool safety layer. Lease was re-read and remains idle generation 2; no task-state or target write was performed."
 }
