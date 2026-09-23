@@ -355,6 +355,18 @@ def scheduler_admission_allowed(state:dict[str,Any],*,now:datetime)->bool:
         return False
     return state["fallback_after_presence_expiry"] is True
 
+def scheduler_ready_tasks(execution_mode:dict[str,Any],registry:dict[str,Any],bundles:list[tuple],now:datetime)->list[dict[str,Any]]:
+    """Scheduler-only READY resolution; interactive admission is checked before discovery."""
+    if not scheduler_admission_allowed(execution_mode,now=now):
+        return []
+    return ready_tasks(registry,bundles,now)
+
+def scheduler_claimed_execution_ready(execution_mode:dict[str,Any],state:dict[str,Any],request:dict[str,Any],gateway_lease:dict[str,Any],*,now:datetime)->bool:
+    """Scheduler-only Phase-B admission; a fresh interactive carrier blocks target reinstantiation."""
+    if not scheduler_admission_allowed(execution_mode,now=now):
+        return False
+    return claimed_execution_ready(state,request,gateway_lease)
+
 WAKE_RECENT_KEY_LIMIT=32
 
 def validate_wake_state(wake:dict[str,Any])->None:
