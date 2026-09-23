@@ -1,14 +1,14 @@
 {
   "schema_version": 2,
-  "last_dispatch_at": "2026-09-23T16:55:23Z",
+  "last_dispatch_at": "2026-09-23T17:16:11Z",
   "last_slot_id": "execution-worker",
-  "last_outcome": "superseded-audit-reconciled",
-  "last_observed_head": "27d315fab3e59a4c17b073db67c148e2fff35a9c",
-  "last_reason": "Generation 7 was executed through claim/recovery but the audit was superseded before target-agent execution after live self-rearm semantics invalidated the pinned design; gateway safely released at generation 44.",
+  "last_outcome": "no-ready-or-recoverable-work",
+  "last_observed_head": "8a1ef256f24850e9dd4c1dff616d6e3205266e02",
+  "last_reason": "Generation 8 reconciled with authoritative gateway idle at generation 44; all task states are terminal (completed or superseded), so no READY or recoverable work exists and no continuation wake is required.",
   "wake": {
     "desired_generation": 8,
     "armed_generation": 8,
-    "served_generation": 7,
+    "served_generation": 8,
     "recent_request_keys": [
       "validation-wake-001",
       "validation-wake-002",
@@ -27,7 +27,7 @@
       "requested_at": "2026-09-23T17:01:00Z"
     },
     "last_armed_at": "2026-09-23T17:09:34Z",
-    "last_served_at": "2026-09-23T16:55:23Z",
-    "last_worker_run_id": "execution-worker-generation-7-superseded-reconcile"
+    "last_served_at": "2026-09-23T17:16:11Z",
+    "last_worker_run_id": "execution-worker-generation-8-no-work"
   }
 }
