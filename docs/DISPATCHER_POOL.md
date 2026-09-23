@@ -2,6 +2,15 @@
 
 The former five-slot polling pool is superseded by an Owner-authorized two-slot event-driven design.
 
+## Interactive-first boundary
+
+`runtime/execution-mode.json` is the scheduler admission gate.
+
+- `interactive`: a live Owner-facing runtime carries the current work. GitHub stores durable handoff state, but Scheduled Tasks do not advance the chain.
+- `autonomous`: no live runtime is carrying the work, or the Owner explicitly requested background/autonomous continuation. Broker/Worker delivery may proceed.
+
+The mode boundary is explicit. Scheduler availability must never be interpreted as permission to prefer autonomous routing over a live Owner session.
+
 ## Runtime roles
 
 ### Execution Worker
