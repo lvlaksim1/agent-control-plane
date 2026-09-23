@@ -1,11 +1,16 @@
 {
   "schema_version": 1,
   "task_id": "TASK-SUP-REMEDIATION-002",
-  "status": "queued",
+  "status": "claimed",
   "request_digest": "sha256:1519a3ae00187ae4cc277adcce522405972b53b8bd90367db1fb88c6be575d1f",
-  "attempt": 0,
+  "attempt": 1,
   "runtime_loss_count": 0,
-  "claim": null,
+  "claim": {
+    "execution_id": "EXEC-SUP-REMEDIATION-002-DIRECT",
+    "generation": 35,
+    "slot_id": "direct-owner-runtime",
+    "claimed_at": "2026-09-23T14:36:55Z"
+  },
   "latest_checkpoint": null,
   "request_blob_sha": "a0838f8e91f2dc707d8f2900119a1e178a82304b"
 }
