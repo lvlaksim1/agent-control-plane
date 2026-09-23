@@ -303,6 +303,46 @@ def validate_result(result:dict[str,Any],request:dict[str,Any])->None:
     else:
         raise base.ControlPlaneError("invalid result execution_mode")
 
+def build_live_return_package(registry:dict[str,Any],request:dict[str,Any],result:dict[str,Any])->dict[str,Any]|None:
+    """Resolve deterministic same-runtime return after bounded live delegation."""
+    base.validate_request(request)
+    validate_result(result,request)
+    responsibility=request.get("responsibility")
+    if responsibility is None:
+        return None
+    if responsibility["mode"]=="explicit_handoff":
+        return None
+    if result.get("execution_mode")!="live":
+        return None
+    return_to=responsibility["return_to_agent_id"]
+    if return_to!=request["issuer_agent_id"]:
+        raise base.ControlPlaneError("bounded delegation return target must be caller")
+    agents=base.registry_index(registry)
+    agent=agents.get(return_to)
+    if agent is None or agent["status"] not in base.EXECUTABLE_AGENT_STATUSES:
+        raise base.ControlPlaneError("return-to caller is not reinstantiable")
+    return {
+      "schema_version":1,
+      "kind":"return_to_caller",
+      "agent_id":agent["agent_id"],
+      "agent_type":agent["agent_type"],
+      "role":agent["role"],
+      "home_repository":agent["home_repository"],
+      "authority_ref":agent["authority_ref"],
+      "entrypoint":agent["entrypoint"],
+      "completed_child_task_id":request["task_id"],
+      "parent_task_id":request.get("parent_task_id"),
+      "workflow_id":request.get("workflow_id"),
+      "commitment_owner_agent_id":responsibility["commitment_owner_agent_id"],
+      "required_sequence":[
+        "reinstantiate the declared caller immediately in the same live runtime",
+        "execute the caller ENTRYPOINT recovery/reinstantiation protocol",
+        "read and verify the completed child result from GitHub",
+        "restore the caller active commitment from durable state",
+        "continue the caller workflow without requiring a user reinvocation"
+      ]
+    }
+
 def completion_satisfied(request:dict[str,Any],result:dict[str,Any]):
     validate_result(result,request)
     required=request.get("completion_contract",{}).get("required_evidence",[])
