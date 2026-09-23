@@ -38,6 +38,8 @@ in the same live runtime
 
 The presence lease exists so abrupt runtime loss cannot block autonomous fallback forever. An explicit Owner `hold` is the only indefinite scheduler block.
 
+While presence is fresh, the live carrier must keep the Broker parked at `presence.lease_until` rather than allowing periodic no-op Scheduled Task executions. Lease renewal and Broker parking are updated together before the prior expiry. The Execution Worker remains disabled/not due. Therefore a normal live Owner session consumes no autonomous execution slot; the first Broker execution occurs only after presence expires. If a Broker invocation arrives early because of platform timing, the admission gate still forces a no-op.
+
 ## Why the relay exists
 
 Live validation showed two scheduler hazards: self-rearming a currently running one-shot can race with completion, and repeatedly reusing an already-fired one-shot can leave a newly requested occurrence enabled but undelivered for an unbounded interval. Therefore v4 uses a recurring hourly Worker as a stable scheduler anchor; only the Broker may retarget its next occurrence earlier, and the hourly RRULE must be preserved.
