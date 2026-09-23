@@ -1,16 +1,11 @@
 {
   "schema_version": 1,
   "task_id": "TASK-CC-ACP-REMEDIATION-001",
-  "status": "active",
+  "status": "completed",
   "request_digest": "sha256:2f8d985a6a90b5aebf0b20f881be836274c47ee041cea8e7e8134abc753cf32f",
   "attempt": 1,
   "runtime_loss_count": 0,
-  "claim": {
-    "execution_id": "EXEC-CC-ACP-REMEDIATION-001-DIRECT",
-    "generation": 23,
-    "slot_id": "direct-owner-runtime",
-    "claimed_at": "2026-09-23T13:13:29Z"
-  },
+  "claim": null,
   "latest_checkpoint": null,
   "request_blob_sha": "d063638ff33b90e7eb61ca6a5133f89654d6d603"
 }

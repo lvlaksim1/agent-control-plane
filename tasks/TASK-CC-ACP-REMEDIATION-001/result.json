@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-CC-ACP-REMEDIATION-001",
+  "request_digest": "sha256:2f8d985a6a90b5aebf0b20f881be836274c47ee041cea8e7e8134abc753cf32f",
+  "request_blob_sha": "d063638ff33b90e7eb61ca6a5133f89654d6d603",
+  "execution_id": "EXEC-CC-ACP-REMEDIATION-001-DIRECT",
+  "generation": 23,
+  "outcome": "success",
+  "summary": "ACP-CC-001 was remediated systemically. Context Capsule Project Manager now requires authoritative re-check of pending externally resolved audit/retest/approval gates before carrying them into a later substantial Persist, updates all affected working views together when a gate is terminal, and represents follow-on gates separately without a universal keyword lifecycle ontology. Historical CCPM-R001 is consistently CLOSED. Stable main and consumers were untouched.",
+  "evidence": [
+    {
+      "kind": "commit",
+      "reference": "lvlaksim1/context-capsule@32a452e8153d4026b488216685c6c92ab3870180",
+      "verified": true,
+      "verified_by": "context-capsule-project-manager",
+      "verified_at": "2026-09-23T13:29:48Z"
+    },
+    {
+      "kind": "ci",
+      "reference": "https://github.com/lvlaksim1/context-capsule/actions/runs/35867437341",
+      "verified": true,
+      "verified_by": "context-capsule-project-manager",
+      "verified_at": "2026-09-23T13:29:48Z"
+    }
+  ],
+  "completed_at": "2026-09-23T13:30:00Z"
+}
