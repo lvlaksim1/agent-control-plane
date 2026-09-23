@@ -1,5 +1,5 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "lease_minutes": 45,
   "runtime_loss_quarantine_after": 3,
   "one_target_agent_per_dispatch": true,
@@ -7,8 +7,15 @@
   "dispatcher_protocol": "docs/SCHEDULED_CHAT_DISPATCHER.md",
   "scheduler_topology": "runtime/dispatcher-pool.json",
   "wake_state": "runtime/dispatcher-health.json#wake",
+  "execution_mode_state": "runtime/execution-mode.json",
   "automatic_execution_activation": "registry-per-agent-explicit",
-  "scheduler_model": "event-wake-broker-relay-v4",
+  "scheduler_model": "event-wake-broker-relay-v5-interactive-first",
+  "execution_mode_policy": {
+    "interactive_first": true,
+    "interactive_mode_blocks_scheduler_progress": true,
+    "autonomous_mode_requires_explicit_handoff_or_no_live_carrier": true,
+    "scheduler_is_fallback_transport": true
+  },
   "execution_worker": {
     "slot_id": "execution-worker",
     "automation_id": "6aac8b1d8888819180cc4af0c009669e",
@@ -18,7 +25,8 @@
     "arm_owner": "wake-broker-watchdog",
     "baseline_cadence": "hourly",
     "preserve_rrule": true,
-    "no_pending_wake_behavior": "fast-noop-unless-gateway-partial"
+    "no_pending_wake_behavior": "fast-noop-unless-gateway-partial",
+    "interactive_mode_behavior": "no-claim-no-target-execution"
   },
   "watchdog": {
     "slot_id": "wake-broker-watchdog",
@@ -33,7 +41,8 @@
     "event_nudge_delay_minutes": 2,
     "arm_commit_order": "persist-before-scheduler",
     "post_scheduler_ack_required": false,
-    "delivery_semantics": "outbox-precommit-to-recurring-worker"
+    "delivery_semantics": "outbox-precommit-to-recurring-worker",
+    "interactive_mode_behavior": "no-arm-no-nudge"
   },
   "authoritative_lease": {
     "repository": "lvlaksim1/agent-control-plane-gateway",
