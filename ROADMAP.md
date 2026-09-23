@@ -21,7 +21,7 @@
 - [x] 17. Multi-entry human routing
 - [x] 18. Five-slot shared dispatcher pool
 - [x] 19. Fold proven protocol into Context Capsule / Service Agent Base
-- [ ] 19.5 Event-driven wake + reusable execution worker + Wake Broker/hourly watchdog
+- [x] 19.5 Event-driven wake + reusable execution worker + Wake Broker/hourly watchdog
 - [ ] 20. Resume Agent Catalog / Agent Factory scaling
 
-Item 19.5 is explicitly Owner-authorized pre-scaling infrastructure work. Live validation replaced unsafe Worker self-rearm with a two-slot cross-task Broker relay. Item 20 remains inactive.
+Item 19.5 is complete and independently verified. Live validation replaced unsafe Worker self-rearm with a two-slot cross-task Broker relay, task-scoped live carriers, and crash-safe partial live-completion recovery. EW-001..EW-003 and PTC-001..PTC-003 are CLOSED / High confidence. Item 20 remains inactive.
