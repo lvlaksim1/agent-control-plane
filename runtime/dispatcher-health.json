@@ -7,7 +7,7 @@
   "last_reason": "Phase A recovery recorded the verified gateway activation receipt for TASK-EVENT-WAKE-RELAY-E2E-001-g45; Phase B requires a later Execution Worker invocation.",
   "wake": {
     "desired_generation": 10,
-    "armed_generation": 9,
+    "armed_generation": 10,
     "served_generation": 9,
     "recent_request_keys": [
       "validation-wake-001",
@@ -28,7 +28,7 @@
       "requested_by": "execution-worker",
       "requested_at": "2026-09-23T17:44:46Z"
     },
-    "last_armed_at": "2026-09-23T17:42:51Z",
+    "last_armed_at": "2026-09-23T17:46:08Z",
     "last_served_at": "2026-09-23T17:44:46Z",
     "last_worker_run_id": "execution-worker-generation-9-phase-a-recovery"
   }
