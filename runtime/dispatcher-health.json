@@ -4,23 +4,24 @@
   "last_slot_id": "execution-worker",
   "last_outcome": "bounded-no-work",
   "last_observed_head": "497d81a493476b417b355d7f91583ff997df4616",
-  "last_reason": "Captured wake generation 2 reconciled against authoritative idle gateway; no READY or recoverable task was selected in this bounded worker cycle.",
+  "last_reason": "Injected controlled stale armed wake generation 3 to validate hourly Watchdog lost-wake recovery.",
   "wake": {
-    "desired_generation": 2,
-    "armed_generation": 2,
+    "desired_generation": 3,
+    "armed_generation": 3,
     "served_generation": 2,
     "recent_request_keys": [
       "validation-wake-001",
-      "validation-wake-002"
+      "validation-wake-002",
+      "validation-lost-wake-003"
     ],
     "last_request": {
-      "generation": 2,
-      "request_key": "validation-wake-002",
-      "reason": "validate-enabled-worker-rearm",
+      "generation": 3,
+      "request_key": "validation-lost-wake-003",
+      "reason": "validate-lost-armed-wake-recovery",
       "requested_by": "ecosystem-supervisor",
-      "requested_at": "2026-09-23T16:04:00Z"
+      "requested_at": "2026-09-23T16:10:00Z"
     },
-    "last_armed_at": "2026-09-23T16:05:08Z",
+    "last_armed_at": "2026-09-23T15:00:00Z",
     "last_served_at": "2026-09-23T16:05:39Z",
     "last_worker_run_id": "execution-worker-generation-2"
   }
