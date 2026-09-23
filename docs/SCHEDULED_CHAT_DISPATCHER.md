@@ -78,7 +78,7 @@ A live agent-to-agent call MUST state its responsibility semantics in immutable 
 - authority is not transferred by transport;
 - `commitment_owner_agent_id` MUST equal the caller / `issuer_agent_id`;
 - `return_to_agent_id` MUST equal that same caller;
-- after the callee reaches verified terminal live completion, the runtime MUST build the deterministic return package, reinstate `return_to_agent_id` from Registry, execute that agent's ENTRYPOINT, re-read the completed child result from GitHub, restore the caller's durable active commitment, and continue without requiring a user reinvocation.
+- after the callee reaches verified terminal live completion, the runtime MUST use the live-delegation completion transition that yields both terminal child state and the deterministic return package; it then reinstates `return_to_agent_id` from Registry, executes that agent's ENTRYPOINT, re-reads the completed child result from GitHub, restores the caller's durable active commitment, and continues without requiring a user reinvocation. A bounded live delegation is not fully handed back until that continuation package is produced and consumed.
 
 Nested bounded delegations unwind one caller at a time through each immutable child request. `parent_task_id` and `workflow_id` preserve call-chain structure; no central Supervisor hop is required.
 
