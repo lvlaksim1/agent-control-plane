@@ -140,6 +140,81 @@ class WorkflowRuntimeTests(unittest.TestCase):
   self.assertFalse(wr.gateway_execution_admitted(s,r,lease))
 
 
+class ExecutionModeTests(unittest.TestCase):
+ def interactive(self,lease_until="2026-09-23T00:30:00Z"):
+  return {
+   "schema_version":2,
+   "mode":"interactive",
+   "autonomous_scheduler_allowed":False,
+   "fallback_after_presence_expiry":True,
+   "set_by":"ecosystem-supervisor",
+   "authority":"owner-directive",
+   "reason":"live owner carrier",
+   "set_at":"2026-09-23T00:00:00Z",
+   "presence":{
+    "carrier_id":"owner-live-runtime-test",
+    "heartbeat_at":"2026-09-23T00:00:00Z",
+    "lease_until":lease_until
+   },
+   "owner_hold":{"enabled":False,"reason":None,"set_by":None,"set_at":None}
+  }
+
+ def autonomous(self):
+  return {
+   "schema_version":2,
+   "mode":"autonomous",
+   "autonomous_scheduler_allowed":True,
+   "fallback_after_presence_expiry":True,
+   "set_by":"ecosystem-supervisor",
+   "authority":"owner-directive",
+   "reason":"no live carrier",
+   "set_at":"2026-09-23T00:00:00Z",
+   "presence":None,
+   "owner_hold":{"enabled":False,"reason":None,"set_by":None,"set_at":None}
+  }
+
+ def hold(self):
+  return {
+   "schema_version":2,
+   "mode":"hold",
+   "autonomous_scheduler_allowed":False,
+   "fallback_after_presence_expiry":False,
+   "set_by":"owner",
+   "authority":"owner-directive",
+   "reason":"explicit pause",
+   "set_at":"2026-09-23T00:00:00Z",
+   "presence":None,
+   "owner_hold":{
+    "enabled":True,
+    "reason":"Owner explicitly paused autonomous continuation",
+    "set_by":"owner",
+    "set_at":"2026-09-23T00:00:00Z"
+   }
+  }
+
+ def test_fresh_interactive_presence_blocks_scheduler(self):
+  m=self.interactive()
+  self.assertTrue(wr.interactive_presence_fresh(m,now=NOW))
+  self.assertFalse(wr.scheduler_admission_allowed(m,now=NOW))
+
+ def test_expired_interactive_presence_enables_fallback(self):
+  m=self.interactive("2026-09-23T00:10:00Z")
+  later=datetime(2026,9,23,0,11,tzinfo=timezone.utc)
+  self.assertFalse(wr.interactive_presence_fresh(m,now=later))
+  self.assertTrue(wr.scheduler_admission_allowed(m,now=later))
+
+ def test_owner_hold_blocks_scheduler_without_expiry(self):
+  self.assertFalse(wr.scheduler_admission_allowed(self.hold(),now=datetime(2027,1,1,tzinfo=timezone.utc)))
+
+ def test_autonomous_mode_allows_scheduler(self):
+  self.assertTrue(wr.scheduler_admission_allowed(self.autonomous(),now=NOW))
+
+ def test_malformed_interactive_mode_is_rejected(self):
+  m=self.interactive(); m["presence"]=None
+  with self.assertRaises(cp.ControlPlaneError):
+   wr.validate_execution_mode(m)
+
+
 class EventWakeTests(unittest.TestCase):
  def wake(self):
   return {
@@ -194,6 +269,31 @@ class EventWakeTests(unittest.TestCase):
    wr.mark_wake_served(w,generation=2,now=NOW,worker_run_id="run-too-new")
 
 
+class BrokerAdmissionTests(unittest.TestCase):
+ def wake(self):
+  w={
+   "desired_generation":0,"armed_generation":0,"served_generation":0,
+   "recent_request_keys":[],"last_request":None,"last_armed_at":None,
+   "last_served_at":None,"last_worker_run_id":None
+  }
+  return wr.request_wake(w,request_key="ready:A",reason="task-ready",requested_by="owner",now=NOW)[0]
+
+ def test_broker_cannot_arm_during_fresh_interactive_presence(self):
+  w=self.wake()
+  mode=ExecutionModeTests().interactive()
+  self.assertIsNone(wr.broker_generation_to_arm(w,mode,now=NOW,stale_after_minutes=20))
+
+ def test_broker_may_arm_after_presence_expiry(self):
+  w=self.wake()
+  mode=ExecutionModeTests().interactive("2026-09-23T00:01:00Z")
+  later=datetime(2026,9,23,0,2,tzinfo=timezone.utc)
+  self.assertEqual(wr.broker_generation_to_arm(w,mode,now=later,stale_after_minutes=20),1)
+
+ def test_broker_cannot_arm_under_explicit_owner_hold(self):
+  w=self.wake()
+  self.assertIsNone(wr.broker_generation_to_arm(w,ExecutionModeTests().hold(),now=NOW,stale_after_minutes=20))
+
+
 class BrokerRelayTests(unittest.TestCase):
  def wake(self):
   return {
@@ -209,13 +309,13 @@ class BrokerRelayTests(unittest.TestCase):
 
  def test_broker_arms_newest_unarmed_desired_generation(self):
   w,_=wr.request_wake(self.wake(),request_key="relay:new",reason="ready",requested_by="issuer",now=NOW)
-  self.assertEqual(wr.broker_generation_to_arm(w,now=NOW,stale_after_minutes=20),1)
+  self.assertEqual(wr.broker_generation_to_arm(w,ExecutionModeTests().autonomous(),now=NOW,stale_after_minutes=20),1)
 
  def test_broker_rearms_same_stale_generation_without_increment(self):
   w,_=wr.request_wake(self.wake(),request_key="relay:stale",reason="ready",requested_by="issuer",now=NOW)
   w=wr.mark_wake_armed(w,generation=1,now=NOW)
   later=datetime(2026,9,23,0,21,tzinfo=timezone.utc)
-  self.assertEqual(wr.broker_generation_to_arm(w,now=later,stale_after_minutes=20),1)
+  self.assertEqual(wr.broker_generation_to_arm(w,ExecutionModeTests().autonomous(),now=later,stale_after_minutes=20),1)
   self.assertEqual(w["desired_generation"],1)
 
  def test_broker_noops_after_generation_is_served(self):
@@ -223,7 +323,7 @@ class BrokerRelayTests(unittest.TestCase):
   w=wr.mark_wake_armed(w,generation=1,now=NOW)
   w=wr.mark_wake_served(w,generation=1,now=NOW,worker_run_id="run-1")
   later=datetime(2026,9,23,0,30,tzinfo=timezone.utc)
-  self.assertIsNone(wr.broker_generation_to_arm(w,now=later,stale_after_minutes=20))
+  self.assertIsNone(wr.broker_generation_to_arm(w,ExecutionModeTests().autonomous(),now=later,stale_after_minutes=20))
 
 
 if __name__=="__main__": unittest.main()
