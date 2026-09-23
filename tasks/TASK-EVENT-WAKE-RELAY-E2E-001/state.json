@@ -1,18 +1,11 @@
 {
   "schema_version": 1,
   "task_id": "TASK-EVENT-WAKE-RELAY-E2E-001",
-  "status": "active",
+  "status": "completed",
   "request_digest": "sha256:a8a4796a7894912fa5a2ef11c8ac654498cdbe487b1af43d2648726566ac551e",
   "attempt": 0,
   "runtime_loss_count": 0,
-  "claim": {
-    "execution_id": "TASK-EVENT-WAKE-RELAY-E2E-001-g45",
-    "generation": 45,
-    "slot_id": "execution-worker",
-    "claimed_at": "2026-09-23T17:31:34Z",
-    "request_blob_sha": "36da1ad356766657949ecae7296cdd6c3a7ece00",
-    "activation_projection_blob_sha": "fa9d3b109c9d6df319312f99f4e9f5b68f3428a8"
-  },
+  "claim": null,
   "latest_checkpoint": null,
   "request_blob_sha": "36da1ad356766657949ecae7296cdd6c3a7ece00"
 }
