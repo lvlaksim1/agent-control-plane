@@ -13,7 +13,7 @@
     "slot_id": "execution-worker",
     "automation_id": "6aac8b1d8888819180cc4af0c009669e",
     "rearm_mode": "one-shot",
-    "minimum_rearm_delay_minutes": 1
+    "minimum_rearm_delay_minutes": 3
   },
   "watchdog": {
     "slot_id": "watchdog-hourly",
