@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-E2E-SUPERVISOR-002",
+  "status": "queued",
+  "request_digest": "sha256:36e1dedbd4f62f1e408bb0180433620cf718794832121f89aa365d92ce83811d",
+  "attempt": 0,
+  "runtime_loss_count": 0,
+  "claim": null,
+  "latest_checkpoint": null
+}
