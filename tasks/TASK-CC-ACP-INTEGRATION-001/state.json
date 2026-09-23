@@ -1,11 +1,16 @@
 {
   "schema_version": 1,
   "task_id": "TASK-CC-ACP-INTEGRATION-001",
-  "status": "queued",
-  "request_digest": "sha256:a9c5924cb2af6a4301f8d50527036e65aaf090f3e764d25245f012b45af5313d",
-  "attempt": 0,
+  "status": "claimed",
+  "request_digest": "sha256:363e91d951023d23727bb926dc59884109a0f474d1827b67ba73a5aef3bde292",
+  "attempt": 1,
   "runtime_loss_count": 0,
-  "claim": null,
+  "claim": {
+    "execution_id": "EXEC-CC-ACP-INTEGRATION-001-DIRECT",
+    "generation": 19,
+    "slot_id": "direct-owner-runtime",
+    "claimed_at": "2026-09-23T12:58:51Z"
+  },
   "latest_checkpoint": null,
   "request_blob_sha": "e1a6e532417edb89c9bb7b0d77088f87af8c2e4d"
 }
