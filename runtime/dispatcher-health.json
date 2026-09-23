@@ -29,7 +29,7 @@
       "requested_by": "ecosystem-supervisor",
       "requested_at": "2026-09-23T20:40:46Z"
     },
-    "last_armed_at": "2026-09-23T22:42:51Z",
+    "last_armed_at": "2026-09-23T23:41:36Z",
     "last_served_at": "2026-09-23T17:56:15Z",
     "last_worker_run_id": "execution-worker-generation-10-release-confirmed"
   }
