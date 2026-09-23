@@ -50,9 +50,51 @@ def validate_task_runtime(meta:dict[str,Any],request:dict[str,Any])->None:
     if meta["retry_not_before"] is not None:
         base.parse_time(meta["retry_not_before"])
 
+def validate_task_continuation(continuation:dict[str,Any]|None,request:dict[str,Any])->None:
+    if continuation is None:
+        return
+    if not isinstance(continuation,dict):
+        raise base.ControlPlaneError("task continuation must be an object or null")
+    base.require_fields(
+        continuation,
+        ["kind","status","continuation_id","return_to_agent_id","commitment_owner_agent_id",
+         "parent_task_id","workflow_id","request_digest","request_blob_sha","result_carrier_id",
+         "live_lease_until","consumed_by_agent_id","consumed_at"],
+        "task continuation"
+    )
+    if continuation["kind"]!="return_to_caller":
+        raise base.ControlPlaneError("unsupported task continuation kind")
+    if continuation["status"] not in {"pending","consumed"}:
+        raise base.ControlPlaneError("invalid task continuation status")
+    for key in ["continuation_id","return_to_agent_id","commitment_owner_agent_id","result_carrier_id"]:
+        if not isinstance(continuation[key],str) or not continuation[key]:
+            raise base.ControlPlaneError(f"task continuation {key} must be non-empty")
+    if continuation["request_digest"]!=base.request_digest(request):
+        raise base.ControlPlaneError("task continuation/request digest mismatch")
+    if not isinstance(continuation["request_blob_sha"],str) or len(continuation["request_blob_sha"])!=40:
+        raise base.ControlPlaneError("task continuation requires request blob sha")
+    base.parse_time(continuation["live_lease_until"])
+    responsibility=request.get("responsibility")
+    if not isinstance(responsibility,dict) or responsibility.get("mode")!="bounded_delegation":
+        raise base.ControlPlaneError("return continuation requires bounded delegation")
+    if continuation["return_to_agent_id"]!=responsibility.get("return_to_agent_id"):
+        raise base.ControlPlaneError("task continuation return target mismatch")
+    if continuation["commitment_owner_agent_id"]!=responsibility.get("commitment_owner_agent_id"):
+        raise base.ControlPlaneError("task continuation commitment owner mismatch")
+    if continuation["parent_task_id"]!=request.get("parent_task_id") or continuation["workflow_id"]!=request.get("workflow_id"):
+        raise base.ControlPlaneError("task continuation call-chain provenance mismatch")
+    if continuation["status"]=="pending":
+        if continuation["consumed_by_agent_id"] is not None or continuation["consumed_at"] is not None:
+            raise base.ControlPlaneError("pending continuation cannot be acknowledged")
+    else:
+        if continuation["consumed_by_agent_id"]!=continuation["return_to_agent_id"] or not continuation["consumed_at"]:
+            raise base.ControlPlaneError("consumed continuation requires caller acknowledgement")
+        base.parse_time(continuation["consumed_at"])
+
 def validate_state_carrier(state:dict[str,Any],request:dict[str,Any])->None:
     base.validate_state(state,request)
     validate_task_carrier(state.get("carrier"))
+    validate_task_continuation(state.get("continuation"),request)
 
 def task_carrier_blocks_scheduler(state:dict[str,Any],request:dict[str,Any],*,now:datetime)->bool:
     validate_state_carrier(state,request)
@@ -303,32 +345,33 @@ def validate_result(result:dict[str,Any],request:dict[str,Any])->None:
     else:
         raise base.ControlPlaneError("invalid result execution_mode")
 
-def build_live_return_package(registry:dict[str,Any],request:dict[str,Any],state:dict[str,Any],result:dict[str,Any])->dict[str,Any]|None:
-    """Resolve deterministic same-runtime return only after terminal live delegation."""
-    base.validate_request(request)
-    validate_state_carrier(state,request)
+def _validate_continuation_result(continuation:dict[str,Any],request:dict[str,Any],result:dict[str,Any])->None:
     validate_result(result,request)
-    if state.get("status")!="completed" or state.get("claim") is not None or state.get("carrier") is not None:
-        raise base.ControlPlaneError("live return requires terminal completed task with no claim/carrier")
-    responsibility=request.get("responsibility")
-    if responsibility is None:
-        if request.get("issuer_agent_id")!="owner" and result.get("execution_mode")=="live":
-            raise base.ControlPlaneError("live agent-to-agent task requires explicit responsibility contract")
-        return None
-    if responsibility["mode"]=="explicit_handoff":
-        return None
     if result.get("execution_mode")!="live":
-        return None
-    return_to=responsibility["return_to_agent_id"]
-    if return_to!=request["issuer_agent_id"]:
-        raise base.ControlPlaneError("bounded delegation return target must be caller")
+        raise base.ControlPlaneError("caller continuation requires live child result")
+    if result.get("carrier_id")!=continuation["result_carrier_id"]:
+        raise base.ControlPlaneError("caller continuation/result carrier mismatch")
+    if result.get("request_digest")!=continuation["request_digest"]:
+        raise base.ControlPlaneError("caller continuation/result digest mismatch")
+    if result.get("request_blob_sha")!=continuation["request_blob_sha"]:
+        raise base.ControlPlaneError("caller continuation/result blob mismatch")
+    ok,missing=completion_satisfied(request,result)
+    if not ok:
+        raise base.ControlPlaneError("caller continuation missing completion evidence: "+",".join(missing))
+
+def _return_agent(registry:dict[str,Any],agent_id:str)->dict[str,Any]:
     agents=base.registry_index(registry)
-    agent=agents.get(return_to)
+    agent=agents.get(agent_id)
     if agent is None or agent["status"] not in base.EXECUTABLE_AGENT_STATUSES:
         raise base.ControlPlaneError("return-to caller is not reinstantiable")
+    return agent
+
+def _return_package(agent:dict[str,Any],request:dict[str,Any],continuation:dict[str,Any],*,delivery_mode:str)->dict[str,Any]:
     return {
       "schema_version":1,
       "kind":"return_to_caller",
+      "delivery_mode":delivery_mode,
+      "continuation_id":continuation["continuation_id"],
       "agent_id":agent["agent_id"],
       "agent_type":agent["agent_type"],
       "role":agent["role"],
@@ -336,17 +379,105 @@ def build_live_return_package(registry:dict[str,Any],request:dict[str,Any],state
       "authority_ref":agent["authority_ref"],
       "entrypoint":agent["entrypoint"],
       "completed_child_task_id":request["task_id"],
-      "parent_task_id":request.get("parent_task_id"),
-      "workflow_id":request.get("workflow_id"),
-      "commitment_owner_agent_id":responsibility["commitment_owner_agent_id"],
+      "parent_task_id":continuation["parent_task_id"],
+      "workflow_id":continuation["workflow_id"],
+      "commitment_owner_agent_id":continuation["commitment_owner_agent_id"],
       "required_sequence":[
-        "reinstantiate the declared caller immediately in the same live runtime",
-        "execute the caller ENTRYPOINT recovery/reinstantiation protocol",
-        "read and verify the completed child result from GitHub",
+        "re-read the terminal child state and exact durable result from GitHub",
+        "reinstantiate the declared caller and execute its ENTRYPOINT recovery/reinstantiation protocol",
+        "acknowledge this exact continuation durably before consequential caller work",
         "restore the caller active commitment from durable state",
         "continue the caller workflow without requiring a user reinvocation"
       ]
     }
+
+def build_live_return_package(registry:dict[str,Any],request:dict[str,Any],state:dict[str,Any],result:dict[str,Any],*,now:datetime)->dict[str,Any]|None:
+    """Build immediate same-runtime return only from durable terminal state."""
+    base.validate_request(request)
+    validate_state_carrier(state,request)
+    validate_result(result,request)
+    responsibility=request.get("responsibility")
+    if responsibility is None:
+        if request.get("issuer_agent_id")!="owner" and result.get("execution_mode")=="live":
+            raise base.ControlPlaneError("live agent-to-agent task requires explicit responsibility contract")
+        return None
+    if responsibility["mode"]=="explicit_handoff":
+        if state.get("continuation") is not None:
+            raise base.ControlPlaneError("explicit handoff cannot carry return continuation")
+        return None
+    if state.get("status")!="completed" or state.get("claim") is not None or state.get("carrier") is not None:
+        raise base.ControlPlaneError("live return requires terminal completed task with no claim/carrier")
+    continuation=state.get("continuation")
+    validate_task_continuation(continuation,request)
+    if continuation is None or continuation["status"]!="pending":
+        raise base.ControlPlaneError("bounded delegation requires pending caller continuation")
+    if now>=base.parse_time(continuation["live_lease_until"]):
+        raise base.ControlPlaneError("live caller continuation lease expired; autonomous recovery required")
+    _validate_continuation_result(continuation,request,result)
+    agent=_return_agent(registry,continuation["return_to_agent_id"])
+    return _return_package(agent,request,continuation,delivery_mode="live")
+
+def build_recovery_return_package(registry:dict[str,Any],request:dict[str,Any],state:dict[str,Any],result:dict[str,Any],*,now:datetime)->dict[str,Any]|None:
+    """Recover caller return after live runtime loss without re-executing child work."""
+    base.validate_request(request)
+    validate_state_carrier(state,request)
+    if state.get("status")!="completed":
+        return None
+    continuation=state.get("continuation")
+    if continuation is None:
+        return None
+    validate_task_continuation(continuation,request)
+    if continuation["status"]!="pending":
+        return None
+    if now<base.parse_time(continuation["live_lease_until"]):
+        return None
+    _validate_continuation_result(continuation,request,result)
+    agent=_return_agent(registry,continuation["return_to_agent_id"])
+    return _return_package(agent,request,continuation,delivery_mode="autonomous_recovery")
+
+def acknowledge_return_continuation(state:dict[str,Any],request:dict[str,Any],result:dict[str,Any],*,continuation_id:str,caller_agent_id:str,now:datetime)->dict[str,Any]:
+    """Idempotently acknowledge caller reinstantiation before caller effects."""
+    validate_state_carrier(state,request)
+    if state.get("status")!="completed":
+        raise base.ControlPlaneError("return acknowledgement requires completed child")
+    continuation=state.get("continuation")
+    validate_task_continuation(continuation,request)
+    if continuation is None or continuation["continuation_id"]!=continuation_id:
+        raise base.ControlPlaneError("caller continuation identity mismatch")
+    if continuation["return_to_agent_id"]!=caller_agent_id:
+        raise base.ControlPlaneError("only declared caller may acknowledge continuation")
+    _validate_continuation_result(continuation,request,result)
+    if continuation["status"]=="consumed":
+        if continuation["consumed_by_agent_id"]!=caller_agent_id:
+            raise base.ControlPlaneError("continuation already consumed by different agent")
+        return copy.deepcopy(state)
+    out=copy.deepcopy(state)
+    out["continuation"]["status"]="consumed"
+    out["continuation"]["consumed_by_agent_id"]=caller_agent_id
+    out["continuation"]["consumed_at"]=base.format_time(now)
+    validate_state_carrier(out,request)
+    return out
+
+def recoverable_return_continuations(registry:dict[str,Any],bundles:list[tuple],result_records:dict[str,dict[str,Any]],now:datetime)->list[dict[str,Any]]:
+    """Return expired pending continuations that Worker may deliver instead of child re-execution."""
+    out=[]
+    for bundle in bundles:
+        req,state,_,meta=normalize(bundle)
+        validate_task_runtime(meta,req)
+        validate_state_carrier(state,req)
+        continuation=state.get("continuation")
+        if state.get("status")!="completed" or not isinstance(continuation,dict) or continuation.get("status")!="pending":
+            continue
+        if now<base.parse_time(continuation["live_lease_until"]):
+            continue
+        if req["task_id"] not in result_records:
+            raise base.ControlPlaneError("pending caller continuation requires exact durable result")
+        result=result_records[req["task_id"]]
+        package=build_recovery_return_package(registry,req,state,result,now=now)
+        if package is not None:
+            out.append(package)
+    out.sort(key=lambda x:(x["completed_child_task_id"],x["continuation_id"]))
+    return out
 
 def completion_satisfied(request:dict[str,Any],result:dict[str,Any]):
     validate_result(result,request)
@@ -382,8 +513,7 @@ def complete_task(lease:dict[str,Any],state:dict[str,Any],request:dict[str,Any],
     new_state=copy.deepcopy(state); new_state["status"]="completed"; new_state["claim"]=None; new_state["carrier"]=None
     return idle_after(lease),new_state
 
-def complete_live_task(state:dict[str,Any],request:dict[str,Any],gates:list[dict[str,Any]],result:dict[str,Any],gateway_lease:dict[str,Any],*,carrier_id:str,now:datetime)->dict[str,Any]:
-    """Terminalize direct-live work before its carrier can expire into autonomous fallback."""
+def _complete_live_task_base(state:dict[str,Any],request:dict[str,Any],gates:list[dict[str,Any]],result:dict[str,Any],gateway_lease:dict[str,Any],*,carrier_id:str,now:datetime)->dict[str,Any]:
     validate_state_carrier(state,request)
     if result.get("execution_mode")!="live":
         raise base.ControlPlaneError("live completion requires execution_mode=live")
@@ -404,19 +534,45 @@ def complete_live_task(state:dict[str,Any],request:dict[str,Any],gates:list[dict
     out["status"]="completed"
     out["claim"]=None
     out["carrier"]=None
+    out["continuation"]=None
     return out
 
-def complete_live_delegation(registry:dict[str,Any],state:dict[str,Any],request:dict[str,Any],gates:list[dict[str,Any]],result:dict[str,Any],gateway_lease:dict[str,Any],*,carrier_id:str,now:datetime)->tuple[dict[str,Any],dict[str,Any]|None]:
-    """Atomically define the live task terminal projection plus caller continuation package.
-
-    Direct Owner work may complete with no return package. Live bounded delegation
-    must yield exactly one deterministic return_to_caller package. Explicit handoff
-    yields no automatic return.
-    """
-    completed=complete_live_task(state,request,gates,result,gateway_lease,carrier_id=carrier_id,now=now)
-    package=build_live_return_package(registry,request,completed,result)
+def complete_live_task(state:dict[str,Any],request:dict[str,Any],gates:list[dict[str,Any]],result:dict[str,Any],gateway_lease:dict[str,Any],*,carrier_id:str,now:datetime)->dict[str,Any]:
+    """Terminalize direct live work that is not bounded delegation."""
     responsibility=request.get("responsibility")
-    if isinstance(responsibility,dict) and responsibility.get("mode")=="bounded_delegation" and package is None:
+    if isinstance(responsibility,dict) and responsibility.get("mode")=="bounded_delegation":
+        raise base.ControlPlaneError("bounded live delegation must use complete_live_delegation")
+    return _complete_live_task_base(state,request,gates,result,gateway_lease,carrier_id=carrier_id,now=now)
+
+def complete_live_delegation(registry:dict[str,Any],state:dict[str,Any],request:dict[str,Any],gates:list[dict[str,Any]],result:dict[str,Any],gateway_lease:dict[str,Any],*,carrier_id:str,now:datetime)->tuple[dict[str,Any],dict[str,Any]]:
+    """Terminalize bounded live child and durably project pending caller continuation."""
+    responsibility=request.get("responsibility")
+    if not isinstance(responsibility,dict) or responsibility.get("mode")!="bounded_delegation":
+        raise base.ControlPlaneError("complete_live_delegation requires bounded_delegation")
+    validate_state_carrier(state,request)
+    carrier=copy.deepcopy(state.get("carrier"))
+    if not isinstance(carrier,dict) or carrier.get("mode")!="live" or carrier.get("carrier_id")!=carrier_id:
+        raise base.ControlPlaneError("bounded delegation requires exact live carrier")
+    completed=_complete_live_task_base(state,request,gates,result,gateway_lease,carrier_id=carrier_id,now=now)
+    continuation_id=f"return:{request['task_id']}:{carrier_id}"
+    completed["continuation"]={
+      "kind":"return_to_caller",
+      "status":"pending",
+      "continuation_id":continuation_id,
+      "return_to_agent_id":responsibility["return_to_agent_id"],
+      "commitment_owner_agent_id":responsibility["commitment_owner_agent_id"],
+      "parent_task_id":request.get("parent_task_id"),
+      "workflow_id":request.get("workflow_id"),
+      "request_digest":base.request_digest(request),
+      "request_blob_sha":state.get("request_blob_sha"),
+      "result_carrier_id":carrier_id,
+      "live_lease_until":carrier["lease_until"],
+      "consumed_by_agent_id":None,
+      "consumed_at":None
+    }
+    validate_state_carrier(completed,request)
+    package=build_live_return_package(registry,request,completed,result,now=now)
+    if package is None:
         raise base.ControlPlaneError("bounded live delegation completed without caller continuation")
     return completed,package
 
