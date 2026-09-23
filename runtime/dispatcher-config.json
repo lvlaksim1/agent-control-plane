@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "lease_minutes": 45,
+  "runtime_loss_quarantine_after": 3,
+  "one_target_agent_per_dispatch": true,
+  "authoritative_time": "github_commit_time",
+  "dispatcher_protocol": "docs/SCHEDULED_CHAT_DISPATCHER.md",
+  "automatic_execution_activation": "registry-per-agent-explicit"
+}\n

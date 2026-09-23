@@ -1,14 +1,17 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Reserved Gate Contract",
+  "title": "Gate Contract",
   "type": "object",
-  "description": "Reserved for plan item 10; not active in the v1 foundation.",
   "required": [
     "schema_version",
     "gate_id",
     "task_id",
     "gate_type",
-    "status"
+    "status",
+    "required_actor_id",
+    "requested_at",
+    "resolved_at",
+    "resolution"
   ],
   "properties": {
     "schema_version": {
@@ -32,10 +35,28 @@
     "status": {
       "enum": [
         "waiting",
-        "open",
         "satisfied",
         "cancelled"
       ]
+    },
+    "required_actor_id": {
+      "type": "string"
+    },
+    "requested_at": {
+      "type": "string"
+    },
+    "resolved_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "resolution": {
+      "type": [
+        "object",
+        "null"
+      ]
     }
-  }
-}
+  },
+  "additionalProperties": false
+}\n

@@ -13,11 +13,11 @@
 
 ## Deliberately not started yet
 
-- [ ] 9. Retry/quarantine orchestration beyond the foundational state transition
-- [ ] 10. Explicit Gate engine
-- [ ] 11. Runtime reinstantiation integration
-- [ ] 12. Completion evidence verifier
-- [ ] 13. Automatic DAG continuation
+- [x] 9. Retry/quarantine orchestration beyond the foundational state transition
+- [x] 10. Explicit Gate engine
+- [x] 11. Runtime reinstantiation contract/invocation package
+- [x] 12. Completion evidence verifier
+- [x] 13. Automatic DAG continuation
 - [ ] 14. First Scheduled Chat dispatcher
 - [ ] 15. Sandbox E2E
 - [ ] 16. Real PM/Auditor integration

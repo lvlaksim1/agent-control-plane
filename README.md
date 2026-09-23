@@ -20,7 +20,7 @@ Constraints:
 - persistent agent identity and memory remain in each agent's home repository;
 - tool access never grants authority.
 
-This repository currently implements foundation plan items 1–8 only. No Scheduled Task is connected yet and all registered agents have automatic execution disabled.
+This repository implements plan items 1–13. Scheduled Chat activation is a separate runtime step; registered agents remain disabled for automatic execution until live integration is deliberately enabled.
 
 ## Implemented foundation
 
@@ -31,7 +31,7 @@ This repository currently implements foundation plan items 1–8 only. No Schedu
 5. Deterministic dependency graph / READY selection with cycle rejection, priority aging, FIFO tie-breaks.
 6. Global GitHub-CAS ownership lease: one autonomous runtime maximum.
 7. Fencing token (generation + execution_id) checked before consequential writes.
-8. Immutable checkpoints plus deterministic stale-runtime recovery and quarantine threshold.
+8. Immutable checkpoints plus deterministic stale-runtime recovery and quarantine threshold.\n9. Execution-failure retry/backoff/quarantine metadata.\n10. Explicit durable Gate engine.\n11. Deterministic persistent-agent invocation package.\n12. Evidence-backed completion verifier.\n13. Automatic DAG continuation through READY recomputation.
 
 ## Repository layout
 
@@ -66,3 +66,4 @@ python3 tools/control_plane.py validate --root .
 python3 -m unittest discover -s tests -v
 
 There is intentionally no OS/Python matrix and no always-on CI requirement: the control plane itself is GitHub state plus the ordinary-Chat protocol.
+\n## Workflow runtime\n\n`tools/workflow_runtime.py` extends the foundation state machine without changing the authority of `runtime/lease.json`. It adds retry/backoff, gates, reinstantiation packages, completion evidence, and DAG continuation. The scheduled dispatcher must follow `docs/SCHEDULED_CHAT_DISPATCHER.md`.\n

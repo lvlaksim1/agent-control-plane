@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Agent Invocation Package",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "agent_id",
+    "agent_type",
+    "role",
+    "home_repository",
+    "authority_ref",
+    "entrypoint",
+    "task_id",
+    "request_digest",
+    "execution_id",
+    "generation",
+    "authority_rule",
+    "required_sequence"
+  ]
+}\n
