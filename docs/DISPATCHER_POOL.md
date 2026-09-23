@@ -70,6 +70,16 @@ A new wake is justified only by durable state that may permit progress, includin
 
 A Worker run by itself is never sufficient reason for a new wake.
 
+## Broker wake-first fast path
+
+The Broker MUST evaluate delivery state before scanning task bundles:
+
+- `desired > armed` → arm the desired generation immediately;
+- `armed > served` and stale → retry that same armed generation immediately;
+- only when neither condition applies may the Broker scan task/gate/runtime state to discover newly READY work.
+
+This keeps wake delivery bounded even when the control-plane task history grows and prevents scheduler recovery from timing out while enumerating unrelated tasks.
+
 ## Broker arming order
 
 Live validation proved that an enabled one-shot may catch up immediately and begin before a post-scheduler acknowledgement can be committed. Therefore delivery state is an **outbox-style precommit**:
