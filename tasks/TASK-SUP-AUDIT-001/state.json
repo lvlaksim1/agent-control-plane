@@ -2,7 +2,7 @@
   "schema_version": 1,
   "task_id": "TASK-SUP-AUDIT-001",
   "status": "queued",
-  "request_digest": "sha256:null",
+  "request_digest": "sha256:1d06359e07c6901fe00ad9a50a3f8530bbce89c9e0a24f8b0ead1163fe18a9d0",
   "attempt": 0,
   "runtime_loss_count": 0,
   "claim": null,
