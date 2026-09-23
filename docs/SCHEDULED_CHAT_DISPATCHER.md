@@ -9,17 +9,23 @@ Direct Owner↔agent conversations remain first-class and do not use scheduler t
 
 ## Interactive-first execution gate
 
-Before any scheduler work, read `runtime/execution-mode.json`.
+Before any Broker or Worker progress, read and validate `runtime/execution-mode.json` using the deterministic schema/runtime rules represented by `schemas/execution-mode.schema.json` and `workflow_runtime.scheduler_admission_allowed`.
 
-If `mode=interactive` or `autonomous_scheduler_allowed=false`:
+Admission:
 
-- Wake Broker / Watchdog MUST NOT arm or nudge the Execution Worker.
-- Execution Worker MUST NOT claim a new task, reinstate a target agent, or perform target work.
-- Any durable task remains in GitHub for direct handoff by the live runtime.
-- Existing gateway partial execution may be inspected only to preserve safety; new autonomous progress is forbidden unless a separate recovery action is required to prevent corruption.
-- The scheduler stays dormant until the live runtime intentionally switches the execution mode to autonomous, or the Owner explicitly requests autonomous/background continuation.
+- fresh `interactive` presence lease → scheduler progress denied;
+- expired `interactive` presence + `fallback_after_presence_expiry=true` → autonomous fallback admitted;
+- `autonomous` → scheduler progress admitted;
+- explicit `hold` → scheduler progress denied without expiry.
 
-In interactive mode, inter-agent continuation is:
+When admission is denied:
+
+- Broker MUST NOT arm or nudge the Execution Worker;
+- Worker MUST NOT claim a new task, reinstate a target agent, or perform target work;
+- durable task/handoff state remains in GitHub for the live runtime;
+- existing gateway partial state may only be inspected or fenced where required to prevent corruption.
+
+In a fresh interactive lease, inter-agent continuation is:
 
 ```
 live Owner runtime
@@ -30,7 +36,7 @@ reinstantiate next persistent agent directly
 in the same live runtime
 ```
 
-Scheduled Tasks are therefore fallback execution carriers, not the normal agent-to-agent transport while the Owner is present.
+The presence lease exists so abrupt runtime loss cannot block autonomous fallback forever. An explicit Owner `hold` is the only indefinite scheduler block.
 
 ## Why the relay exists
 
@@ -126,6 +132,8 @@ Then:
 7. on execution failure, fence/release first, then apply retry/backoff/quarantine policy.
 
 ## Completion
+
+Lifecycle ordering uses **authoritative Git/gateway commit chronology**, not the embedded `result.completed_at` value. `completed_at` is parseable execution-local metadata only; it must never be used to prove that completion preceded release.
 
 While the exact active fence remains valid:
 
