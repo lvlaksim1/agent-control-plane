@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-CC-ACP-INTEGRATION-001",
+  "request_digest": "sha256:363e91d951023d23727bb926dc59884109a0f474d1827b67ba73a5aef3bde292",
+  "request_blob_sha": "e1a6e532417edb89c9bb7b0d77088f87af8c2e4d",
+  "execution_id": "EXEC-CC-ACP-INTEGRATION-001-DIRECT",
+  "generation": 19,
+  "outcome": "success",
+  "summary": "Context Capsule v2 / Service Agent Base now include a transport-neutral optional external-task interoperability contract. Direct Owner/requester invocation remains first-class; authority transport is non-escalating; target-side mandate validation, supplied execution fencing, safe checkpoints, evidence-backed completion, terminal cleanup, and bounded agent-to-agent routing are normative. No stable release or consumer migration was performed.",
+  "evidence": [
+    {
+      "kind": "commit",
+      "reference": "lvlaksim1/context-capsule@6ce955ab8dc6e5ef205ec8aea35b8d83dc8b51e5",
+      "verified": true,
+      "verified_by": "context-capsule-project-manager",
+      "verified_at": "2026-09-23T12:57:30Z"
+    },
+    {
+      "kind": "ci",
+      "reference": "https://github.com/lvlaksim1/context-capsule/actions/runs/35863780692",
+      "verified": true,
+      "verified_by": "context-capsule-project-manager",
+      "verified_at": "2026-09-23T12:57:30Z"
+    }
+  ],
+  "completed_at": "2026-09-23T13:00:00Z"
+}
