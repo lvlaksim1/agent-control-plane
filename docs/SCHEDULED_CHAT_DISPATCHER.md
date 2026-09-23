@@ -2,14 +2,14 @@
 
 The scheduler uses two infrastructure automations:
 
-1. one reusable one-shot **Execution Worker**; and
+1. one reusable hourly-anchored **Execution Worker** whose next occurrence may be retargeted earlier; and
 2. one recurring **Wake Broker / Hourly Watchdog**.
 
 Direct Owner↔agent conversations remain first-class and do not use scheduler transport. A wake changes only *when* work is reconsidered. It never grants authority.
 
 ## Why the relay exists
 
-Live validation showed that a one-shot Scheduled Task can race with its own completion if it tries to re-arm itself while the current invocation is still active. Re-enabling an expired one-shot may also be delivered as an immediate catch-up run rather than exactly at the requested future DTSTART.
+Live validation showed two scheduler hazards: self-rearming a currently running one-shot can race with completion, and repeatedly reusing an already-fired one-shot can leave a newly requested occurrence enabled but undelivered for an unbounded interval. Therefore v4 uses a recurring hourly Worker as a stable scheduler anchor; only the Broker may retarget its next occurrence earlier, and the hourly RRULE must be preserved.
 
 Therefore the Execution Worker **must never schedule itself**.
 
@@ -28,11 +28,12 @@ if continuation is needed:
 persist new wake → nudge Broker → STOP
 ```
 
-The Broker or Worker may run immediately as catch-up delivery; correctness never depends on exact wall-clock delivery. Live validation also showed that a Worker can start before a Broker performs a post-scheduler acknowledgement, so the Broker must commit the delivery generation **before** scheduling the Worker. The required semantic boundary is a later Execution Worker invocation plus the exact durable fence.
+The Broker or Worker may run late or as catch-up delivery; correctness never depends on exact wall-clock delivery. Live validation also showed that a Worker can start before a Broker performs a post-scheduler acknowledgement, so the Broker must commit the delivery generation **before** scheduling the Worker. The required semantic boundary is a later Execution Worker invocation plus the exact durable fence.
 
 ## Entry reconciliation
 
-At every Execution Worker invocation use a **lease-first fast path**:
+At every Execution Worker invocation use a **lease-first fast path**. A natural hourly Worker occurrence is not permission to scan for work: if the gateway is idle and there is no `armed_generation > served_generation`, stop after the wake/gateway check without scanning task bundles.
+
 
 1. read `runtime/dispatcher-config.json`, `runtime/dispatcher-pool.json`, `runtime/dispatcher-health.json`, Registry, and the authoritative gateway lease;
 2. validate wake state and capture the exact `armed_generation` that caused this invocation as `invocation_generation`; never treat a newer unarmed desired generation as served;
@@ -145,8 +146,8 @@ Each Broker run uses a **wake-first fast path**:
 5. create a deterministic durable wake if such work exists but no sufficient wake is pending, then choose that new generation;
 6. a stale `armed_generation > served_generation` **forces a new Worker scheduling attempt even if the Worker automation still reports enabled or carries an old/past DTSTART**; scheduler metadata is not proof of delivery;
 7. **before any scheduler call**, CAS-persist the chosen generation as `armed_generation` with a fresh `last_armed_at`; this durable delivery intent makes an immediate/catch-up Worker invocation safe;
-8. schedule the existing Execution Worker for a fresh one-shot occurrence and set `is_enabled=true`;
-9. verify the returned scheduler state names the exact Worker and is enabled/runnable for the newly requested occurrence; exact wall-clock timing is not a correctness assumption;
+8. retarget the existing recurring Execution Worker's next occurrence, preserve its `RRULE:FREQ=HOURLY`, and keep `is_enabled=true`;
+9. verify the returned scheduler state names the exact Worker, is enabled/runnable for the newly requested occurrence, and still carries its hourly RRULE; exact wall-clock timing is not a correctness assumption;
 10. do not require any post-scheduler GitHub write for correctness. If the scheduler call fails or the Broker runtime dies after step 6, `armed_generation > served_generation` becomes stale and the hourly Broker retries the **same** generation;
 11. otherwise no-op.
 
