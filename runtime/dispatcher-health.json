@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "last_dispatch_at": "2026-09-23T03:39:30Z",
+  "last_dispatch_at": "2026-09-23T12:16:32Z",
   "last_slot_id": "probe-1",
   "last_outcome": "completed",
-  "last_observed_head": "ef800cbdcc32267e96faf63132a650c6ed83aa94",
-  "last_reason": "TASK-E2E-SUPERVISOR-002 completed under gateway lease generation 5. Claim was accepted, claimed/active/completed projections were durably verified, commit evidence 7b84024861604408a359dc681b300bd607cef55e was independently re-read, and exact release was accepted with gateway returning idle generation 6."
+  "last_observed_head": "3b6d082480a6b74adc1867c4625e0d7847436989",
+  "last_reason": "TASK-INT-PM-001 completed as a bounded read-only Project Manager integration attestation under gateway lease generation 7. The manager was reinstantiated from lvlaksim1/context-capsule@v2-manager-runtime, authoritative manager-state HEAD ebefc10e3cb16535d9672daa8c4911d635020757 was verified, no Context Capsule mutation was performed, result/state completion became durable, and exact release was accepted with gateway returning idle generation 8."
 }
