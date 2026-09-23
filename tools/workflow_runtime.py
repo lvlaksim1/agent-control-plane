@@ -373,6 +373,15 @@ def scheduler_admission_allowed(state:dict[str,Any],*,now:datetime)->bool:
         return False
     return state["fallback_after_presence_expiry"] is True
 
+def interactive_fallback_wake_at(state:dict[str,Any],*,now:datetime)->datetime|None:
+    """Return when the Broker should be parked so no Scheduled Task executes during fresh interactive presence."""
+    validate_execution_mode(state)
+    if state["mode"]!="interactive" or not interactive_presence_fresh(state,now=now):
+        return None
+    if state["fallback_after_presence_expiry"] is not True:
+        return None
+    return base.parse_time(state["presence"]["lease_until"])
+
 def scheduler_ready_tasks(execution_mode:dict[str,Any],registry:dict[str,Any],bundles:list[tuple],now:datetime)->list[dict[str,Any]]:
     """Scheduler-only READY resolution; interactive admission is checked before discovery."""
     if not scheduler_admission_allowed(execution_mode,now=now):
