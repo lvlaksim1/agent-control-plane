@@ -172,6 +172,12 @@ class LiveReturnTests(unittest.TestCase):
   self.assertEqual(pkg["completed_child_task_id"],"AUD")
   self.assertIn("without requiring a user reinvocation",pkg["required_sequence"][-1])
 
+ def test_live_agent_call_without_responsibility_contract_is_rejected(self):
+  reg=registry(True,("manager","auditor"))
+  r=request("LEGACY","auditor"); r["issuer_agent_id"]="manager"; r["authority_basis"]={"kind":"engagement","reference":"E1"}
+  with self.assertRaises(cp.ControlPlaneError):
+   wr.build_live_return_package(reg,r,self.live_result(r))
+
  def test_explicit_handoff_has_no_automatic_return(self):
   reg=registry(True,("manager","specialist"))
   r=request("H","specialist"); r["issuer_agent_id"]="manager"; r["authority_basis"]={"kind":"handoff","reference":"H1"}
