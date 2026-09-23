@@ -1,11 +1,16 @@
 {
   "schema_version": 1,
   "task_id": "TASK-CC-ACP-AUDIT-001",
-  "status": "queued",
+  "status": "claimed",
   "request_digest": "sha256:023e642122a7b391975bfcab6fbb5bfd0ba81280b9ccbfd011776e47846d36b1",
-  "attempt": 0,
+  "attempt": 1,
   "runtime_loss_count": 0,
-  "claim": null,
+  "claim": {
+    "execution_id": "EXEC-CC-ACP-AUDIT-001-DIRECT",
+    "generation": 21,
+    "slot_id": "direct-owner-runtime",
+    "claimed_at": "2026-09-23T13:02:24Z"
+  },
   "latest_checkpoint": null,
   "request_blob_sha": "0abcbeb127c9b5f72cb25236cb8f200978053cd5"
 }
