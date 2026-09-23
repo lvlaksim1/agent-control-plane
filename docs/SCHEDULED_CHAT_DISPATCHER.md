@@ -125,11 +125,12 @@ Each Broker run:
 2. detect READY work, due retry, partial reserved/active transitions, stale/lost wake delivery, or protocol-defined lease recovery;
 3. create a deterministic durable wake if work exists but no sufficient wake is pending;
 4. if `desired_generation > armed_generation`, choose `desired_generation`; if an already-armed unserved generation is stale, choose that same `armed_generation`;
-5. **before any scheduler call**, CAS-persist the chosen generation as `armed_generation` with a fresh `last_armed_at`; this durable delivery intent makes an immediate/catch-up Worker invocation safe;
-6. schedule the existing Execution Worker for a one-shot run and set `is_enabled=true`;
-7. verify the returned scheduler state names the exact Worker and is enabled/runnable; exact wall-clock timing is not a correctness assumption;
-8. do not require any post-scheduler GitHub write for correctness. If the scheduler call fails or the Broker runtime dies after step 5, `armed_generation > served_generation` becomes stale and the hourly Broker retries the **same** generation;
-9. otherwise no-op.
+5. a stale `armed_generation > served_generation` **forces a new Worker scheduling attempt even if the Worker automation still reports enabled or carries an old/past DTSTART**; scheduler metadata is not proof of delivery;
+6. **before any scheduler call**, CAS-persist the chosen generation as `armed_generation` with a fresh `last_armed_at`; this durable delivery intent makes an immediate/catch-up Worker invocation safe;
+7. schedule the existing Execution Worker for a fresh one-shot occurrence and set `is_enabled=true`;
+8. verify the returned scheduler state names the exact Worker and is enabled/runnable for the newly requested occurrence; exact wall-clock timing is not a correctness assumption;
+9. do not require any post-scheduler GitHub write for correctness. If the scheduler call fails or the Broker runtime dies after step 6, `armed_generation > served_generation` becomes stale and the hourly Broker retries the **same** generation;
+10. otherwise no-op.
 
 The Broker never updates its own schedule while it is executing.
 
