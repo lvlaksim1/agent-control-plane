@@ -4,23 +4,31 @@ The former five-slot polling pool is superseded by an Owner-authorized two-slot 
 
 ## Interactive-first boundary
 
-`runtime/execution-mode.json` is a schema-v2 scheduler admission state, validated by `workflow_runtime.validate_execution_mode` / `scheduler_admission_allowed`.
+Interactive-first routing is **per task / per work chain**, not a global scheduler mode.
 
-Modes:
+A task carried by the live Owner-facing runtime records a renewable carrier lease in its own `tasks/<task_id>/runtime.json#carrier`:
 
-- `interactive`: a live Owner-facing carrier holds a **renewable bounded presence lease**. While `now < presence.lease_until`, Broker and Worker admission is denied.
-- `autonomous`: no live carrier is intentionally carrying the chain (or Owner explicitly delegated background continuation); scheduler admission is allowed.
-- `hold`: explicit Owner pause. This blocks scheduler admission indefinitely and is deliberately distinct from ephemeral interactive presence.
+- `mode=live`: the task is owned by the live chat/runtime until `lease_until`; scheduler selection and scheduler Phase-B execution for that task are blocked while the lease is fresh.
+- expired `live` lease with `fallback_after_expiry=true`: the scheduler may pick up that task if the live runtime disappeared or stopped renewing it.
+- `mode=hold`: explicit per-task Owner pause with no expiry.
+- `carrier=null`: no live carrier; normal autonomous scheduler eligibility applies.
 
-Interactive state contains `carrier_id`, `heartbeat_at`, and `lease_until`. If the live runtime disappears without an explicit handoff, a fresh lease blocks scheduler work only until expiry. When the lease is expired and `fallback_after_presence_expiry=true`, deterministic scheduler admission permits autonomous fallback without needing the vanished runtime to write a transition.
+The key invariant is isolation: **a live carrier blocks only its own task/chain**. Broker and Worker remain available to service unrelated autonomous tasks while the Owner is online.
 
-A live interactive runtime refreshes its own lease while it continues substantial work. It must never use a long-lived Owner hold merely to represent presence.
+When the Owner is online, an inter-agent handoff for the current chain is:
 
-To honor the stronger rule that Scheduled Task **executions themselves** are reserved for Owner absence, the live carrier parks the Broker's next occurrence exactly at the current presence `lease_until` and keeps the Execution Worker disabled/not due. If the Owner remains active, the same carrier renews the lease and moves the Broker occurrence to the new expiry before the old one fires. If the runtime disappears, no further renewal occurs: the Broker fires at lease expiry, observes that interactive presence is no longer fresh, and becomes the autonomous fallback wake.
+```
+live Owner runtime
+      ↓
+persist task / handoff in GitHub
+      ↓
+attach/renew live carrier on that task
+      ↓
+reinstantiate the next persistent agent immediately
+in the same live runtime
+```
 
-`interactive_fallback_wake_at` is the deterministic projection of this parking deadline. An unexpectedly early Broker invocation still checks admission and no-ops while the lease is fresh.
-
-Scheduler availability, a queued task, or a wake never overrides a fresh interactive presence lease. Execution mode is a routing gate, not authority.
+No scheduler wait is introduced into the interactive path. Scheduler slots are fallback delivery for unattended tasks and for live-carried tasks whose carrier lease later expires.
 
 ## Runtime roles
 
