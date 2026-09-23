@@ -80,7 +80,7 @@ Live validation proved that an enabled one-shot may catch up immediately and beg
 4. Broker schedules the existing Execution Worker one-shot and enables it.
 5. Broker verifies the returned scheduler state identifies the exact Worker and leaves a runnable occurrence, but no post-scheduler repository write is required for correctness.
 
-If scheduling fails after step 3, the durable state is intentionally `armed > served`. Once stale, the hourly Broker retries the **same** generation. If the Worker starts immediately after step 4, it already sees the correct armed generation and can safely serve it.
+If scheduling fails after step 3, the durable state is intentionally `armed > served`. Once stale, the hourly Broker retries the **same** generation even if the Worker automation still appears enabled or retains an old/past DTSTART; those scheduler fields do not prove delivery. If the Worker starts immediately after step 4, it already sees the correct armed generation and can safely serve it.
 
 ## Event nudge order
 
