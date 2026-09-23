@@ -1,11 +1,15 @@
 {
   "schema_version": 1,
   "task_id": "TASK-INT-PM-001",
-  "status": "queued",
+  "status": "claimed",
   "request_digest": "sha256:b09948e7000a2adfb47a29ffd3abc959c90d2d8a11b5b03527545cc176334a75",
-  "attempt": 0,
+  "attempt": 1,
   "runtime_loss_count": 0,
-  "claim": null,
+  "claim": {
+    "execution_id": "exec-int-pm-001-20260923T121402Z-p1",
+    "generation": 7,
+    "slot_id": "probe-1"
+  },
   "latest_checkpoint": null,
   "request_blob_sha": "1756c0a3e0c247c16c98715e58c31cdf2684791e"
 }
