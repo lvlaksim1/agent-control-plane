@@ -172,6 +172,23 @@ class LiveReturnTests(unittest.TestCase):
   self.assertEqual(pkg["completed_child_task_id"],"AUD")
   self.assertIn("without requiring a user reinvocation",pkg["required_sequence"][-1])
 
+ def test_live_delegation_completion_yields_return_package(self):
+  reg=registry(True,("supervisor","auditor"))
+  r=self.delegated("AUD-COMPLETE","supervisor","auditor")
+  s=state(r)
+  s["carrier"]={
+   "mode":"live","carrier_id":"live-caller","set_by":"supervisor","reason":"delegation",
+   "heartbeat_at":"2026-09-23T00:00:00Z","lease_until":"2026-09-23T01:00:00Z","fallback_after_expiry":True
+  }
+  gateway={"state":"idle","generation":46,"execution_id":None,"task_id":None,"agent_id":None,"slot_id":None}
+  completed,pkg=wr.complete_live_delegation(
+   reg,s,r,[],self.live_result(r),gateway,carrier_id="live-caller",
+   now=datetime(2026,9,23,0,30,tzinfo=timezone.utc)
+  )
+  self.assertEqual(completed["status"],"completed")
+  self.assertIsNone(completed["carrier"])
+  self.assertEqual(pkg["agent_id"],"supervisor")
+
  def test_live_agent_call_without_responsibility_contract_is_rejected(self):
   reg=registry(True,("manager","auditor"))
   r=request("LEGACY","auditor"); r["issuer_agent_id"]="manager"; r["authority_basis"]={"kind":"engagement","reference":"E1"}
