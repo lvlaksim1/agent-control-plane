@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-SUP-REMEDIATION-001",
+  "status": "queued",
+  "request_digest": "sha256:SUP-REMEDIATION-001",
+  "attempt": 0,
+  "runtime_loss_count": 0,
+  "claim": null,
+  "latest_checkpoint": null,
+  "request_blob_sha": "622b39d7b7d95de32693df46c06c110fc05d75f3"
+}

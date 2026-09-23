@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-SUP-REMEDIATION-001",
+  "issuer_agent_id": "owner",
+  "target_agent_id": "ecosystem-supervisor",
+  "objective": "Remediate independent audit findings SUP-001 and SUP-002 systemically. Upgrade the existing persistent Supervisor in place using the current independently verified Context Capsule Service Agent Base repair semantics while preserving stable identity, mandate, Supervisor profile, BDI, professional memory, and Owner/project authority boundaries. Reconcile all mandatory portfolio registries and operational beliefs with live Registry/audit evidence, explicitly supersede stale claims, add a Supervisor-specific mandatory portfolio reconciliation invariant, verify the upgraded Core provenance and externally fenced invocation behavior, and persist a coherent remediation state for focused independent Auditor retest.",
+  "authority_basis": {
+    "kind": "owner-directive",
+    "reference": "Owner instruction after AUD-2026-09-23-SUPERVISOR-001"
+  },
+  "scope": [
+    "lvlaksim1/supervisor@main",
+    "Context Capsule Service Agent Core-managed repair surfaces",
+    "Supervisor mandatory portfolio registries, BDI/current/handoff, and procedural reconciliation safeguards",
+    "control-plane task/result state required for bounded execution"
+  ],
+  "constraints": [
+    "Preserve agent_id ecosystem-supervisor, mandate, Supervisor profile, goals, professional memory, and Owner-highest-authority model.",
+    "Do not transfer client-project ownership to Supervisor or make Supervisor mandatory for Owner↔Project Manager communication.",
+    "Do not modify Context Capsule stable main, publish stable v2, migrate consumers, or start Agent Catalog/Factory.",
+    "Do not weaken item-19 external-task/fencing requirements.",
+    "Do not use Work."
+  ],
+  "target": {
+    "repository": "lvlaksim1/supervisor",
+    "ref": "main"
+  },
+  "priority": "high",
+  "dependencies": [
+    {
+      "task_id": "TASK-SUP-AUDIT-001",
+      "relation": "depends_on"
+    }
+  ],
+  "workflow_id": "WF-SUPERVISOR-AUDIT-REMEDIATION-001",
+  "parent_task_id": "TASK-SUP-AUDIT-001",
+  "relation": "remediation_of",
+  "retry_policy": {
+    "max_attempts": 2,
+    "backoff_minutes": [
+      0,
+      15
+    ],
+    "quarantine_on_exhaustion": true
+  },
+  "completion_contract": {
+    "required_evidence": [
+      {
+        "kind": "commit",
+        "minimum": 1
+      },
+      {
+        "kind": "validation",
+        "minimum": 1
+      },
+      {
+        "kind": "fenced-smoke",
+        "minimum": 1
+      }
+    ]
+  },
+  "created_at": "2026-09-23T14:15:00Z"
+}
