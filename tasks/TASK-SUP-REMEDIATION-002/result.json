@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-SUP-REMEDIATION-002",
+  "request_digest": "sha256:1519a3ae00187ae4cc277adcce522405972b53b8bd90367db1fb88c6be575d1f",
+  "request_blob_sha": "a0838f8e91f2dc707d8f2900119a1e178a82304b",
+  "execution_id": "EXEC-SUP-REMEDIATION-002-DIRECT",
+  "generation": 35,
+  "outcome": "success",
+  "summary": "Narrow SUP-002 remediation completed on Supervisor snapshot e99c8ceda16f56dcb87bfc9f6c60866aff1cde69. ENG-2026-09-23-ACP-9-20 now reflects the later Owner directive: items 9-19 complete, item 20/Agent Catalog/Factory not active, engagement blocked pending Owner discussion, and current work limited to closing Master Plan 6.5. Mandatory portfolio reconciliation now explicitly includes service-agent engagements and later Owner revisions. SUP-001 Core/fencing remediation was not modified.",
+  "evidence": [
+    {
+      "kind": "commit",
+      "reference": "lvlaksim1/supervisor@e99c8ceda16f56dcb87bfc9f6c60866aff1cde69",
+      "verified": true,
+      "verified_by": "ecosystem-supervisor",
+      "verified_at": "2026-09-23T14:45:00Z"
+    },
+    {
+      "kind": "validation",
+      "reference": "compare f37fb991d27b4fedaaf4ed8452513269bf8a5450..e99c8ceda16f56dcb87bfc9f6c60866aff1cde69 confirms a single narrow portfolio/engagement remediation commit; item-19 Service Agent Core blobs remain unchanged",
+      "verified": true,
+      "verified_by": "ecosystem-supervisor",
+      "verified_at": "2026-09-23T14:45:00Z"
+    }
+  ],
+  "completed_at": "2026-09-23T14:45:00Z"
+}
