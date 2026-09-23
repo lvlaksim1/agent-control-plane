@@ -214,6 +214,19 @@ class ExecutionModeTests(unittest.TestCase):
   with self.assertRaises(cp.ControlPlaneError):
    wr.validate_execution_mode(m)
 
+ def test_scheduler_ready_discovery_is_blocked_while_presence_is_fresh(self):
+  r=request("MODE-BLOCK")
+  bundle=(r,state(r),[],wr.task_runtime("MODE-BLOCK"))
+  self.assertEqual(wr.scheduler_ready_tasks(self.interactive(),registry(),[bundle],NOW),[])
+  self.assertEqual([x["task_id"] for x in wr.scheduler_ready_tasks(self.autonomous(),registry(),[bundle],NOW)],["MODE-BLOCK"])
+
+ def test_phase_b_reinstantiation_is_blocked_while_presence_is_fresh(self):
+  r=request("PHASE-B"); s=state(r,"claimed")
+  s["claim"]={"execution_id":"e1","generation":9,"slot_id":"execution-worker","claimed_at":"2026-09-23T00:00:00Z","activation_projection_blob_sha":"b"*40}
+  lease={"state":"active","generation":9,"execution_id":"e1","task_id":"PHASE-B","agent_id":"agent-a","slot_id":"execution-worker","request_blob_sha":"a"*40,"activation_projection_blob_sha":"b"*40}
+  self.assertFalse(wr.scheduler_claimed_execution_ready(self.interactive(),s,r,lease,now=NOW))
+  self.assertTrue(wr.scheduler_claimed_execution_ready(self.autonomous(),s,r,lease,now=NOW))
+
 
 class EventWakeTests(unittest.TestCase):
  def wake(self):
