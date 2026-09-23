@@ -40,19 +40,22 @@
   "next_check": {
     "id": "OUTBOX-BROKER-PHASE-A-B-E2E",
     "task_id": "TASK-EVENT-WAKE-RELAY-E2E-001",
-    "status": "phase-a-armed",
+    "status": "phase-a-retry-same-generation",
     "wake_generation": 9,
     "evidence": [
       "TASK-EVENT-WAKE-RELAY-E2E-001 is queued and READY.",
       "Durable wake generation 9 was requested for this task.",
       "Wake Broker precommitted armed_generation=9 at 2026-09-23T17:20:29Z before scheduling the Worker.",
-      "Execution Worker was armed as an enabled one-shot occurrence for Phase A; direct producer-to-Worker arming was not used."
+      "Execution Worker was armed as an enabled one-shot occurrence for Phase A; direct producer-to-Worker arming was not used.",
+      "First gen9 Worker occurrence completed without durable Phase-A state; no gateway lease was taken and task stayed queued, so retry remains safe.",
+      "Worker fast path now routes exact `task-ready:<task_id>` wake before any broad queue scan."
     ],
     "expected": "Worker Phase A reserve/claim/activate and STOP -> Phase-B durable wake -> Broker arm -> later Worker Phase B reinstates ecosystem-supervisor and completes -> gateway release."
   },
-  "updated_at": "2026-09-23T17:21:10Z",
+  "updated_at": "2026-09-23T17:25:00Z",
   "notes": [
-    "TASK-EVENT-WAKE-E2E-002 was superseded before execution because TASK-EVENT-WAKE-RELAY-E2E-001 had already been durably queued first and already owned wake generation 9."
+    "TASK-EVENT-WAKE-E2E-002 was superseded before execution because TASK-EVENT-WAKE-RELAY-E2E-001 had already been durably queued first and already owned wake generation 9.",
+    "Generation 9 first Worker delivery at 17:22:54Z produced no durable Phase-A transition. Diagnostic remediation: add wake-addressed exact-task fast path and temporarily reduce stale retry timeout from 5 to 1 minute so Broker retries the SAME precommitted generation 9. This is a controlled validation setting and must be restored to production 20 minutes before final pin."
   ],
   "completed_checks": [
     {
