@@ -1,63 +1,113 @@
-# Scheduled Chat Dispatcher Protocol
+# Scheduled Chat Execution Worker Protocol
 
-The Dispatcher is infrastructure, not a persistent agent. Direct Owner↔agent conversations are first-class and do not use this scheduler pool.
+The scheduler uses one reusable one-shot Execution Worker plus one hourly Watchdog. Both are infrastructure, not persistent agents. Direct Owner↔agent conversations remain first-class and do not use scheduler transport.
+
+A wake changes only *when* work is reconsidered. It never grants authority.
+
+## Entry reconciliation
+
+At every Execution Worker invocation:
+
+1. read `runtime/dispatcher-config.json`, `runtime/dispatcher-pool.json`, `runtime/dispatcher-health.json`, Registry, task requests/states/gates/runtime metadata, and the authoritative gateway lease;
+2. validate the current wake state and capture `desired_generation`;
+3. reconcile partial transitions and any exact existing gateway lease before selecting new work;
+4. execute at most one bounded control-plane cycle.
 
 ## Two-phase target execution
 
-**A gateway claim is only a reservation. A reserved lease never authorizes target-agent reinstantiation or target writes.**
+**A gateway reservation/activation never authorizes target execution in the same invocation.**
 
-### Phase A — reserve and arm, then stop
+### Phase A — reserve and activate, then stop
 
-1. Reconcile Registry, tasks, gates, runtime metadata, and the authoritative gateway lease.
-2. If gateway is idle, compute READY deterministically and select at most one task.
-3. Request gateway `claim`. A successful claim MUST commit gateway state `reserved`, never `active`.
-4. CAS-write the private task projection to `claimed` with exact execution_id, generation, slot_id, claimed_at, request_blob_sha; re-read it.
-5. Capture the Git blob SHA of that durably visible claimed state.
-6. Request gateway `activate` using exact fence fields plus `activation_projection_blob_sha=<claimed state blob SHA>`.
-7. Proceed only if the canonical gateway lease is `active` and records that exact activation projection receipt.
-8. CAS-update the private claim to record the same `activation_projection_blob_sha`; re-read it.
-9. **STOP THE DISPATCHER INVOCATION. Do not reinstate the target agent and do not perform any target write in the reservation/activation invocation.**
+1. Require gateway idle and deterministically select at most one READY task.
+2. Request gateway `claim`; successful claim must commit `reserved`.
+3. CAS-write private task state to `claimed` with exact execution_id, generation, slot_id=`execution-worker`, claimed_at and request_blob_sha; re-read.
+4. Capture the claimed-state Git blob SHA.
+5. Request gateway `activate` with the exact fence plus `activation_projection_blob_sha`.
+6. Proceed only if canonical gateway lease is `active` and records that exact receipt.
+7. Record the same activation receipt in the private claim and re-read.
+8. Persist a new durable wake request keyed by this exact activated execution, because Phase B must occur in a later invocation.
+9. Re-arm the same Execution Worker for a near-future one-shot run and only after confirmed scheduler update record the corresponding armed generation.
+10. Mark the current wake generation served.
+11. **STOP. Do not reinstate the target agent and do not perform target writes.**
 
-If the runtime dies:
-- `reserved + queued`: repair the same task to claimed, then activate; never create a second claim.
-- `reserved + claimed`: activate from the exact current claimed projection and stop.
-- `active + claimed` without locally recorded receipt: verify the gateway receipt refers to a valid historical claimed-state Git blob for the same task/fence, record the receipt, and stop.
-- release/fence first if any identity, request blob, or projection evidence conflicts.
+If re-arm fails, leave the durable wake pending. The hourly Watchdog must recover it.
 
-### Phase B — execute in a later dispatcher invocation
+### Phase B — execute in a later invocation
 
-10. A later dispatcher may begin target-agent reinstantiation only when:
-   - gateway state is `active`;
-   - private task state is `claimed`;
-   - private claim contains `activation_projection_blob_sha`;
-   - gateway and private claim exactly match task_id + target agent_id + execution_id + generation + slot_id + request_blob_sha + activation_projection_blob_sha.
-11. Reinstate the existing target agent from Registry home_repository@authority_ref and execute its ENTRYPOINT recovery protocol.
-12. The target agent validates issuer, authority provenance, target identity, objective, scope, constraints, requested effects, and completion contract against its own mandate. Routing, tools, registry membership, reservation, or activation never create authority.
-13. CAS-update private task state to `active` while retaining the activation receipt; re-read it.
-14. **Before every consequential target/control-plane write**, require deterministic admission: private state `active`, gateway lease `active`, and the full exact receipt/fence match above. Otherwise stop before the write.
-15. Persist immutable checkpoints after meaningful durable progress. Never persist hidden chain-of-thought.
-16. If execution will exceed the lease window, renew only while the exact active fence and activation receipt still match.
-17. On execution failure, fence/release first, then apply retry/backoff/quarantine policy.
+A later Execution Worker may begin target-agent reinstantiation only when:
 
-### Completion
+- gateway state is `active`;
+- private task state is `claimed`;
+- private claim contains `activation_projection_blob_sha`;
+- gateway and private claim exactly match task_id + target agent_id + execution_id + generation + slot_id + request_blob_sha + activation_projection_blob_sha.
 
-18. While the exact active fence remains valid, write `result.json` exactly to `runtime/dispatcher-write-contract.json`. Every required evidence item must be independently verified and satisfy completion_contract.
-19. CAS-update task state to `completed` with `claim=null`; re-read it.
-20. Only after completed state is durable request exact gateway `release`; verify canonical gateway becomes idle at a newer generation.
-21. Persist bounded dispatcher health. Do not manually start dependent work; a later dispatcher recomputes READY.
+Then:
 
-## Recovery and reconciliation
+1. reinstate the existing target agent from Registry home_repository@authority_ref and execute its ENTRYPOINT protocol;
+2. target agent validates issuer, authority provenance, target identity, objective, scope, constraints, requested effects and completion contract against its own mandate;
+3. CAS-update private task state to `active`;
+4. before every consequential target/control-plane write require the exact active fence/receipt match;
+5. persist immutable checkpoints after meaningful durable progress;
+6. if execution exceeds the lease window, renew only while the exact fence remains valid;
+7. on execution failure, fence/release first, then apply retry/backoff/quarantine policy.
 
-- A completed task with valid result and idle gateway may have its completion projection repaired; it must never execute twice.
-- An expired reserved/active lease is fenced before task requeue/quarantine.
-- A task may never be selected for a new claim while the gateway holds its prior execution.
-- Gateway response is trusted only after canonical committed lease re-read.
-- A dispatcher executes at most one target-agent execution per invocation and never combines agent identities.
+## Completion
 
-## Human and issuer routing
+While the exact active fence remains valid:
 
-Supervisor is not a mandatory gateway. Owner may work directly with any persistent agent. A task may be issued by Owner or a registered active agent with explicit authority basis. Target-side mandate validation is always required.
+1. write `result.json` exactly to `runtime/dispatcher-write-contract.json`;
+2. CAS-update task state to `completed` with `claim=null`; re-read;
+3. only after durable completion request exact gateway release and verify canonical gateway idle at a newer generation;
+4. recompute READY/recovery state;
+5. if another durable reason for progress exists, persist a new wake request and re-arm the Execution Worker;
+6. mark the current wake generation served;
+7. stop.
 
-## Gateway trust boundary
+A worker invocation never re-arms itself merely because it ran.
 
-The public gateway stores only opaque execution coordination. It never receives project objective/content, Context Capsule state, completion evidence, or target secrets.
+## Wake transport contract
+
+Wake state is `runtime/dispatcher-health.json#wake`.
+
+- `desired_generation`: latest requested wake;
+- `armed_generation`: latest successfully scheduled wake;
+- `served_generation`: latest wake reconciled by a worker invocation.
+
+Wake requests use deterministic `request_key` values. Recent keys suppress replay.
+
+Re-arm ordering is mandatory:
+
+1. durable wake request;
+2. scheduler update of the existing Execution Worker;
+3. verify update;
+4. durable armed-generation acknowledgement.
+
+Duplicate invocation is safe because task state and the gateway lease remain authoritative.
+
+## Hourly Watchdog
+
+The Watchdog never executes target-agent work.
+
+Each hourly run:
+
+1. reconcile Registry, tasks, gates, runtime metadata, wake state and authoritative gateway lease;
+2. detect READY work, due retries, stale/lost wake delivery, or protocol-defined lease recovery;
+3. create a durable wake request if needed;
+4. if desired > armed, or an outstanding armed generation is stale, re-arm the Execution Worker;
+5. record the matching armed generation after successful scheduler update;
+6. otherwise no-op.
+
+The Watchdog is the guaranteed slow recovery path; event wake is the normal fast path.
+
+## Recovery
+
+- reserved + queued: repair the same task to claimed, activate, request Phase-B wake, then stop;
+- reserved + claimed: activate from exact current claimed projection, request Phase-B wake, then stop;
+- active + claimed without locally recorded receipt: verify canonical receipt against a valid historical claimed-state blob, record it, request Phase-B wake if necessary, then stop;
+- expired reserved/active lease: fence before requeue/quarantine, then request a recovery wake if progress is possible;
+- completed task with valid result and idle gateway: repair completion projection only; never execute twice.
+
+## Authority and routing
+
+Supervisor is not a mandatory gateway. Owner or a registered active agent may issue a task only with the required authority basis. Target-side mandate validation is always required. Wake delivery, scheduler identity, Registry membership, lease reservation or tool access never expand authority.
