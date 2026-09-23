@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "task_id": "TASK-CC-ACP-INTEGRATION-001",
-  "status": "claimed",
+  "status": "active",
   "request_digest": "sha256:363e91d951023d23727bb926dc59884109a0f474d1827b67ba73a5aef3bde292",
   "attempt": 1,
   "runtime_loss_count": 0,
