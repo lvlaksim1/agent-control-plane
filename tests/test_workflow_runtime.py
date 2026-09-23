@@ -115,5 +115,29 @@ class WorkflowRuntimeTests(unittest.TestCase):
   with self.assertRaises(cp.ControlPlaneError):
    wr.ready_tasks(registry(),[(r,state(r),[],wr.task_runtime("BAD"))],NOW)
 
+ def test_reserved_gateway_never_admits_target_write(self):
+  r=request("F"); s=state(r,"claimed")
+  s["claim"]={"execution_id":"e1","generation":9,"slot_id":"dispatcher-00","claimed_at":"2026-09-23T00:00:00Z","activation_projection_blob_sha":"b"*40}
+  lease={"state":"reserved","generation":9,"execution_id":"e1","task_id":"F","agent_id":"agent-a","slot_id":"dispatcher-00","request_blob_sha":"a"*40,"activation_projection_blob_sha":None}
+  self.assertFalse(wr.claimed_execution_ready(s,r,lease))
+  s["status"]="active"
+  self.assertFalse(wr.gateway_execution_admitted(s,r,lease))
+
+ def test_active_gateway_requires_matching_activation_receipt(self):
+  r=request("F"); s=state(r,"claimed")
+  s["claim"]={"execution_id":"e1","generation":9,"slot_id":"dispatcher-00","claimed_at":"2026-09-23T00:00:00Z","activation_projection_blob_sha":"b"*40}
+  lease={"state":"active","generation":9,"execution_id":"e1","task_id":"F","agent_id":"agent-a","slot_id":"dispatcher-00","request_blob_sha":"a"*40,"activation_projection_blob_sha":"b"*40}
+  self.assertTrue(wr.claimed_execution_ready(s,r,lease))
+  s["status"]="active"
+  self.assertTrue(wr.gateway_execution_admitted(s,r,lease))
+  bad=dict(lease); bad["activation_projection_blob_sha"]="c"*40
+  self.assertFalse(wr.gateway_execution_admitted(s,r,bad))
+
+ def test_active_state_without_activation_receipt_is_never_admitted(self):
+  r=request("F"); s=state(r,"active")
+  s["claim"]={"execution_id":"e1","generation":9,"slot_id":"dispatcher-00","claimed_at":"2026-09-23T00:00:00Z"}
+  lease={"state":"active","generation":9,"execution_id":"e1","task_id":"F","agent_id":"agent-a","slot_id":"dispatcher-00","request_blob_sha":"a"*40,"activation_projection_blob_sha":"b"*40}
+  self.assertFalse(wr.gateway_execution_admitted(s,r,lease))
+
 
 if __name__=="__main__": unittest.main()
