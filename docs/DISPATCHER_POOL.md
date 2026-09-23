@@ -46,8 +46,8 @@ A worker run by itself is never sufficient reason to re-arm.
 ## Re-arm ordering
 
 1. Persist a wake request.
-2. Re-arm the existing Execution Worker.
-3. Verify the scheduler update.
+2. Re-arm the existing Execution Worker by setting a future one-shot run and `is_enabled=true`.
+3. Verify the scheduler update shows the worker enabled with that future run.
 4. Persist the corresponding armed generation.
 
 If step 4 is lost, a duplicate re-arm is safe. If the worker never runs, the Watchdog detects an outstanding stale armed generation and re-arms it.
