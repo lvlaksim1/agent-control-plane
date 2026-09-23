@@ -368,3 +368,12 @@ def stale_armed_wake(wake:dict[str,Any],*,now:datetime,stale_after_minutes:int)-
         return True
     return now>=base.parse_time(wake["last_armed_at"])+timedelta(minutes=stale_after_minutes)
 
+def broker_generation_to_arm(wake:dict[str,Any],*,now:datetime,stale_after_minutes:int)->int|None:
+    """Return the wake generation the Broker should schedule on the Worker, if any."""
+    validate_wake_state(wake)
+    if wake["desired_generation"]>wake["armed_generation"]:
+        return wake["desired_generation"]
+    if stale_armed_wake(wake,now=now,stale_after_minutes=stale_after_minutes):
+        return wake["armed_generation"]
+    return None
+
