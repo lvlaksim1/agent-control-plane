@@ -242,3 +242,37 @@ def newly_ready_after_completion(registry:dict[str,Any],bundles:list[tuple],comp
         raise base.ControlPlaneError("completed task not found")
     before_ids={x["task_id"] for x in before}; after_ids={x["task_id"] for x in ready_tasks(registry,after,now)}
     return sorted(after_ids-before_ids)
+
+
+def gateway_execution_admitted(state:dict[str,Any],request:dict[str,Any],gateway_lease:dict[str,Any],*,require_active_state:bool=True)->bool:
+    """Deterministic target-write admission against the public two-phase gateway receipt."""
+    base.validate_state(state,request)
+    claim=state.get("claim")
+    if claim is None:
+        return False
+    if require_active_state and state.get("status")!="active":
+        return False
+    if not require_active_state and state.get("status") not in {"claimed","active"}:
+        return False
+    required_lease=["state","generation","execution_id","task_id","agent_id","slot_id","request_blob_sha","activation_projection_blob_sha"]
+    if any(k not in gateway_lease for k in required_lease):
+        return False
+    if gateway_lease.get("state")!="active":
+        return False
+    receipt=claim.get("activation_projection_blob_sha")
+    if not isinstance(receipt,str) or len(receipt)!=40:
+        return False
+    expected={
+      "task_id":request["task_id"],
+      "agent_id":request["target_agent_id"],
+      "execution_id":claim.get("execution_id"),
+      "generation":claim.get("generation"),
+      "slot_id":claim.get("slot_id"),
+      "request_blob_sha":state.get("request_blob_sha"),
+      "activation_projection_blob_sha":receipt,
+    }
+    return all(gateway_lease.get(k)==v for k,v in expected.items())
+
+def claimed_execution_ready(state:dict[str,Any],request:dict[str,Any],gateway_lease:dict[str,Any])->bool:
+    """Allows a later dispatcher to begin target reinstantiation only after a durable activation receipt."""
+    return state.get("status")=="claimed" and gateway_execution_admitted(state,request,gateway_lease,require_active_state=False)
