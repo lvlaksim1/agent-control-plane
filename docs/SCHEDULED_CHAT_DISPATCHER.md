@@ -7,38 +7,33 @@ The scheduler uses two infrastructure automations:
 
 Direct Owner↔agent conversations remain first-class and do not use scheduler transport. A wake changes only *when* work is reconsidered. It never grants authority.
 
-## Interactive-first execution gate
+## Per-task live-carrier gate
 
-Before any Broker or Worker progress, read and validate `runtime/execution-mode.json` using the deterministic schema/runtime rules represented by `schemas/execution-mode.schema.json` and `workflow_runtime.scheduler_admission_allowed`.
+There is no global interactive shutdown.
 
-Admission:
+For every candidate task, read and validate its `runtime.json#carrier` before scheduler claim or Phase-B target reinstantiation:
 
-- fresh `interactive` presence lease → scheduler progress denied;
-- expired `interactive` presence + `fallback_after_presence_expiry=true` → autonomous fallback admitted;
-- `autonomous` → scheduler progress admitted;
-- explicit `hold` → scheduler progress denied without expiry.
+- fresh `mode=live` carrier lease → this task is not scheduler-eligible;
+- expired `mode=live` with `fallback_after_expiry=true` → this task becomes scheduler-eligible;
+- `mode=hold` → this task remains blocked until its carrier is explicitly cleared;
+- `carrier=null` → normal scheduler eligibility.
 
-When admission is denied:
+A live carrier on TASK-A must never block unrelated TASK-B. The Broker and Worker remain operational while the Owner is online and may continue other autonomous work.
 
-- Broker MUST NOT arm or nudge the Execution Worker;
-- Worker MUST NOT claim a new task, reinstate a target agent, or perform target work;
-- durable task/handoff state remains in GitHub for the live runtime;
-- existing gateway partial state may only be inspected or fenced where required to prevent corruption.
-
-In a fresh interactive lease, inter-agent continuation is:
+For the task currently carried by the live Owner runtime, continuation is immediate and scheduler-free:
 
 ```
 live Owner runtime
       ↓
 persist task / engagement in GitHub
       ↓
-reinstantiate next persistent agent directly
+record/renew TASK-specific live carrier
+      ↓
+reinstantiate the next persistent agent directly
 in the same live runtime
 ```
 
-The presence lease exists so abrupt runtime loss cannot block autonomous fallback forever. An explicit Owner `hold` is the only indefinite scheduler block.
-
-While presence is fresh, the live carrier must keep the Broker parked at `presence.lease_until` rather than allowing periodic no-op Scheduled Task executions. Lease renewal and Broker parking are updated together before the prior expiry. The Execution Worker remains disabled/not due. Therefore a normal live Owner session consumes no autonomous execution slot; the first Broker execution occurs only after presence expires. If a Broker invocation arrives early because of platform timing, the admission gate still forces a no-op.
+If that live runtime disappears, its task becomes eligible after the carrier lease expires. This is a continuity fallback, not a scheduled delay in the interactive path.
 
 ## Why the relay exists
 
@@ -72,8 +67,8 @@ At every Execution Worker invocation use a **lease-first fast path**. A natural 
 2. validate wake state and capture the exact `armed_generation` that caused this invocation as `invocation_generation`; never treat a newer unarmed desired generation as served;
 3. if the gateway is `reserved` or `active`, fetch only the exact referenced task request/state/runtime/gates plus contract files needed to reconcile that execution;
 4. reconcile that exact execution before considering a new claim;
-5. when the gateway is idle, first inspect the captured wake's `last_request.request_key`; if it has the exact form `task-ready:<task_id>`, fetch and validate that exact task first and select it directly when it is still queued and READY;
-6. only if no exact wake-addressed READY task is available may the worker scan unrelated queued task states and compute READY deterministically;
+5. when the gateway is idle, first inspect the captured wake's `last_request.request_key`; if it has the exact form `task-ready:<task_id>`, fetch that task's request/state/runtime/gates, validate its per-task carrier, and select it only when it is queued, READY, and scheduler-eligible;
+6. only if no exact wake-addressed scheduler-eligible READY task is available may the worker scan other queued tasks, excluding only tasks with fresh live carriers or explicit holds;
 7. execute at most one bounded control-plane cycle.
 
 ## Authoritative gateway requests
@@ -177,7 +172,7 @@ Each Broker run uses a **wake-first fast path**:
 1. read `runtime/dispatcher-config.json`, `runtime/dispatcher-health.json`, scheduler topology and the authoritative gateway lease first;
 2. if `desired_generation > armed_generation`, immediately choose `desired_generation` for delivery without scanning unrelated tasks;
 3. if `armed_generation > served_generation` and that delivery is stale, immediately choose the same `armed_generation` for retry without scanning unrelated tasks;
-4. only when no unarmed/stale delivery exists, reconcile Registry and task/gate/runtime metadata to detect new READY work, due retry, partial reserved/active transitions or protocol-defined recovery;
+4. only when no unarmed/stale delivery exists, reconcile Registry and task/gate/runtime metadata to detect new scheduler-eligible READY work, due retry, partial reserved/active transitions or protocol-defined recovery; fresh live carriers and per-task holds exclude only their own tasks;
 5. create a deterministic durable wake if such work exists but no sufficient wake is pending, then choose that new generation;
 6. a stale `armed_generation > served_generation` **forces a new Worker scheduling attempt even if the Worker automation still reports enabled or carries an old/past DTSTART**; scheduler metadata is not proof of delivery;
 7. **before any scheduler call**, CAS-persist the chosen generation as `armed_generation` with a fresh `last_armed_at`; this durable delivery intent makes an immediate/catch-up Worker invocation safe;
