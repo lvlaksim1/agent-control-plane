@@ -1,5 +1,5 @@
 {
-  "schema_version": 6,
+  "schema_version": 7,
   "lease_minutes": 45,
   "runtime_loss_quarantine_after": 3,
   "one_target_agent_per_dispatch": true,
@@ -8,7 +8,7 @@
   "scheduler_topology": "runtime/dispatcher-pool.json",
   "wake_state": "runtime/dispatcher-health.json#wake",
   "automatic_execution_activation": "registry-per-agent-explicit",
-  "scheduler_model": "event-wake-broker-relay-v8-per-task-carrier",
+  "scheduler_model": "event-wake-broker-relay-v9-cas-live-carrier",
   "execution_worker": {
     "slot_id": "execution-worker",
     "automation_id": "6aac8b1d8888819180cc4af0c009669e",
@@ -47,13 +47,17 @@
   "private_lease_status": "legacy-foundation-reference-not-runtime-authority",
   "result_time_semantics": {
     "completed_at": "execution-local metadata; not authoritative for lifecycle ordering",
-    "lifecycle_order": "derive from durable Git commit chronology and gateway commits"
+    "lifecycle_order": "derive from durable Git commit chronology and gateway commits",
+    "live_result": "execution_mode=live binds result to carrier_id; lifecycle order is durable state/result chronology"
   },
   "task_carrier_policy": {
-    "metadata_location": "tasks/<task_id>/runtime.json#carrier",
+    "metadata_location": "tasks/<task_id>/state.json#carrier",
+    "ownership_update": "CAS on the same state.json projection used by scheduler claim",
     "scope": "per-task-or-work-chain",
-    "live_mode": "fresh live carrier lease excludes only that task from scheduler selection/execution",
-    "live_handoff": "while Owner is online, GitHub carries durable handoff and next agent is reinstantiated immediately in the same live runtime",
+    "live_acquire_precondition": "state=queued, claim=null; carrier CAS races against scheduler claim on the same state object",
+    "live_write_fence": "fresh matching carrier_id + queued/unclaimed state + no same-task reserved/active gateway ownership",
+    "live_completion": "evidence-backed live result terminalizes state=completed and clears carrier before lease expiry",
+    "live_handoff": "when Owner is online, GitHub carries durable handoff and next agent is reinstantiated immediately in the same live runtime",
     "unrelated_autonomous_tasks": "remain scheduler-eligible",
     "fallback_after_expiry": true,
     "explicit_hold": "per-task hold blocks only that task without expiry",
