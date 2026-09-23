@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-CC-ACP-AUDIT-001",
+  "status": "queued",
+  "request_digest": "sha256:4239597bc426856c9f0d8aaf056081896368dbe0d1c9c19114893e91a27ce5dd",
+  "attempt": 0,
+  "runtime_loss_count": 0,
+  "claim": null,
+  "latest_checkpoint": null,
+  "request_blob_sha": "0abcbeb127c9b5f72cb25236cb8f200978053cd5"
+}

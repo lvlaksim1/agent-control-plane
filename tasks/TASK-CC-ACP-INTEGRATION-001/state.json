@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-CC-ACP-INTEGRATION-001",
+  "status": "queued",
+  "request_digest": "sha256:a9c5924cb2af6a4301f8d50527036e65aaf090f3e764d25245f012b45af5313d",
+  "attempt": 0,
+  "runtime_loss_count": 0,
+  "claim": null,
+  "latest_checkpoint": null,
+  "request_blob_sha": "e1a6e532417edb89c9bb7b0d77088f87af8c2e4d"
+}
