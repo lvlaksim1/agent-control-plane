@@ -49,5 +49,31 @@
       "status": "completed",
       "claim": null
     }
+  },
+  "reservation": {
+    "gateway_claim_result": "reserved",
+    "target_writes_authorized": false,
+    "next_steps": [
+      "CAS task state to claimed and re-read",
+      "capture claimed state Git blob SHA",
+      "gateway activate with activation_projection_blob_sha",
+      "record activation_projection_blob_sha inside task claim and re-read",
+      "STOP this dispatcher invocation"
+    ]
+  },
+  "execution_admission": {
+    "required_gateway_state": "active",
+    "required_private_state_before_reinstantiation": "claimed",
+    "required_private_state_before_consequential_write": "active",
+    "required_match": [
+      "task_id",
+      "agent_id",
+      "execution_id",
+      "generation",
+      "slot_id",
+      "request_blob_sha",
+      "activation_projection_blob_sha"
+    ],
+    "same_invocation_as_reservation": false
   }
 }
