@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-CC-ACP-CLOSURE-001",
+  "status": "queued",
+  "request_digest": "sha256:07219d8a97e0fe02566d84993e15a7b454c865ae5ab0d1e3f4079dd230546f7c",
+  "attempt": 0,
+  "runtime_loss_count": 0,
+  "claim": null,
+  "latest_checkpoint": null,
+  "request_blob_sha": "519df970bdadc006db6e47f2cdcadaa153d9414a"
+}

@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-CC-ACP-CLOSURE-001",
+  "issuer_agent_id": "owner",
+  "target_agent_id": "context-capsule-project-manager",
+  "objective": "Consume the terminal independent Auditor result for TASK-CC-ACP-RETEST-001 and reconcile Context Capsule durable manager state. Persist ACP-CC-001 as CLOSED / High confidence, mark Master Plan item 19 independently verified, remove the now-terminal focused-retest gate from all primary working views, and preserve stable main/release/migration boundaries. This is a state-reconciliation closure only; do not change the audited Core mechanism.",
+  "authority_basis": {
+    "kind": "owner-directed-workflow",
+    "reference": "OWNER-2026-09-23-CONTINUE-ACP-CC-001 / WF-ACP-CC-001-REMEDIATION-001"
+  },
+  "scope": [
+    "lvlaksim1/context-capsule@v2-manager-runtime",
+    "manager BDI/current/handoff reconciliation only"
+  ],
+  "constraints": [
+    "Do not modify audited Core mechanism except if required to correct an objectively discovered defect.",
+    "Do not modify stable main or migrate consumers.",
+    "Preserve CCPM-001 through CCPM-004, CCPM-R001, and ACP-CC-001 closure exactly as established by Auditor evidence.",
+    "Do not publish stable v2.",
+    "Do not use Work."
+  ],
+  "target": {
+    "repository": "lvlaksim1/context-capsule",
+    "ref": "v2-manager-runtime"
+  },
+  "priority": "high",
+  "dependencies": [
+    {
+      "task_id": "TASK-CC-ACP-RETEST-001",
+      "relation": "depends_on"
+    }
+  ],
+  "workflow_id": "WF-ACP-CC-001-REMEDIATION-001",
+  "parent_task_id": "TASK-CC-ACP-RETEST-001",
+  "relation": "closure_of",
+  "retry_policy": {
+    "max_attempts": 2,
+    "backoff_minutes": [
+      0,
+      15
+    ],
+    "quarantine_on_exhaustion": true
+  },
+  "completion_contract": {
+    "required_evidence": [
+      {
+        "kind": "commit",
+        "minimum": 1
+      },
+      {
+        "kind": "ci",
+        "minimum": 1
+      }
+    ]
+  },
+  "created_at": "2026-09-23T13:36:30Z"
+}
