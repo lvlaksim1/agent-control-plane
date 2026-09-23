@@ -20,7 +20,7 @@ Wake transport state is stored under `runtime/dispatcher-health.json#wake`:
 
 - `desired_generation`: newest durable wake request;
 - `armed_generation`: newest generation successfully scheduled on the worker;
-- `served_generation`: newest generation actually reconciled by a worker run.
+- `served_generation`: newest armed generation actually reconciled by a worker run; it must never exceed `armed_generation`.
 
 A bounded `recent_request_keys` list suppresses replay of the same wake-producing transition.
 
