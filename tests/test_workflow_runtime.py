@@ -166,7 +166,7 @@ class LiveReturnTests(unittest.TestCase):
  def test_live_bounded_delegation_returns_to_caller(self):
   reg=registry(True,("supervisor","auditor"))
   r=self.delegated("AUD","supervisor","auditor")
-  pkg=wr.build_live_return_package(reg,r,self.live_result(r))
+  pkg=wr.build_live_return_package(reg,r,state(r,"completed"),self.live_result(r))
   self.assertEqual(pkg["kind"],"return_to_caller")
   self.assertEqual(pkg["agent_id"],"supervisor")
   self.assertEqual(pkg["completed_child_task_id"],"AUD")
@@ -176,7 +176,13 @@ class LiveReturnTests(unittest.TestCase):
   reg=registry(True,("manager","auditor"))
   r=request("LEGACY","auditor"); r["issuer_agent_id"]="manager"; r["authority_basis"]={"kind":"engagement","reference":"E1"}
   with self.assertRaises(cp.ControlPlaneError):
-   wr.build_live_return_package(reg,r,self.live_result(r))
+   wr.build_live_return_package(reg,r,state(r,"completed"),self.live_result(r))
+
+ def test_return_rejects_nonterminal_child(self):
+  reg=registry(True,("supervisor","auditor"))
+  r=self.delegated("AUD-NONTERM","supervisor","auditor")
+  with self.assertRaises(cp.ControlPlaneError):
+   wr.build_live_return_package(reg,r,state(r),self.live_result(r))
 
  def test_explicit_handoff_has_no_automatic_return(self):
   reg=registry(True,("manager","specialist"))
@@ -186,14 +192,14 @@ class LiveReturnTests(unittest.TestCase):
    "commitment_owner_agent_id":"specialist",
    "return_to_agent_id":None
   }
-  self.assertIsNone(wr.build_live_return_package(reg,r,self.live_result(r)))
+  self.assertIsNone(wr.build_live_return_package(reg,r,state(r,"completed"),self.live_result(r)))
 
  def test_nested_delegations_unwind_one_caller_at_a_time(self):
   reg=registry(True,("supervisor","manager","auditor"))
   manager_task=self.delegated("M","supervisor","manager",workflow="WF-NEST")
   audit_task=self.delegated("A","manager","auditor",parent="M",workflow="WF-NEST")
-  first=wr.build_live_return_package(reg,audit_task,self.live_result(audit_task))
-  second=wr.build_live_return_package(reg,manager_task,self.live_result(manager_task))
+  first=wr.build_live_return_package(reg,audit_task,state(audit_task,"completed"),self.live_result(audit_task))
+  second=wr.build_live_return_package(reg,manager_task,state(manager_task,"completed"),self.live_result(manager_task))
   self.assertEqual(first["agent_id"],"manager")
   self.assertEqual(first["parent_task_id"],"M")
   self.assertEqual(second["agent_id"],"supervisor")
