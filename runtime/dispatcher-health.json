@@ -27,7 +27,7 @@
       "requested_by": "ecosystem-supervisor",
       "requested_at": "2026-09-23T17:19:10Z"
     },
-    "last_armed_at": "2026-09-23T17:32:31Z",
+    "last_armed_at": "2026-09-23T17:37:58Z",
     "last_served_at": "2026-09-23T17:16:11Z",
     "last_worker_run_id": "execution-worker-generation-8-no-work"
   }
