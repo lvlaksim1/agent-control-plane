@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "task_id": "TASK-INT-PM-002",
-  "status": "claimed",
+  "status": "active",
   "request_digest": "sha256:fae2cfb252ef0cb0440086ee0351bc5188618e2c24d731459f674134671e5e7e",
   "attempt": 1,
   "runtime_loss_count": 1,
