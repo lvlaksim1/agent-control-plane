@@ -425,12 +425,95 @@ def claimed_execution_ready(state:dict[str,Any],request:dict[str,Any],gateway_le
     """Allows a later dispatcher to begin target reinstantiation only after a durable activation receipt."""
     return state.get("status")=="claimed" and gateway_execution_admitted(state,request,gateway_lease,require_active_state=False)
 
-def scheduler_ready_tasks(registry:dict[str,Any],bundles:list[tuple],now:datetime)->list[dict[str,Any]]:
-    """Scheduler READY resolution: skip only tasks whose own state carrier is live/held."""
+def expired_live_carrier_requires_result_reconciliation(state:dict[str,Any],request:dict[str,Any],*,now:datetime)->bool:
+    validate_state_carrier(state,request)
+    carrier=state.get("carrier")
+    if not isinstance(carrier,dict) or carrier.get("mode")!="live":
+        return False
+    if carrier.get("fallback_after_expiry") is not True:
+        return False
+    return now>=base.parse_time(carrier["lease_until"]) and state.get("status")=="queued" and state.get("claim") is None
+
+def repair_expired_live_completion(state:dict[str,Any],request:dict[str,Any],gates:list[dict[str,Any]],result:dict[str,Any]|None,*,result_committed_at:datetime|None,now:datetime)->dict[str,Any]|None:
+    """Repair a live success left between durable result write and terminal state CAS.
+
+    Invalid/mismatched/late results do not suppress legitimate expiry fallback.
+    """
+    validate_state_carrier(state,request)
+    if not expired_live_carrier_requires_result_reconciliation(state,request,now=now):
+        return None
+    if result is None or result_committed_at is None:
+        return None
+    carrier=state["carrier"]
+    lease_until=base.parse_time(carrier["lease_until"])
+    if result_committed_at>now or result_committed_at>lease_until:
+        return None
+    try:
+        validate_result(result,request)
+    except Exception:
+        return None
+    if result.get("execution_mode")!="live" or result.get("carrier_id")!=carrier.get("carrier_id"):
+        return None
+    if result.get("request_blob_sha")!=state.get("request_blob_sha"):
+        return None
+    for gate in gates:
+        try:
+            validate_gate(gate,request)
+        except Exception:
+            return None
+        if gate["status"]!="satisfied":
+            return None
+    ok,_=completion_satisfied(request,result)
+    if not ok:
+        return None
+    out=copy.deepcopy(state)
+    out["status"]="completed"
+    out["claim"]=None
+    out["carrier"]=None
+    return out
+
+def scheduler_preflight(registry:dict[str,Any],bundles:list[tuple],result_records:dict[str,Any],now:datetime)->tuple[list[dict[str,Any]],list[tuple[str,dict[str,Any]]]]:
+    """Resolve carrier state before scheduler claim.
+
+    For every expired live-carried queued task, result_records MUST contain an
+    explicit observation: None when result.json is absent, or
+    {"result": <dict>, "committed_at": <datetime>} when present.
+    """
     eligible=[]
+    repairs=[]
     for bundle in bundles:
         req,state,gates,meta=normalize(bundle)
         validate_task_runtime(meta,req)
+        if task_carrier_blocks_scheduler(state,req,now=now):
+            continue
+        if expired_live_carrier_requires_result_reconciliation(state,req,now=now):
+            task_id=req["task_id"]
+            if task_id not in result_records:
+                raise base.ControlPlaneError("expired live carrier requires explicit result reconciliation before scheduler claim")
+            record=result_records[task_id]
+            if record is not None:
+                if not isinstance(record,dict) or "result" not in record or "committed_at" not in record:
+                    raise base.ControlPlaneError("invalid result reconciliation record")
+                repaired=repair_expired_live_completion(
+                    state,req,gates,record["result"],
+                    result_committed_at=record["committed_at"],now=now
+                )
+                if repaired is not None:
+                    repairs.append((task_id,repaired))
+                    continue
+        eligible.append((req,state,gates,meta))
+    return ready_tasks(registry,eligible,now),repairs
+
+def scheduler_ready_tasks(registry:dict[str,Any],bundles:list[tuple],now:datetime)->list[dict[str,Any]]:
+    """READY resolution for tasks that do not require expired-live result reconciliation."""
+    for bundle in bundles:
+        req,state,_,meta=normalize(bundle)
+        validate_task_runtime(meta,req)
+        if expired_live_carrier_requires_result_reconciliation(state,req,now=now):
+            raise base.ControlPlaneError("expired live carrier requires result-aware scheduler_preflight")
+    eligible=[]
+    for bundle in bundles:
+        req,state,gates,meta=normalize(bundle)
         if task_carrier_blocks_scheduler(state,req,now=now):
             continue
         eligible.append((req,state,gates,meta))
