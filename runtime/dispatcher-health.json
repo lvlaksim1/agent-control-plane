@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "last_dispatch_at": "2026-09-23T03:29:44Z",
+  "last_dispatch_at": "2026-09-23T03:39:30Z",
   "last_slot_id": "probe-1",
-  "last_outcome": "blocked",
-  "last_observed_head": "aa88f107f163b5c96fa6c87074f4a986a23d3695",
-  "last_reason": "TASK-E2E-SUPERVISOR-002 is READY and request blob identity matches state.request_blob_sha, but mandatory CAS lease acquisition was blocked by the tool safety layer. Lease was re-read and remains idle generation 2; no task-state or target write was performed."
+  "last_outcome": "completed",
+  "last_observed_head": "ef800cbdcc32267e96faf63132a650c6ed83aa94",
+  "last_reason": "TASK-E2E-SUPERVISOR-002 completed under gateway lease generation 5. Claim was accepted, claimed/active/completed projections were durably verified, commit evidence 7b84024861604408a359dc681b300bd607cef55e was independently re-read, and exact release was accepted with gateway returning idle generation 6."
 }
