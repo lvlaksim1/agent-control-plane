@@ -22,7 +22,7 @@
     "automation_id": "6aac8b23fff4819180fb12916df071a8",
     "cadence": "hourly",
     "target_execution_allowed": false,
-    "stale_armed_after_minutes": 5,
+    "stale_armed_after_minutes": 1,
     "mode": "event-broker-plus-hourly-watchdog",
     "worker_arm_allowed": true,
     "self_schedule_update_while_running": false,
