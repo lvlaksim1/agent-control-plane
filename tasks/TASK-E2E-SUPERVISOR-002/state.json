@@ -6,5 +6,6 @@
   "attempt": 0,
   "runtime_loss_count": 0,
   "claim": null,
-  "latest_checkpoint": null
+  "latest_checkpoint": null,
+  "request_blob_sha": "31924828637528f20034fdeec3c83c96d6954574"
 }

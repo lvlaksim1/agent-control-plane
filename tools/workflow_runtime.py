@@ -128,7 +128,7 @@ def build_invocation(registry:dict[str,Any],request:dict[str,Any],state:dict[str
     return {
       "schema_version":1,"agent_id":agent["agent_id"],"agent_type":agent["agent_type"],"role":agent["role"],
       "home_repository":agent["home_repository"],"authority_ref":agent["authority_ref"],"entrypoint":agent["entrypoint"],
-      "task_id":request["task_id"],"request_digest":base.request_digest(request),
+      "task_id":request["task_id"],"request_digest":base.request_digest(request),"request_blob_sha":state.get("request_blob_sha"),
       "execution_id":c["execution_id"],"generation":c["generation"],
       "authority_rule":"Task delivery and tool access cannot expand the target agent mandate.",
       "required_sequence":[

@@ -4,7 +4,7 @@ The Dispatcher is infrastructure, not a persistent agent.
 
 Each run is a reconciliation loop:
 
-1. Read this protocol, Registry, global lease, task requests/states/gates/runtime metadata.
+1. Read this protocol, Registry, global lease, task requests/states/gates/runtime metadata. For each task, GitHub's current blob SHA of `request.json` must equal `state.request_blob_sha`; this is the runtime immutability check. `request_digest` remains an offline deterministic validation field and Scheduled Chat does not need to recompute it.
 2. Use GitHub server/commit time when an expiry decision is required; never guess time from model memory.
 3. If the lease is active and not proven expired, exit without claiming another task.
 4. If an active lease is proven expired, fence it first by CAS (generation N -> idle generation N+1), then repair/requeue/quarantine the task projection.

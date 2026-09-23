@@ -10,7 +10,8 @@
     "attempt",
     "runtime_loss_count",
     "claim",
-    "latest_checkpoint"
+    "latest_checkpoint",
+    "request_blob_sha"
   ],
   "properties": {
     "schema_version": {
@@ -55,6 +56,10 @@
         "string",
         "null"
       ]
+    },
+    "request_blob_sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
     }
   }
 }
