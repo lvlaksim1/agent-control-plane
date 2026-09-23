@@ -406,6 +406,20 @@ def complete_live_task(state:dict[str,Any],request:dict[str,Any],gates:list[dict
     out["carrier"]=None
     return out
 
+def complete_live_delegation(registry:dict[str,Any],state:dict[str,Any],request:dict[str,Any],gates:list[dict[str,Any]],result:dict[str,Any],gateway_lease:dict[str,Any],*,carrier_id:str,now:datetime)->tuple[dict[str,Any],dict[str,Any]|None]:
+    """Atomically define the live task terminal projection plus caller continuation package.
+
+    Direct Owner work may complete with no return package. Live bounded delegation
+    must yield exactly one deterministic return_to_caller package. Explicit handoff
+    yields no automatic return.
+    """
+    completed=complete_live_task(state,request,gates,result,gateway_lease,carrier_id=carrier_id,now=now)
+    package=build_live_return_package(registry,request,completed,result)
+    responsibility=request.get("responsibility")
+    if isinstance(responsibility,dict) and responsibility.get("mode")=="bounded_delegation" and package is None:
+        raise base.ControlPlaneError("bounded live delegation completed without caller continuation")
+    return completed,package
+
 def repair_completed_projection(lease:dict[str,Any],state:dict[str,Any],request:dict[str,Any],gates:list[dict[str,Any]],result:dict[str,Any])->dict[str,Any]:
     base.validate_lease(lease); base.validate_state(state,request)
     if lease["state"]!="idle":
