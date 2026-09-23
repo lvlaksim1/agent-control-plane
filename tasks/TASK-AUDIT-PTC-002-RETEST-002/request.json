@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-AUDIT-PTC-002-RETEST-002",
+  "issuer_agent_id": "ecosystem-supervisor",
+  "target_agent_id": "project-manager-auditor",
+  "objective": "Perform a focused independent read-only retest of PTC-002 only. Verify that an expired live-carried queued task cannot be executed again after a valid live success result was durably committed before carrier expiry but the runtime died before terminal state CAS. Verify result-aware scheduler preflight, exact request/blob/carrier/evidence binding, authoritative Git commit chronology, terminal state repair, legitimate fallback when result is absent/invalid/mismatched/post-expiry, and fail-closed behavior when a present result's authoritative commit chronology is unavailable. Publish a canonical retest report in the Auditor home repository.",
+  "authority_basis": {
+    "kind": "owner-directive",
+    "reference": "Owner instructed Supervisor to continue final remediation and focused retest of Master Plan 8.5 in the current live runtime."
+  },
+  "scope": [
+    "read-only retest of lvlaksim1/agent-control-plane@53c77b4104cc4bd726dd81bf96d8d1d39f942c14 for PTC-002 remediation",
+    "read-only inspection of current ACP Scheduled Task Worker prompt/topology for deployed rule consistency",
+    "read-only reconciliation with AUD-2026-09-24-PER-TASK-CARRIER-001-RETEST-001",
+    "Auditor own-home writes for engagement state and canonical report publication",
+    "execute immediately from GitHub handoff in the current live Owner-facing runtime; do not wait for a Scheduled Task"
+  ],
+  "constraints": [
+    "Do not modify agent-control-plane, supervisor, context-capsule, or gateway audited evidence.",
+    "Do not remediate PTC-002 inside the retest.",
+    "Preserve PTC-001/PTC-003 and EW-001..EW-003 closures absent direct contradictory evidence.",
+    "Do not globally disable, park, or reschedule Broker/Worker because Owner is online.",
+    "Do not activate Agent Catalog, Agent Factory, or item 20."
+  ],
+  "target": {
+    "repository": "lvlaksim1/agent-control-plane",
+    "ref": "53c77b4104cc4bd726dd81bf96d8d1d39f942c14"
+  },
+  "priority": "high",
+  "dependencies": [],
+  "workflow_id": "WF-PTC-002-RETEST-002",
+  "parent_task_id": "TASK-AUDIT-PER-TASK-CARRIER-RETEST-001",
+  "relation": "focused-retest",
+  "retry_policy": {
+    "max_attempts": 2,
+    "backoff_minutes": [
+      0,
+      15
+    ],
+    "quarantine_on_exhaustion": true
+  },
+  "completion_contract": {
+    "required_evidence": [
+      {
+        "kind": "audit",
+        "minimum": 1
+      }
+    ]
+  },
+  "created_at": "2026-09-23T22:46:48Z"
+}

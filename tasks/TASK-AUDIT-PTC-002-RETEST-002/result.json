@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-AUDIT-PTC-002-RETEST-002",
+  "request_digest": "sha256:4d9b2c828796988840d549c61718658948877148cb673d08d16b8b4ae4b24315",
+  "request_blob_sha": "2ae21802afa73c64a8a3c4d687206c456e6bc824",
+  "execution_mode": "live",
+  "carrier_id": "owner-live-runtime-ptc002-retest-002",
+  "outcome": "success",
+  "summary": "Focused PTC-002 retest completed: PTC-002 CLOSED / High confidence; PTC-001 and PTC-003 remain CLOSED; no new findings.",
+  "evidence": [
+    {
+      "kind": "audit",
+      "reference": "lvlaksim1/project-manager-auditor/audits/AUD-2026-09-24-PTC-002-RETEST-002.md@ce326eeffcd91f073264b99f7aebc2fb9cceac52",
+      "verified": true,
+      "verified_by": "project-manager-auditor",
+      "verified_at": "2026-09-23T22:52:25Z"
+    }
+  ],
+  "completed_at": "2026-09-23T22:52:25Z"
+}

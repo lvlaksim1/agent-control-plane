@@ -1,8 +1,36 @@
 {
-  "schema_version": 1,
-  "last_dispatch_at": "2026-09-23T12:56:18Z",
-  "last_slot_id": "dispatcher-12",
-  "last_outcome": "lease-fenced-before-target-execution",
-  "last_observed_head": "497d81a493476b417b355d7f91583ff997df4616",
-  "last_reason": "Recovered the exact generation-17 pre-projection claim for TASK-CC-ACP-INTEGRATION-001 and completed target Project Manager reinstantiation/authority validation, but the authoritative gateway lease advanced to idle generation 18 before any target write. No target change was performed. Repaired the private task projection back to queued with attempt unchanged for a later fresh claim."
+  "schema_version": 2,
+  "last_dispatch_at": "2026-09-23T17:56:15Z",
+  "last_slot_id": "execution-worker",
+  "last_outcome": "phase-b-release-confirmed-no-work",
+  "last_observed_head": "2f1e49e24b130f34461ad18d1720e2f5f7b25a6f",
+  "last_reason": "Canonical gateway release for TASK-EVENT-WAKE-RELAY-E2E-001-g45 is confirmed by idle gateway generation 46; the durable task is completed and no further work is required for invocation generation 10.",
+  "wake": {
+    "desired_generation": 11,
+    "armed_generation": 11,
+    "served_generation": 10,
+    "recent_request_keys": [
+      "validation-wake-001",
+      "validation-wake-002",
+      "validation-lost-wake-003",
+      "phase-b:TASK-EVENT-WAKE-E2E-001-g41",
+      "release-verify:TASK-EVENT-WAKE-E2E-001-g41",
+      "validation-watchdog-lost-wake-006",
+      "task-ready:TASK-AUDIT-EVENT-WAKE-001",
+      "validation-broker-relay-noop-008",
+      "task-ready:TASK-EVENT-WAKE-RELAY-E2E-001",
+      "phase-b:TASK-EVENT-WAKE-RELAY-E2E-001-g45",
+      "task-ready:TASK-AUDIT-EVENT-WAKE-002"
+    ],
+    "last_request": {
+      "generation": 11,
+      "request_key": "task-ready:TASK-AUDIT-EVENT-WAKE-002",
+      "reason": "task-ready",
+      "requested_by": "ecosystem-supervisor",
+      "requested_at": "2026-09-23T20:40:46Z"
+    },
+    "last_armed_at": "2026-09-23T22:42:51Z",
+    "last_served_at": "2026-09-23T17:56:15Z",
+    "last_worker_run_id": "execution-worker-generation-10-release-confirmed"
+  }
 }

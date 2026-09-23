@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "validation_id": "VAL-2026-09-23-ACP-EVENT-WAKE-RELAY-002",
+  "status": "superseded",
+  "architecture": "event-wake-broker-relay-v2",
+  "branch": "event-wake-redesign",
+  "owner_directive": "OWNER-2026-09-23-EVENT-WAKE-REDESIGN",
+  "supersedes": "VAL-2026-09-23-ACP-EVENT-WAKE-001",
+  "started_at": "2026-09-23T16:57:00Z",
+  "design_change": {
+    "observed_problem": "Live Scheduled Task execution showed that self-rearming the currently active one-shot Worker can be overwritten by its own completion, and expired one-shot re-enable may be delivered as catch-up rather than exact future DTSTART.",
+    "remediation": "Execution Worker is forbidden to schedule itself. A separate recurring Wake Broker / Hourly Watchdog is the sole role that arms the Worker. Worker continuations persist durable wake, nudge the Broker, then stop.",
+    "slots": 2
+  },
+  "completed_checks": [
+    {
+      "id": "STALE-AUDIT-SAFE-SUPERSEDE",
+      "status": "passed",
+      "evidence": [
+        "TASK-AUDIT-EVENT-WAKE-001 superseded before Auditor target execution",
+        "gateway execution TASK-AUDIT-EVENT-WAKE-001-g43 safely released; gateway idle generation 44"
+      ]
+    },
+    {
+      "id": "DETERMINISTIC-BROKER-LOGIC",
+      "status": "implemented",
+      "evidence": [
+        "tools/workflow_runtime.py broker_generation_to_arm",
+        "tests/test_workflow_runtime.py BrokerRelayTests"
+      ]
+    }
+  ],
+  "active_check": {
+    "id": "EVENT-PRODUCER-BROKER-WORKER-NOOP",
+    "wake_generation": 8,
+    "status": "failed-design-observation",
+    "expected": "event producer nudges recurring Broker; Broker alone arms Worker; Worker reconciles generation 8 with no target work and disables after one-shot completion",
+    "observed": "Broker ran at 17:04:36Z and scheduled Worker; Worker catch-up ran at 17:06:01Z before armed_generation was committed, so it could not serve generation 8."
+  },
+  "remaining": [
+    "live broker relay no-op",
+    "live Phase A to Broker to Phase B target execution",
+    "lost worker delivery recovery through hourly Broker",
+    "new pinned snapshot",
+    "independent Auditor review"
+  ],
+  "scaling_boundary": "Agent Catalog, Agent Factory and item 20 remain inactive",
+  "superseded_at": "2026-09-23T17:07:20Z",
+  "superseded_reason": "Live broker relay no-op validation showed that an enabled one-shot Worker can start as catch-up before the Broker performs its post-scheduler GitHub acknowledgement. Generation 8 remained desired=8/armed=7/served=7 while the Worker ran and disabled. The relay is safe but fast delivery was not acknowledged; candidate refined to outbox-style precommit before scheduler action.",
+  "successor_validation": "VAL-2026-09-23-ACP-EVENT-WAKE-RELAY-003"
+}

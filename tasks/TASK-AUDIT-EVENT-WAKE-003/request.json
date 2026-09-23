@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-AUDIT-EVENT-WAKE-003",
+  "issuer_agent_id": "ecosystem-supervisor",
+  "target_agent_id": "project-manager-auditor",
+  "objective": "Independently audit the corrected pre-scaling Agent Control Plane event-wake architecture and the newly codified interactive-first execution invariant. Primary target is lvlaksim1/agent-control-plane@4b5b7aa7ad45b385e5ba0f1e674e221cc31a838c. Verify Broker-relay wake delivery, Broker pre-arm ordering, durable generation/replay semantics, served<=armed<=desired fencing, two-phase Phase A/Phase B separation, gateway lease/fencing, completion-before-release, lost-wake recovery, exact-task fast paths, successful TASK-EVENT-WAKE-RELAY-E2E-001 evidence, explicit interactive execution-mode gating, and that autonomous scheduler transport is fallback-only while a live Owner runtime carries the work. Also verify the matching universal Project Manager/Service Agent Core interoperability amendment at lvlaksim1/context-capsule@a820397f7498c3e0f44f5e6416d9e158b0b3ae0d and Supervisor policy/state at lvlaksim1/supervisor@33992e50eb966b9820488ee4c0deb2c49e248e92. Publish the canonical audit report in the Auditor home repository. Do not modify audited targets.",
+  "authority_basis": {
+    "kind": "owner-directive",
+    "reference": "Owner instructed Supervisor to codify interactive-first routing and continue; prior instruction explicitly launched the event-wake audit."
+  },
+  "scope": [
+    "read-only audit of lvlaksim1/agent-control-plane@4b5b7aa7ad45b385e5ba0f1e674e221cc31a838c",
+    "read-only verification of lvlaksim1/context-capsule@a820397f7498c3e0f44f5e6416d9e158b0b3ae0d including Core binding to d5002dd7566396ae1ee8552b07cf2468e708a184 and successful hosted CI",
+    "read-only verification of lvlaksim1/supervisor@33992e50eb966b9820488ee4c0deb2c49e248e92 interactive-first policy/state",
+    "read-only verification of lvlaksim1/agent-control-plane-gateway@main lease evidence",
+    "read-only verification of current Scheduled Task topology/state showing ACP Execution Worker and Wake Broker disabled during the active Owner-present chain",
+    "read-only verification of TASK-EVENT-WAKE-RELAY-E2E-001 durable state/result and associated wake evidence",
+    "Auditor home-repository writes required to persist engagement state and publish the canonical report",
+    "control-plane audit task/result state only as handoff metadata; do not use ACP scheduler to execute this engagement"
+  ],
+  "constraints": [
+    "Interactive-first execution is mandatory for this engagement: do not use Scheduled Tasks, Wake Broker, or Execution Worker to carry the audit while the Owner is active in this live runtime.",
+    "Do not modify agent-control-plane, context-capsule, supervisor, or agent-control-plane-gateway audited evidence.",
+    "Do not remediate findings inside the audit engagement.",
+    "Do not change Auditor mandate or methodology.",
+    "Prefer deterministic verification; use behavioral probes only if required and keep audited targets read-only.",
+    "Do not activate Agent Catalog, Agent Factory, or item 20.",
+    "Do not use Work."
+  ],
+  "target": {
+    "repository": "lvlaksim1/agent-control-plane",
+    "ref": "4b5b7aa7ad45b385e5ba0f1e674e221cc31a838c"
+  },
+  "priority": "high",
+  "dependencies": [],
+  "workflow_id": "WF-AUDIT-EVENT-WAKE-003",
+  "parent_task_id": null,
+  "relation": "independent-verification",
+  "retry_policy": {
+    "max_attempts": 2,
+    "backoff_minutes": [
+      0,
+      15
+    ],
+    "quarantine_on_exhaustion": true
+  },
+  "completion_contract": {
+    "required_evidence": [
+      {
+        "kind": "audit",
+        "minimum": 1
+      }
+    ]
+  },
+  "created_at": "2026-09-23T21:05:00Z"
+}

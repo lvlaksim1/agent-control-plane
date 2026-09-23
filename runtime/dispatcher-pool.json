@@ -1,41 +1,56 @@
 {
-  "schema_version": 1,
-  "purpose": "shared Scheduled Chat dispatcher pool",
+  "schema_version": 4,
+  "purpose": "event-driven autonomous scheduler with per-task live-carrier isolation",
   "max_concurrent_target_executions": 1,
   "authoritative_lease": "lvlaksim1/agent-control-plane-gateway@main:runtime/lease.json",
-  "gateway_concurrency": {
-    "group": "agent-control-plane-global-lease",
-    "queue": "max"
+  "execution_worker": {
+    "slot_id": "execution-worker",
+    "automation_id": "6aac8b1d8888819180cc4af0c009669e",
+    "source_automation": "ACP Dispatcher :00",
+    "mode": "reusable-hourly-retargetable",
+    "normally_dormant": false,
+    "self_rearm_allowed": false,
+    "arm_owner": "wake-broker-watchdog",
+    "baseline_cadence": "hourly",
+    "idle_behavior": "health-and-gateway-fast-noop",
+    "interactive_behavior": "deprecated-global-mode; inspect per-task runtime carrier before claim/Phase-B"
   },
-  "slots": [
-    {
-      "slot_id": "dispatcher-00",
-      "minute": 0
-    },
-    {
-      "slot_id": "dispatcher-12",
-      "minute": 12
-    },
+  "watchdog": {
+    "slot_id": "wake-broker-watchdog",
+    "automation_id": "6aac8b23fff4819180fb12916df071a8",
+    "source_automation": "ACP Dispatcher :12",
+    "mode": "event-broker-plus-hourly-watchdog",
+    "interactive_behavior": "deprecated-global-mode; remain available for unrelated autonomous tasks"
+  },
+  "retired_polling_slots": [
     {
       "slot_id": "dispatcher-24",
-      "minute": 24
+      "automation_id": "6aac85d181108191bb95bfe823f18edc"
     },
     {
       "slot_id": "dispatcher-36",
-      "minute": 36
+      "automation_id": "6aac8b3402048191b4fc6d735aa8f38c"
     },
     {
       "slot_id": "dispatcher-48",
-      "minute": 48
+      "automation_id": "6aac8b15fd088191a4a2b169de4dd3be"
     }
   ],
-  "cadence": "each slot hourly; aggregate wake opportunity approximately every 12 minutes",
   "invariants": [
-    "slots are infrastructure workers, never agent identities",
-    "a slot may execute at most one target-agent task per invocation",
-    "active gateway lease prevents any second target-agent execution",
-    "pre-projection recovery continues the same execution token",
-    "scheduler tasks must never edit scheduler configuration themselves",
-    "direct Owner-agent conversations do not use this pool"
+    "Owner-active live runtime is the preferred carrier for the specific authorized task/chain it is carrying",
+    "GitHub remains the durable inter-agent handoff surface in both interactive and autonomous execution",
+    "a fresh per-task live carrier blocks scheduler execution only for that task/chain",
+    "Owner presence never globally disables, parks, or delays Broker/Worker",
+    "unrelated tasks without a fresh live carrier remain autonomously schedulable",
+    "an expired live carrier may fall back to scheduler when fallback_after_expiry=true",
+    "an explicit per-task hold blocks only that task without expiry",
+    "scheduler wake never grants authority",
+    "one worker invocation executes at most one target-agent task",
+    "active gateway lease prevents a second target-agent execution",
+    "phase A and phase B remain separate autonomous worker invocations",
+    "execution worker never schedules itself and preserves its hourly RRULE",
+    "only wake-broker-watchdog arms the execution worker",
+    "watchdog never performs target-agent work",
+    "direct Owner-agent conversations do not use scheduler transport"
   ]
 }

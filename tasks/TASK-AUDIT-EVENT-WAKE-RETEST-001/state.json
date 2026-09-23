@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-AUDIT-EVENT-WAKE-RETEST-001",
+  "status": "queued",
+  "request_digest": "sha256:dbda560ae44eb343a4c1c63f06cc9396636ac711af51239a7b0281aac213fd32",
+  "attempt": 0,
+  "runtime_loss_count": 0,
+  "claim": null,
+  "latest_checkpoint": null,
+  "request_blob_sha": "d15390f64c5c2127a62d72db3768dcef59712d5c"
+}

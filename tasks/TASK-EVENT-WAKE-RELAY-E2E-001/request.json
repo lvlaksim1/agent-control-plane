@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-EVENT-WAKE-RELAY-E2E-001",
+  "issuer_agent_id": "owner",
+  "target_agent_id": "ecosystem-supervisor",
+  "objective": "Validate the final event-wake Broker relay end-to-end: event producer durable wake -> Wake Broker precommit and Worker arm -> Execution Worker Phase A reserve/claim/activate then STOP -> durable Phase-B wake and Broker nudge -> Broker precommit next generation -> later Execution Worker Phase B -> ecosystem-supervisor reinstantiation and mandate validation -> verified result -> completed state -> gateway release. Do not modify any client project.",
+  "authority_basis": {
+    "kind": "owner-directive",
+    "reference": "OWNER-2026-09-23-EVENT-WAKE-REDESIGN"
+  },
+  "scope": [
+    "lvlaksim1/agent-control-plane@event-wake-redesign control-plane task/result/runtime state for TASK-EVENT-WAKE-RELAY-E2E-001",
+    "read-only verification of lvlaksim1/agent-control-plane-gateway@main authoritative lease",
+    "ecosystem-supervisor reinstantiation from lvlaksim1/supervisor@main for bounded verification only",
+    "Scheduled Task coordination only through ACP Wake Broker / Watchdog and ACP Execution Worker"
+  ],
+  "constraints": [
+    "Do not modify any client-project repository.",
+    "Do not modify agent mandates or authority boundaries.",
+    "Do not activate Agent Catalog, Agent Factory, or item 20.",
+    "Execution Worker must never schedule itself.",
+    "Only Wake Broker / Hourly Watchdog may arm Execution Worker.",
+    "Preserve Phase A reserve/claim/activate then STOP; target-agent reinstantiation must occur only in a later Execution Worker invocation.",
+    "Preserve immutable request digest/blob SHA, exact gateway fencing, and completion-before-release.",
+    "Do not use Work."
+  ],
+  "target": {
+    "repository": "lvlaksim1/agent-control-plane",
+    "ref": "event-wake-redesign"
+  },
+  "priority": "high",
+  "dependencies": [],
+  "workflow_id": "WF-EVENT-WAKE-RELAY-E2E-001",
+  "parent_task_id": null,
+  "relation": "scheduler-e2e",
+  "retry_policy": {
+    "max_attempts": 2,
+    "backoff_minutes": [
+      0,
+      15
+    ],
+    "quarantine_on_exhaustion": true
+  },
+  "completion_contract": {
+    "required_evidence": [
+      {
+        "kind": "state",
+        "minimum": 1
+      }
+    ]
+  },
+  "created_at": "2026-09-23T17:18:30Z"
+}

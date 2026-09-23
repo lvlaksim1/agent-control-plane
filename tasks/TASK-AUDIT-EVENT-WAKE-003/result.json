@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-AUDIT-EVENT-WAKE-003",
+  "request_digest": "sha256:b50ffd4b08ce27c246212bd7f89b77facb82a59f8b1f810e2c6a8eed2f862940",
+  "request_blob_sha": "656583efa25d2726df5ce041d8449eaa39d9f758",
+  "execution_id": "interactive-direct-audit-003",
+  "generation": 1,
+  "outcome": "success",
+  "summary": "Independent interactive-first audit completed directly in the live Owner runtime. Canonical report opened EW-001, EW-002, and EW-003; item 19.5 remains open pending remediation/retest.",
+  "evidence": [
+    {
+      "kind": "audit",
+      "reference": "lvlaksim1/project-manager-auditor@5f1d2a33e2164b60a378632cc05c643053e9fdd2:audits/AUD-2026-09-23-EVENT-WAKE-003.md",
+      "verified": true,
+      "verified_by": "ecosystem-supervisor",
+      "verified_at": "2026-09-23T21:14:00Z"
+    }
+  ],
+  "completed_at": "2026-09-23T21:14:00Z"
+}

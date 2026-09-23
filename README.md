@@ -8,7 +8,7 @@ This repository is **infrastructure, not an agent**. It has no Project Manager o
 
 Intended execution model:
 
-ordinary ChatGPT Scheduled Task -> GitHub control plane -> reinstate target persistent agent from its home Context Capsule -> execute bounded task -> persist evidence
+durable wake -> reusable Scheduled Chat Execution Worker -> GitHub control plane -> reinstate target persistent agent from its home Context Capsule -> execute bounded task -> persist evidence
 
 Constraints:
 
@@ -20,7 +20,7 @@ Constraints:
 - persistent agent identity and memory remain in each agent's home repository;
 - tool access never grants authority.
 
-This repository has proven items 1–17, including real persistent Project Manager → Auditor routing. Direct Owner↔agent conversations remain first-class and do not use dispatcher slots.
+This repository has proven items 1–19, including real persistent Project Manager → Auditor routing and Context Capsule interoperability. Direct Owner↔agent conversations remain first-class and do not use scheduler transport.
 
 ## Implemented foundation
 
@@ -87,3 +87,28 @@ The strict workflow `WF-REAL-PM-AUDITOR-002` proved:
 - the Project Manager can issue a dependent task directly to the persistent Auditor without Supervisor as issuer;
 - the Auditor can reinstate independently, verify the PM evidence read-only, publish its own audit evidence, and complete under the same fencing rules;
 - direct human project-development chat remains separate from autonomous dispatcher latency.
+
+
+## Event-driven scheduler redesign
+
+The Owner-authorized pre-scaling scheduler redesign is complete and independently verified.
+
+Production topology:
+
+- one reusable **hourly-anchored Execution Worker** whose next occurrence may be retargeted earlier by the Broker;
+- one **Wake Broker / Hourly Watchdog** that performs event delivery and recovery but never target-agent work;
+- durable wake generations in `runtime/dispatcher-health.json#wake`;
+- the authoritative gateway lease, two-phase activation, fencing, immutable task intent, mandate validation, and evidence-backed completion remain preserved;
+- interactive-first routing is task-scoped: a fresh live carrier blocks only its own scheduler-visible task/chain, while unrelated autonomous work remains schedulable;
+- expired live-carried queued work is result-aware before fallback: an exact valid pre-expiry live success repairs to terminal completed state instead of executing twice, while absent/invalid/mismatched/post-expiry results retain legitimate fallback and unverifiable result chronology fails closed.
+
+Independent closure evidence:
+
+- EW-001..EW-003 — CLOSED / High confidence;
+- PTC-001..PTC-003 — CLOSED / High confidence;
+- final focused report: `project-manager-auditor/audits/AUD-2026-09-24-PTC-002-RETEST-002.md`.
+
+See `docs/DISPATCHER_POOL.md` and `docs/SCHEDULED_CHAT_DISPATCHER.md`.
+
+Agent Catalog / Agent Factory / item 20 remain out of scope and inactive.
+

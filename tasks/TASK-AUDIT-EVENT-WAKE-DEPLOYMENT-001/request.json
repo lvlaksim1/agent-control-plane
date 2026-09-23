@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-AUDIT-EVENT-WAKE-DEPLOYMENT-001",
+  "issuer_agent_id": "ecosystem-supervisor",
+  "target_agent_id": "project-manager-auditor",
+  "objective": "Perform a final narrow independent read-only deployment acceptance of ACP interactive scheduler parking at lvlaksim1/agent-control-plane@fccd8d3fc53705b3fadb6df6565be3314ae735a1. Verify that a fresh Owner-facing presence lease causes no Scheduled Task execution before lease expiry, the live carrier parks the Broker at presence.lease_until, Worker remains disabled/not due, an early Broker invocation still no-ops, and lack of lease renewal permits the Broker to fire at expiry and enter autonomous fallback. Verify the new helper/test/config/docs are coherent and preserve the EW-001..EW-003 closures from AUD-2026-09-23-EVENT-WAKE-003-RETEST-001. Verify current live scheduler state matches this deployment model. Publish a canonical acceptance report. Do not modify audited targets.",
+  "authority_basis": {
+    "kind": "owner-directive",
+    "reference": "Owner required slots be used only when Owner is absent; Supervisor identified and implemented lease-expiry Broker parking before final item 19.5 closure."
+  },
+  "scope": [
+    "read-only target lvlaksim1/agent-control-plane@fccd8d3fc53705b3fadb6df6565be3314ae735a1",
+    "read-only current ACP Scheduled Task state",
+    "preservation of EW-001..EW-003 closure only where touched by parking change",
+    "Auditor own-home report/state writes",
+    "GitHub durable handoff only; no ACP scheduler execution for this audit"
+  ],
+  "constraints": [
+    "Direct interactive-first retest only; do not use Scheduled Tasks to execute the audit.",
+    "Do not remediate target.",
+    "Do not broaden into Catalog/Factory/item20.",
+    "Do not treat ACP hosted runner non-allocation as successful test evidence.",
+    "Do not use Work."
+  ],
+  "target": {
+    "repository": "lvlaksim1/agent-control-plane",
+    "ref": "fccd8d3fc53705b3fadb6df6565be3314ae735a1"
+  },
+  "priority": "high",
+  "dependencies": [
+    {
+      "task_id": "TASK-AUDIT-EVENT-WAKE-RETEST-001",
+      "relation": "depends_on"
+    }
+  ],
+  "workflow_id": "WF-AUDIT-EVENT-WAKE-003",
+  "parent_task_id": "TASK-AUDIT-EVENT-WAKE-RETEST-001",
+  "relation": "deployment_acceptance_after",
+  "retry_policy": {
+    "max_attempts": 2,
+    "backoff_minutes": [
+      0,
+      15
+    ],
+    "quarantine_on_exhaustion": true
+  },
+  "completion_contract": {
+    "required_evidence": [
+      {
+        "kind": "audit",
+        "minimum": 1
+      }
+    ]
+  },
+  "created_at": "2026-09-23T21:31:00Z"
+}

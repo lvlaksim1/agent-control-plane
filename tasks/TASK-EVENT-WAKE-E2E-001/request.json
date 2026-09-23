@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-EVENT-WAKE-E2E-001",
+  "issuer_agent_id": "owner",
+  "target_agent_id": "ecosystem-supervisor",
+  "objective": "Validate the redesigned event-wake scheduler end-to-end across Phase A and later-invocation Phase B without modifying any client project. Reconcile the exact gateway activation receipt, reinstate ecosystem-supervisor, verify the event-wake control-plane state, and complete this task with verified state evidence.",
+  "authority_basis": {
+    "kind": "owner-directive",
+    "reference": "OWNER-2026-09-23-EVENT-WAKE-REDESIGN"
+  },
+  "scope": [
+    "lvlaksim1/agent-control-plane@event-wake-redesign control-plane task/result state for TASK-EVENT-WAKE-E2E-001",
+    "read-only verification of lvlaksim1/agent-control-plane@event-wake-redesign runtime scheduler state",
+    "read-only verification of lvlaksim1/agent-control-plane-gateway@main authoritative lease"
+  ],
+  "constraints": [
+    "Do not modify any client-project repository.",
+    "Do not modify agent mandates, authority boundaries, or Agent Catalog/Factory state.",
+    "Do not perform a target mutation other than protocol-required control-plane state/result/checkpoint writes for this test.",
+    "Preserve Phase A activation then STOP; target-agent reinstantiation must occur only in a later Execution Worker invocation.",
+    "Do not use Work."
+  ],
+  "target": {
+    "repository": "lvlaksim1/agent-control-plane",
+    "ref": "event-wake-redesign"
+  },
+  "priority": "high",
+  "dependencies": [],
+  "workflow_id": "WF-EVENT-WAKE-E2E-001",
+  "parent_task_id": null,
+  "relation": "scheduler-e2e",
+  "retry_policy": {
+    "max_attempts": 2,
+    "backoff_minutes": [
+      0,
+      15
+    ],
+    "quarantine_on_exhaustion": true
+  },
+  "completion_contract": {
+    "required_evidence": [
+      {
+        "kind": "state",
+        "minimum": 1
+      }
+    ]
+  },
+  "created_at": "2026-09-23T16:12:00Z"
+}

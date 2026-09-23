@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-AUDIT-PER-TASK-CARRIER-001",
+  "issuer_agent_id": "ecosystem-supervisor",
+  "target_agent_id": "project-manager-auditor",
+  "objective": "Perform a fresh narrow independent read-only acceptance of the corrected task-scoped interactive-first carrier model. Verify that live Owner presence never globally disables, parks, or delays ACP scheduler infrastructure; a fresh live carrier blocks scheduler claim/Phase-B only for its own task/chain; unrelated autonomous tasks remain scheduler-eligible; expiry enables fallback only for the affected task when declared; per-task hold remains isolated; online inter-agent handoff uses GitHub durable state plus immediate same-runtime reinstantiation without waiting for Scheduled Tasks; and existing Broker/Worker wake fencing, two-phase execution, gateway fencing, and prior EW-001..EW-003 closures remain preserved where touched. Also verify matching Project Manager/Service Agent Core propagation and hosted CI evidence. Publish a canonical acceptance report in the Auditor home repository. Do not modify audited targets.",
+  "authority_basis": {
+    "kind": "owner-directive",
+    "reference": "Owner clarified on 2026-09-24 that online inter-agent communication must be immediate through GitHub, while Scheduled Tasks remain available for unrelated autonomous work; Owner instructed Supervisor to implement and continue."
+  },
+  "scope": [
+    "read-only audit of lvlaksim1/agent-control-plane@5d4fab45e62026d6e26ee565a3085a4674befe3e",
+    "read-only audit of lvlaksim1/context-capsule@909ca47b77752b93ee2476ad35b51d5e28409b7a including Core binding bef230aa1599fd7ef04beabc19c6e42f5c1ec5e7 and successful hosted CI run 35925204701",
+    "read-only verification of lvlaksim1/supervisor@522adc98275be899f9e2a4c34dd933b98e6ab587 task-scoped policy/state",
+    "read-only verification of lvlaksim1/agent-control-plane-gateway@main and current ACP Scheduled Task topology/state",
+    "read-only preservation check for prior EW-001..EW-003 closures where the corrected carrier model touches those mechanisms",
+    "Auditor own-home writes required to persist engagement state and publish the canonical report",
+    "GitHub durable handoff for this audit with a fresh task-scoped live carrier; do not use ACP Scheduled Tasks to execute this audit while that carrier is fresh"
+  ],
+  "constraints": [
+    "Do not globally disable, park, delay, or reschedule ACP Broker/Worker merely because the Owner is online.",
+    "Do not modify agent-control-plane, context-capsule, supervisor, or agent-control-plane-gateway audited evidence.",
+    "Do not remediate findings inside the audit engagement.",
+    "Do not change Auditor mandate or methodology.",
+    "Execute this audit immediately in the current live Owner-facing runtime from GitHub handoff; do not wait for a Scheduled Task.",
+    "Do not activate Agent Catalog, Agent Factory, or item 20.",
+    "Do not use Work."
+  ],
+  "target": {
+    "repository": "lvlaksim1/agent-control-plane",
+    "ref": "5d4fab45e62026d6e26ee565a3085a4674befe3e"
+  },
+  "priority": "high",
+  "dependencies": [],
+  "workflow_id": "WF-PER-TASK-CARRIER-001",
+  "parent_task_id": null,
+  "relation": "independent-deployment-acceptance",
+  "retry_policy": {
+    "max_attempts": 2,
+    "backoff_minutes": [
+      0,
+      15
+    ],
+    "quarantine_on_exhaustion": true
+  },
+  "completion_contract": {
+    "required_evidence": [
+      {
+        "kind": "audit",
+        "minimum": 1
+      }
+    ]
+  },
+  "created_at": "2026-09-23T21:56:17Z"
+}

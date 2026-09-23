@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-EVENT-WAKE-E2E-002",
+  "status": "superseded",
+  "request_digest": "sha256:a3f72701487d7c171a5baeeb186ce2b42ba54f930879b17a5876b49447ebd41b",
+  "attempt": 0,
+  "runtime_loss_count": 0,
+  "claim": null,
+  "latest_checkpoint": null,
+  "request_blob_sha": "8c62aab939fd1fa5dedad159abd65c17cba36d06",
+  "superseded_by": "TASK-EVENT-WAKE-RELAY-E2E-001",
+  "superseded_reason": "An equivalent v3 E2E task was already durably queued first and already owns wake generation 9; keep exactly one live validation task."
+}

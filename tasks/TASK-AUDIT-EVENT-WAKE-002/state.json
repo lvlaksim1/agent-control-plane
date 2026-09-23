@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-AUDIT-EVENT-WAKE-002",
+  "status": "superseded",
+  "request_digest": "sha256:e621a09fe9a5b33dba64390cdf904f98ca4bf37b5688c7b0376b74bd14e5126e",
+  "attempt": 0,
+  "runtime_loss_count": 0,
+  "claim": null,
+  "latest_checkpoint": null,
+  "request_blob_sha": "bea8abd15dd3f42ce2ec38f9860057b684c4540a",
+  "superseded_by": "TASK-AUDIT-EVENT-WAKE-003",
+  "superseded_reason": "Owner interactive-first correction and material target changes after pinned snapshot 00bb04a2; replacement audit must cover corrected ACP snapshot plus Core interoperability amendment."
+}

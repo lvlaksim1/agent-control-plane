@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-AUDIT-EVENT-WAKE-002",
+  "issuer_agent_id": "ecosystem-supervisor",
+  "target_agent_id": "project-manager-auditor",
+  "objective": "Independently audit the Owner-authorized Agent Control Plane event-wake Broker-relay scheduler redesign at pinned snapshot 00bb04a2a3a1bbd0d59edce0bd6f8afd0681ccab. Verify the two-slot Execution Worker + Wake Broker/Hourly Watchdog topology, Broker pre-arm ordering, durable wake generation/replay semantics, served<=armed<=desired fencing, two-phase Phase A/Phase B separation, authoritative gateway lease/fencing, completion-before-release, lost-wake recovery, exact-task fast paths, direct Owner-agent entry preservation, and the completed live E2E evidence TASK-EVENT-WAKE-RELAY-E2E-001. Publish the canonical audit report in the Auditor home repository. Do not modify the audited target.",
+  "authority_basis": {
+    "kind": "owner-directive",
+    "reference": "OWNER-2026-09-23-EVENT-WAKE-AUDIT-002 / user explicitly instructed: launch audit"
+  },
+  "scope": [
+    "read-only audit of lvlaksim1/agent-control-plane@00bb04a2a3a1bbd0d59edce0bd6f8afd0681ccab",
+    "read-only verification of lvlaksim1/agent-control-plane-gateway@main lease evidence",
+    "read-only verification of current Scheduled Task topology for ACP Execution Worker, ACP Wake Broker / Watchdog, and retired polling slots",
+    "read-only verification of TASK-EVENT-WAKE-RELAY-E2E-001 durable state/result and related wake evidence",
+    "Auditor own home-repository writes required to publish and persist the canonical audit result",
+    "control-plane task/result/checkpoint state required for this audit task"
+  ],
+  "constraints": [
+    "Do not modify lvlaksim1/agent-control-plane audited snapshot or main.",
+    "Do not modify lvlaksim1/agent-control-plane-gateway.",
+    "Do not remediate findings inside the audit engagement.",
+    "Do not change Auditor mandate or methodology.",
+    "Prefer deterministic verification and live read-only scheduler evidence; use a behavioral probe only if methodology requires it and keep the audited target read-only.",
+    "Do not activate Agent Catalog, Agent Factory, or item 20.",
+    "Do not use Work."
+  ],
+  "target": {
+    "repository": "lvlaksim1/agent-control-plane",
+    "ref": "00bb04a2a3a1bbd0d59edce0bd6f8afd0681ccab"
+  },
+  "priority": "high",
+  "dependencies": [],
+  "workflow_id": "WF-AUDIT-EVENT-WAKE-002",
+  "parent_task_id": null,
+  "relation": "independent-verification",
+  "retry_policy": {
+    "max_attempts": 2,
+    "backoff_minutes": [
+      0,
+      15
+    ],
+    "quarantine_on_exhaustion": true
+  },
+  "completion_contract": {
+    "required_evidence": [
+      {
+        "kind": "audit",
+        "minimum": 1
+      }
+    ]
+  },
+  "created_at": "2026-09-23T20:36:00Z"
+}

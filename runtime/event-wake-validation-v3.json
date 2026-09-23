@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "validation_id": "VAL-2026-09-23-ACP-EVENT-WAKE-RELAY-003",
+  "status": "superseded",
+  "architecture": "event-wake-broker-relay-v3",
+  "branch": "event-wake-redesign",
+  "owner_directive": "OWNER-2026-09-23-EVENT-WAKE-REDESIGN",
+  "supersedes": [
+    "VAL-2026-09-23-ACP-EVENT-WAKE-001",
+    "VAL-2026-09-23-ACP-EVENT-WAKE-RELAY-002"
+  ],
+  "started_at": "2026-09-23T17:07:20Z",
+  "design_change": {
+    "observed_problem": "Broker can successfully enable the one-shot Worker, but the platform may deliver it as immediate catch-up before a post-scheduler repository acknowledgement is committed.",
+    "remediation": "Use outbox-style delivery precommit: Broker persists armed_generation and last_armed_at before enabling the Worker. No post-scheduler repository write is required for correctness. Failed/lost scheduling leaves armed>served and is retried as the same generation after stale timeout.",
+    "slots": 2
+  },
+  "inherited_evidence": [
+    "Gateway globally serializes target execution and is idle generation 44 after safe supersede of stale audit.",
+    "Execution Worker self-rearm is forbidden.",
+    "Only Wake Broker / Hourly Watchdog may arm Execution Worker.",
+    "served_generation <= armed_generation <= desired_generation is enforced.",
+    "three former polling slots remain disabled."
+  ],
+  "active_check": {
+    "id": "FINAL-BROKER-RELAY-E2E",
+    "task_id": "TASK-EVENT-WAKE-RELAY-E2E-001",
+    "status": "running",
+    "phase": "generation-9-worker-delivery",
+    "expected": "Worker Phase A -> durable Phase-B wake -> Broker arm next generation -> later Worker Phase B -> verified completion -> gateway release"
+  },
+  "remaining": [
+    "live Phase A -> durable wake -> Broker -> later Phase B target execution on v3",
+    "controlled stale/lost Worker delivery recovery using the same precommitted generation",
+    "restore production stale-delivery timeout",
+    "pin final snapshot",
+    "independent Auditor review"
+  ],
+  "scaling_boundary": "Agent Catalog, Agent Factory and item 20 remain inactive",
+  "next_check": {
+    "id": "OUTBOX-BROKER-PHASE-A-B-E2E",
+    "task_id": "TASK-EVENT-WAKE-RELAY-E2E-001",
+    "status": "phase-a-retry-same-generation",
+    "wake_generation": 9,
+    "evidence": [
+      "TASK-EVENT-WAKE-RELAY-E2E-001 is queued and READY.",
+      "Durable wake generation 9 was requested for this task.",
+      "Wake Broker precommitted armed_generation=9 at 2026-09-23T17:20:29Z before scheduling the Worker.",
+      "Execution Worker was armed as an enabled one-shot occurrence for Phase A; direct producer-to-Worker arming was not used.",
+      "First gen9 Worker occurrence completed without durable Phase-A state; no gateway lease was taken and task stayed queued, so retry remains safe.",
+      "Worker fast path now routes exact `task-ready:<task_id>` wake before any broad queue scan."
+    ],
+    "expected": "Worker Phase A reserve/claim/activate and STOP -> Phase-B durable wake -> Broker arm -> later Worker Phase B reinstates ecosystem-supervisor and completes -> gateway release."
+  },
+  "updated_at": "2026-09-23T17:40:00Z",
+  "notes": [
+    "TASK-EVENT-WAKE-E2E-002 was superseded before execution because TASK-EVENT-WAKE-RELAY-E2E-001 had already been durably queued first and already owned wake generation 9.",
+    "Generation 9 first Worker delivery at 17:22:54Z produced no durable Phase-A transition. Diagnostic remediation: add wake-addressed exact-task fast path and temporarily reduce stale retry timeout from 5 to 1 minute so Broker retries the SAME precommitted generation 9. This is a controlled validation setting and must be restored to production 20 minutes before final pin."
+  ],
+  "completed_checks": [
+    {
+      "id": "OUTBOX-BROKER-WORKER-NOOP",
+      "status": "passed",
+      "evidence": [
+        "002424653a9c532d7835fdfcd62e9e793e3be9a0 precommitted generation 8 before scheduling",
+        "4a3daf1a31c778d9239e04ea953697e609075776 Worker served generation 8",
+        "desired=armed=served=8; gateway idle generation 44; Worker one-shot disabled"
+      ]
+    },
+    {
+      "id": "FINAL-E2E-BROKER-ARM-9",
+      "status": "running",
+      "evidence": [
+        "9d2302ee1f04b88a06a75565dbf63d8681649719 wake state desired=9 armed=9 served=8",
+        "Broker precommitted generation 9 at 2026-09-23T17:20:29Z",
+        "Worker scheduled as one-shot for 2026-09-23T17:22:43Z"
+      ]
+    }
+  ],
+  "superseded_by": "VAL-2026-09-23-ACP-EVENT-WAKE-RELAY-004",
+  "supersede_reason": "Live gen9 validation proved repeated reuse of an already-fired one-shot Worker can leave an enabled occurrence undelivered past DTSTART. v4 keeps the Worker as a recurring hourly scheduler anchor and lets Broker retarget its next occurrence while preserving RRULE."
+}

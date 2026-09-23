@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-AUDIT-PER-TASK-CARRIER-001",
+  "status": "completed",
+  "request_digest": "sha256:77b16997e68f413db2048d3c25991646ba78d5b63c58cc6448d31ed67baca714",
+  "attempt": 0,
+  "runtime_loss_count": 0,
+  "claim": null,
+  "latest_checkpoint": null,
+  "request_blob_sha": "09893bdfa973ef1b1b573aa3ad1b7bacb0f5e355",
+  "carrier": null
+}

@@ -140,4 +140,240 @@ class WorkflowRuntimeTests(unittest.TestCase):
   self.assertFalse(wr.gateway_execution_admitted(s,r,lease))
 
 
+class TaskCarrierTests(unittest.TestCase):
+ def live_state(self,task_id="A",lease_until="2026-09-23T00:30:00Z"):
+  r=request(task_id); s=state(r)
+  s["carrier"]={
+   "mode":"live","carrier_id":"owner-live-runtime-test","set_by":"owner",
+   "reason":"live owner chain","heartbeat_at":"2026-09-23T00:00:00Z",
+   "lease_until":lease_until,"fallback_after_expiry":True
+  }
+  return r,s
+
+ def idle_gateway(self):
+  return {"state":"idle","generation":46,"execution_id":None,"task_id":None,"agent_id":None,"slot_id":None}
+
+ def live_result(self,r,s,carrier_id="owner-live-runtime-test"):
+  return {
+   "schema_version":1,"task_id":r["task_id"],"request_digest":cp.request_digest(r),
+   "request_blob_sha":s["request_blob_sha"],"execution_mode":"live","carrier_id":carrier_id,
+   "outcome":"success","summary":"done",
+   "evidence":[{"kind":"commit","reference":"live-result-commit","verified":True,"verified_by":"agent-a","verified_at":"2026-09-23T00:04:00Z"}],
+   "completed_at":"2026-09-23T00:04:00Z"
+  }
+
+ def test_live_carrier_blocks_only_its_task(self):
+  a,sa=self.live_state("A")
+  b=request("B"); sb=state(b)
+  ready=wr.scheduler_ready_tasks(registry(),[(a,sa,[],wr.task_runtime("A")),(b,sb,[],wr.task_runtime("B"))],NOW)
+  self.assertEqual([x["task_id"] for x in ready],["B"])
+
+ def test_expired_live_carrier_requires_result_aware_preflight(self):
+  a,sa=self.live_state("A","2026-09-23T00:05:00Z")
+  later=datetime(2026,9,23,0,10,tzinfo=timezone.utc)
+  with self.assertRaises(cp.ControlPlaneError):
+   wr.scheduler_ready_tasks(registry(),[(a,sa,[],wr.task_runtime("A"))],later)
+
+ def test_expired_live_carrier_without_result_allows_autonomous_fallback(self):
+  a,sa=self.live_state("A","2026-09-23T00:05:00Z")
+  later=datetime(2026,9,23,0,10,tzinfo=timezone.utc)
+  ready,repairs=wr.scheduler_preflight(
+   registry(),[(a,sa,[],wr.task_runtime("A"))],{"A":None},later
+  )
+  self.assertEqual([x["task_id"] for x in ready],["A"])
+  self.assertEqual(repairs,[])
+
+ def test_durable_live_result_repairs_partial_completion_before_fallback(self):
+  a,sa=self.live_state("A","2026-09-23T00:05:00Z")
+  later=datetime(2026,9,23,0,10,tzinfo=timezone.utc)
+  record={"result":self.live_result(a,sa),"committed_at":datetime(2026,9,23,0,4,tzinfo=timezone.utc)}
+  ready,repairs=wr.scheduler_preflight(
+   registry(),[(a,sa,[],wr.task_runtime("A"))],{"A":record},later
+  )
+  self.assertEqual(ready,[])
+  self.assertEqual(len(repairs),1)
+  task_id,repaired=repairs[0]
+  self.assertEqual(task_id,"A")
+  self.assertEqual(repaired["status"],"completed")
+  self.assertIsNone(repaired["claim"])
+  self.assertIsNone(repaired["carrier"])
+
+ def test_mismatched_live_result_does_not_suppress_legitimate_fallback(self):
+  a,sa=self.live_state("A","2026-09-23T00:05:00Z")
+  later=datetime(2026,9,23,0,10,tzinfo=timezone.utc)
+  bad=self.live_result(a,sa,carrier_id="other-live-runtime")
+  ready,repairs=wr.scheduler_preflight(
+   registry(),[(a,sa,[],wr.task_runtime("A"))],
+   {"A":{"result":bad,"committed_at":datetime(2026,9,23,0,4,tzinfo=timezone.utc)}},later
+  )
+  self.assertEqual([x["task_id"] for x in ready],["A"])
+  self.assertEqual(repairs,[])
+
+ def test_late_live_result_does_not_suppress_legitimate_fallback(self):
+  a,sa=self.live_state("A","2026-09-23T00:05:00Z")
+  later=datetime(2026,9,23,0,10,tzinfo=timezone.utc)
+  ready,repairs=wr.scheduler_preflight(
+   registry(),[(a,sa,[],wr.task_runtime("A"))],
+   {"A":{"result":self.live_result(a,sa),"committed_at":datetime(2026,9,23,0,6,tzinfo=timezone.utc)}},later
+  )
+  self.assertEqual([x["task_id"] for x in ready],["A"])
+  self.assertEqual(repairs,[])
+
+ def test_present_live_result_without_commit_time_fails_closed(self):
+  a,sa=self.live_state("A","2026-09-23T00:05:00Z")
+  later=datetime(2026,9,23,0,10,tzinfo=timezone.utc)
+  with self.assertRaises(cp.ControlPlaneError):
+   wr.scheduler_preflight(
+    registry(),[(a,sa,[],wr.task_runtime("A"))],
+    {"A":{"result":self.live_result(a,sa),"committed_at":None}},later
+   )
+
+ def test_hold_blocks_only_its_task_without_expiry(self):
+  a=request("A"); sa=state(a)
+  sa["carrier"]={
+   "mode":"hold","carrier_id":"owner-hold-A","set_by":"owner","reason":"pause task A",
+   "heartbeat_at":None,"lease_until":None,"fallback_after_expiry":False
+  }
+  b=request("B"); sb=state(b)
+  ready=wr.scheduler_ready_tasks(registry(),[(a,sa,[],wr.task_runtime("A")),(b,sb,[],wr.task_runtime("B"))],datetime(2027,1,1,tzinfo=timezone.utc))
+  self.assertEqual([x["task_id"] for x in ready],["B"])
+
+ def test_live_carrier_acquisition_is_same_state_projection_as_scheduler_claim(self):
+  r=request("A"); s=state(r)
+  acquired=wr.set_live_task_carrier(s,r,carrier_id="owner-live-runtime-test",set_by="owner",reason="live handoff",now=NOW,lease_minutes=45)
+  self.assertEqual(acquired["status"],"queued")
+  self.assertIsNone(acquired["claim"])
+  self.assertEqual(acquired["carrier"]["carrier_id"],"owner-live-runtime-test")
+  claimed=state(r,"claimed"); claimed["claim"]={"execution_id":"e1","generation":2,"slot_id":"execution-worker","claimed_at":"2026-09-23T00:00:00Z"}
+  with self.assertRaises(cp.ControlPlaneError):
+   wr.set_live_task_carrier(claimed,r,carrier_id="owner-live-runtime-test",set_by="owner",reason="too late",now=NOW)
+
+ def test_live_carrier_can_be_renewed_by_same_carrier(self):
+  r,s=self.live_state("A")
+  later=datetime(2026,9,23,0,10,tzinfo=timezone.utc)
+  renewed=wr.renew_live_task_carrier(s,r,carrier_id="owner-live-runtime-test",now=later,lease_minutes=45)
+  self.assertEqual(renewed["carrier"]["heartbeat_at"],"2026-09-23T00:10:00Z")
+  self.assertEqual(renewed["carrier"]["lease_until"],"2026-09-23T00:55:00Z")
+
+ def test_other_carrier_cannot_renew(self):
+  r,s=self.live_state("A")
+  with self.assertRaises(cp.ControlPlaneError):
+   wr.renew_live_task_carrier(s,r,carrier_id="other-runtime",now=NOW,lease_minutes=45)
+
+ def test_claimed_phase_b_blocked_only_for_live_carried_task(self):
+  r,s=self.live_state("F")
+  s["status"]="claimed"
+  s["claim"]={"execution_id":"e1","generation":9,"slot_id":"execution-worker","claimed_at":"2026-09-23T00:00:00Z","activation_projection_blob_sha":"b"*40}
+  lease={"state":"active","generation":9,"execution_id":"e1","task_id":"F","agent_id":"agent-a","slot_id":"execution-worker","request_blob_sha":"a"*40,"activation_projection_blob_sha":"b"*40}
+  self.assertFalse(wr.scheduler_claimed_execution_ready(s,r,lease,now=NOW))
+  later=datetime(2026,9,23,0,31,tzinfo=timezone.utc)
+  self.assertTrue(wr.scheduler_claimed_execution_ready(s,r,lease,now=later))
+
+ def test_live_fence_rejects_same_task_gateway_ownership(self):
+  r,s=self.live_state("A")
+  gateway={"state":"reserved","task_id":"A"}
+  self.assertFalse(wr.live_carrier_fence_valid(s,r,gateway,carrier_id="owner-live-runtime-test",now=NOW))
+
+ def test_live_completion_terminalizes_before_expiry(self):
+  r,s=self.live_state("A")
+  result=self.live_result(r,s)
+  completed=wr.complete_live_task(s,r,[],result,self.idle_gateway(),carrier_id="owner-live-runtime-test",now=datetime(2026,9,23,0,10,tzinfo=timezone.utc))
+  self.assertEqual(completed["status"],"completed")
+  self.assertIsNone(completed["carrier"])
+  ready=wr.scheduler_ready_tasks(registry(),[(r,completed,[],wr.task_runtime("A"))],datetime(2026,9,23,1,0,tzinfo=timezone.utc))
+  self.assertEqual(ready,[])
+
+ def test_expired_live_carrier_cannot_complete(self):
+  r,s=self.live_state("A","2026-09-23T00:05:00Z")
+  later=datetime(2026,9,23,0,10,tzinfo=timezone.utc)
+  with self.assertRaises(cp.ControlPlaneError):
+   wr.complete_live_task(s,r,[],self.live_result(r,s),self.idle_gateway(),carrier_id="owner-live-runtime-test",now=later)
+
+
+class EventWakeTests(unittest.TestCase):
+ def wake(self):
+  return {
+   "desired_generation":0,
+   "armed_generation":0,
+   "served_generation":0,
+   "recent_request_keys":[],
+   "last_request":None,
+   "last_armed_at":None,
+   "last_served_at":None,
+   "last_worker_run_id":None
+  }
+
+ def test_wake_request_is_replay_safe(self):
+  w=self.wake()
+  w,created=wr.request_wake(w,request_key="task-ready:A",reason="task-ready",requested_by="owner",now=NOW)
+  self.assertTrue(created)
+  self.assertEqual(w["desired_generation"],1)
+  again,created=wr.request_wake(w,request_key="task-ready:A",reason="task-ready",requested_by="owner",now=NOW)
+  self.assertFalse(created)
+  self.assertEqual(again["desired_generation"],1)
+
+ def test_wake_arm_and_serve_generations(self):
+  w,_=wr.request_wake(self.wake(),request_key="phase-b:A:e1:9",reason="phase-b",requested_by="execution-worker",now=NOW)
+  self.assertTrue(wr.wake_needs_arming(w))
+  w=wr.mark_wake_armed(w,generation=1,now=NOW)
+  self.assertFalse(wr.wake_needs_arming(w))
+  self.assertTrue(wr.wake_pending(w))
+  w=wr.mark_wake_served(w,generation=1,now=NOW,worker_run_id="run-1")
+  self.assertFalse(wr.wake_pending(w))
+  self.assertEqual(w["served_generation"],1)
+
+ def test_stale_armed_wake_is_detected_for_watchdog(self):
+  w,_=wr.request_wake(self.wake(),request_key="ready:B",reason="task-ready",requested_by="pm",now=NOW)
+  w=wr.mark_wake_armed(w,generation=1,now=NOW)
+  later=datetime(2026,9,23,0,21,tzinfo=timezone.utc)
+  self.assertTrue(wr.stale_armed_wake(w,now=later,stale_after_minutes=20))
+  w=wr.mark_wake_served(w,generation=1,now=later,worker_run_id="run-2")
+  self.assertFalse(wr.stale_armed_wake(w,now=later,stale_after_minutes=20))
+
+ def test_invalid_generation_transitions_are_rejected(self):
+  w=self.wake()
+  with self.assertRaises(cp.ControlPlaneError):
+   wr.mark_wake_armed(w,generation=1,now=NOW)
+  w,_=wr.request_wake(w,request_key="x",reason="ready",requested_by="owner",now=NOW)
+  with self.assertRaises(cp.ControlPlaneError):
+   wr.mark_wake_served(w,generation=1,now=NOW,worker_run_id="run-unarmed")
+  w=wr.mark_wake_armed(w,generation=1,now=NOW)
+  w,_=wr.request_wake(w,request_key="y",reason="newer-ready",requested_by="owner",now=NOW)
+  self.assertEqual((w["desired_generation"],w["armed_generation"]),(2,1))
+  with self.assertRaises(cp.ControlPlaneError):
+   wr.mark_wake_served(w,generation=2,now=NOW,worker_run_id="run-too-new")
+
+
+class BrokerRelayTests(unittest.TestCase):
+ def wake(self):
+  return {
+   "desired_generation":0,
+   "armed_generation":0,
+   "served_generation":0,
+   "recent_request_keys":[],
+   "last_request":None,
+   "last_armed_at":None,
+   "last_served_at":None,
+   "last_worker_run_id":None
+  }
+
+ def test_broker_arms_newest_unarmed_desired_generation(self):
+  w,_=wr.request_wake(self.wake(),request_key="relay:new",reason="ready",requested_by="issuer",now=NOW)
+  self.assertEqual(wr.broker_generation_to_arm(w,now=NOW,stale_after_minutes=20),1)
+
+ def test_broker_rearms_same_stale_generation_without_increment(self):
+  w,_=wr.request_wake(self.wake(),request_key="relay:stale",reason="ready",requested_by="issuer",now=NOW)
+  w=wr.mark_wake_armed(w,generation=1,now=NOW)
+  later=datetime(2026,9,23,0,21,tzinfo=timezone.utc)
+  self.assertEqual(wr.broker_generation_to_arm(w,now=later,stale_after_minutes=20),1)
+  self.assertEqual(w["desired_generation"],1)
+
+ def test_broker_noops_after_generation_is_served(self):
+  w,_=wr.request_wake(self.wake(),request_key="relay:done",reason="ready",requested_by="issuer",now=NOW)
+  w=wr.mark_wake_armed(w,generation=1,now=NOW)
+  w=wr.mark_wake_served(w,generation=1,now=NOW,worker_run_id="run-1")
+  later=datetime(2026,9,23,0,30,tzinfo=timezone.utc)
+  self.assertIsNone(wr.broker_generation_to_arm(w,now=later,stale_after_minutes=20))
+
+
 if __name__=="__main__": unittest.main()

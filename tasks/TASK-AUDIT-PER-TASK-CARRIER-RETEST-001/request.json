@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-AUDIT-PER-TASK-CARRIER-RETEST-001",
+  "issuer_agent_id": "ecosystem-supervisor",
+  "target_agent_id": "project-manager-auditor",
+  "objective": "Perform a focused independent read-only retest of PTC-001, PTC-002, and PTC-003 only. Verify the exact remediation mechanisms: atomic/race-safe live-carrier acquisition against scheduler claim on the same task ownership projection; evidence-backed live completion that terminalizes scheduler-visible work before carrier expiry and permits fallback only after nonterminal runtime loss; and universal Core wording/validation that makes the carrier mandatory for scheduler-visible interactive work while preserving direct Owner work with no scheduler-visible projection. Preserve previously closed EW-001..EW-003 unless new evidence directly contradicts those mechanisms. Publish a canonical retest report in the Auditor home repository.",
+  "authority_basis": {
+    "kind": "owner-directive",
+    "reference": "Owner instructed Supervisor to continue remediation/retest of Master Plan 8.5 and requested immediate GitHub-based inter-agent handoff while Owner is online."
+  },
+  "scope": [
+    "read-only retest of lvlaksim1/agent-control-plane@708a8ab6d4ac97c10d10021e47e7e845051a99bb for PTC-001/PTC-002 remediation",
+    "read-only retest of lvlaksim1/context-capsule Core implementation snapshot 8fc2da36f0a77d0f2a16508a8f7ee97fe1baa754 and binding b1e5ef97235400f8f3f98aae109a687b2643be30 for PTC-003",
+    "verify Context Capsule hosted CI run 35928337273 on head 7d3c21770e439e7957185fda263d1636ec77e653",
+    "read-only reconciliation with AUD-2026-09-24-PER-TASK-CARRIER-001",
+    "Auditor own-home writes for engagement state and canonical report publication",
+    "execute immediately in current live Owner-facing runtime from GitHub handoff; do not wait for Scheduled Task"
+  ],
+  "constraints": [
+    "Do not modify agent-control-plane, context-capsule, supervisor, or gateway audited evidence.",
+    "Do not remediate findings inside the retest.",
+    "Do not reopen EW-001..EW-003 absent direct contradictory evidence.",
+    "Do not globally disable, park, or reschedule Broker/Worker because Owner is online.",
+    "Do not activate Agent Catalog, Agent Factory, or item 20."
+  ],
+  "target": {
+    "repository": "lvlaksim1/agent-control-plane",
+    "ref": "708a8ab6d4ac97c10d10021e47e7e845051a99bb"
+  },
+  "priority": "high",
+  "dependencies": [],
+  "workflow_id": "WF-PER-TASK-CARRIER-RETEST-001",
+  "parent_task_id": "TASK-AUDIT-PER-TASK-CARRIER-001",
+  "relation": "focused-retest",
+  "retry_policy": {
+    "max_attempts": 2,
+    "backoff_minutes": [
+      0,
+      15
+    ],
+    "quarantine_on_exhaustion": true
+  },
+  "completion_contract": {
+    "required_evidence": [
+      {
+        "kind": "audit",
+        "minimum": 1
+      }
+    ]
+  },
+  "created_at": "2026-09-23T22:30:18Z"
+}

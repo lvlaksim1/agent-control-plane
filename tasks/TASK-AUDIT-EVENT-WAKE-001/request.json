@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-AUDIT-EVENT-WAKE-001",
+  "issuer_agent_id": "ecosystem-supervisor",
+  "target_agent_id": "project-manager-auditor",
+  "objective": "Independently audit the Owner-authorized Agent Control Plane event-wake scheduler redesign at pinned snapshot cbd57a0661f1a5d25c89088b3966bb1116640796. Verify the one reusable Execution Worker plus hourly Watchdog topology, durable wake generation and replay semantics, served<=armed<=desired fencing, two-phase Phase A/Phase B separation, authoritative gateway lease/fencing, completion-before-release, lost-wake recovery, Watchdog read-only scheduling boundary, direct Owner-agent entry preservation, and that Agent Catalog/Factory/item 20 remain inactive. Publish the canonical audit report in the Auditor home repository. Do not modify the audited target.",
+  "authority_basis": {
+    "kind": "owner-directive",
+    "reference": "OWNER-2026-09-23-EVENT-WAKE-REDESIGN / independent review required"
+  },
+  "scope": [
+    "read-only audit of lvlaksim1/agent-control-plane@cbd57a0661f1a5d25c89088b3966bb1116640796",
+    "read-only verification of lvlaksim1/agent-control-plane-gateway@main lease evidence and relevant scheduler state",
+    "read-only verification of current Scheduled Task topology for ACP Execution Worker, ACP Hourly Watchdog, and retired polling slots",
+    "Auditor own home-repository writes required to publish and persist the canonical audit result",
+    "control-plane task/result/checkpoint state required for this audit task"
+  ],
+  "constraints": [
+    "Do not modify lvlaksim1/agent-control-plane audited snapshot or main.",
+    "Do not modify lvlaksim1/agent-control-plane-gateway.",
+    "Do not remediate findings inside the audit engagement.",
+    "Do not change Auditor mandate or methodology.",
+    "Prefer deterministic verification and live read-only scheduler evidence; no hidden behavioral probe is required unless deterministic evidence is insufficient.",
+    "Do not activate Agent Catalog, Agent Factory, or item 20.",
+    "Do not use Work."
+  ],
+  "target": {
+    "repository": "lvlaksim1/agent-control-plane",
+    "ref": "cbd57a0661f1a5d25c89088b3966bb1116640796"
+  },
+  "priority": "high",
+  "dependencies": [],
+  "workflow_id": "WF-AUDIT-EVENT-WAKE-001",
+  "parent_task_id": null,
+  "relation": "independent-verification",
+  "retry_policy": {
+    "max_attempts": 2,
+    "backoff_minutes": [
+      0,
+      15
+    ],
+    "quarantine_on_exhaustion": true
+  },
+  "completion_contract": {
+    "required_evidence": [
+      {
+        "kind": "audit",
+        "minimum": 1
+      }
+    ]
+  },
+  "created_at": "2026-09-23T16:41:37Z"
+}

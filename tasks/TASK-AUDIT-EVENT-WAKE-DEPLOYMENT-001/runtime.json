@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-AUDIT-EVENT-WAKE-DEPLOYMENT-001",
+  "failure_count": 0,
+  "retry_not_before": null,
+  "last_failure": null,
+  "carrier": null
+}

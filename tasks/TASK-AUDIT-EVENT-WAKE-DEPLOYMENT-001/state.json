@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-AUDIT-EVENT-WAKE-DEPLOYMENT-001",
+  "status": "superseded",
+  "request_digest": "sha256:ab25d5071d02816a502fcc44bf503b7f5317939990ab6cb6d016085f6413a2fe",
+  "attempt": 0,
+  "runtime_loss_count": 0,
+  "claim": null,
+  "latest_checkpoint": null,
+  "request_blob_sha": "b8cdf1b6d7551f0917e5dc8f664b5538f75e9f88",
+  "superseded_by": "TASK-AUDIT-PER-TASK-CARRIER-001",
+  "superseded_reason": "Owner clarified that online presence must not globally park or disable scheduler infrastructure; audit target based on global Broker parking is obsolete."
+}

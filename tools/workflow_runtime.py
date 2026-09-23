@@ -11,8 +11,35 @@ GATE_TYPES={"owner_decision","authority","external_dependency","audit","release_
 GATE_STATUSES={"waiting","satisfied","cancelled"}
 DEFAULT_POLICY={"max_attempts":3,"backoff_minutes":[0,15,60],"quarantine_on_exhaustion":True}
 
+TASK_CARRIER_MODES={"live","hold"}
+
 def task_runtime(task_id:str)->dict[str,Any]:
     return {"schema_version":1,"task_id":task_id,"failure_count":0,"retry_not_before":None,"last_failure":None}
+
+def validate_task_carrier(carrier:dict[str,Any]|None)->None:
+    if carrier is None:
+        return
+    if not isinstance(carrier,dict):
+        raise base.ControlPlaneError("task carrier must be an object or null")
+    base.require_fields(carrier,["mode","carrier_id","set_by","reason","heartbeat_at","lease_until","fallback_after_expiry"],"task carrier")
+    if carrier["mode"] not in TASK_CARRIER_MODES:
+        raise base.ControlPlaneError("invalid task carrier mode")
+    if not carrier["carrier_id"] or not carrier["set_by"] or not carrier["reason"]:
+        raise base.ControlPlaneError("task carrier identity/provenance must be non-empty")
+    if not isinstance(carrier["fallback_after_expiry"],bool):
+        raise base.ControlPlaneError("task carrier fallback_after_expiry must be boolean")
+    if carrier["mode"]=="live":
+        if not carrier["heartbeat_at"] or not carrier["lease_until"]:
+            raise base.ControlPlaneError("live task carrier requires heartbeat_at and lease_until")
+        heartbeat=base.parse_time(carrier["heartbeat_at"])
+        lease_until=base.parse_time(carrier["lease_until"])
+        if lease_until<=heartbeat:
+            raise base.ControlPlaneError("live task carrier lease must expire after heartbeat")
+    else:
+        if carrier["heartbeat_at"] is not None or carrier["lease_until"] is not None:
+            raise base.ControlPlaneError("hold task carrier must not expire")
+        if carrier["fallback_after_expiry"] is not False:
+            raise base.ControlPlaneError("hold task carrier cannot allow expiry fallback")
 
 def validate_task_runtime(meta:dict[str,Any],request:dict[str,Any])->None:
     base.require_fields(meta,["schema_version","task_id","failure_count","retry_not_before","last_failure"],"task runtime")
@@ -22,6 +49,89 @@ def validate_task_runtime(meta:dict[str,Any],request:dict[str,Any])->None:
         raise base.ControlPlaneError("failure_count must be non-negative")
     if meta["retry_not_before"] is not None:
         base.parse_time(meta["retry_not_before"])
+
+def validate_state_carrier(state:dict[str,Any],request:dict[str,Any])->None:
+    base.validate_state(state,request)
+    validate_task_carrier(state.get("carrier"))
+
+def task_carrier_blocks_scheduler(state:dict[str,Any],request:dict[str,Any],*,now:datetime)->bool:
+    validate_state_carrier(state,request)
+    carrier=state.get("carrier")
+    if carrier is None:
+        return False
+    if carrier["mode"]=="hold":
+        return True
+    lease_until=base.parse_time(carrier["lease_until"])
+    if now < lease_until:
+        return True
+    return carrier["fallback_after_expiry"] is not True
+
+def set_live_task_carrier(state:dict[str,Any],request:dict[str,Any],*,carrier_id:str,set_by:str,reason:str,now:datetime,lease_minutes:int=45)->dict[str,Any]:
+    """Prepare one CAS update on state.json. Claim-vs-carrier races resolve on the same Git object."""
+    validate_state_carrier(state,request)
+    if state["status"]!="queued" or state.get("claim") is not None:
+        raise base.ControlPlaneError("live carrier can be acquired only from unclaimed queued state")
+    if not carrier_id or not set_by or not reason or not isinstance(lease_minutes,int) or lease_minutes<1:
+        raise base.ControlPlaneError("invalid live task carrier parameters")
+    current=state.get("carrier")
+    if current is not None:
+        if current["mode"]=="hold":
+            raise base.ControlPlaneError("explicit task hold must be cleared before live acquisition")
+        if now < base.parse_time(current["lease_until"]) and current["carrier_id"]!=carrier_id:
+            raise base.ControlPlaneError("task already has a fresh live carrier")
+    out=copy.deepcopy(state)
+    out["carrier"]={
+      "mode":"live",
+      "carrier_id":carrier_id,
+      "set_by":set_by,
+      "reason":reason,
+      "heartbeat_at":base.format_time(now),
+      "lease_until":base.format_time(now+timedelta(minutes=lease_minutes)),
+      "fallback_after_expiry":True
+    }
+    validate_state_carrier(out,request)
+    return out
+
+def renew_live_task_carrier(state:dict[str,Any],request:dict[str,Any],*,carrier_id:str,now:datetime,lease_minutes:int=45)->dict[str,Any]:
+    validate_state_carrier(state,request)
+    if state["status"]!="queued" or state.get("claim") is not None:
+        raise base.ControlPlaneError("only unclaimed queued live task can renew carrier")
+    carrier=state.get("carrier")
+    if not isinstance(carrier,dict) or carrier.get("mode")!="live":
+        raise base.ControlPlaneError("task has no live carrier")
+    if carrier.get("carrier_id")!=carrier_id:
+        raise base.ControlPlaneError("task carrier mismatch")
+    if now>=base.parse_time(carrier["lease_until"]):
+        raise base.ControlPlaneError("expired live task carrier cannot be renewed without reconciliation")
+    out=copy.deepcopy(state)
+    out["carrier"]["heartbeat_at"]=base.format_time(now)
+    out["carrier"]["lease_until"]=base.format_time(now+timedelta(minutes=lease_minutes))
+    return out
+
+def clear_task_carrier(state:dict[str,Any],request:dict[str,Any])->dict[str,Any]:
+    validate_state_carrier(state,request)
+    if state.get("claim") is not None:
+        raise base.ControlPlaneError("cannot clear carrier from claimed task")
+    out=copy.deepcopy(state)
+    out["carrier"]=None
+    return out
+
+def live_carrier_fence_valid(state:dict[str,Any],request:dict[str,Any],gateway_lease:dict[str,Any],*,carrier_id:str,now:datetime)->bool:
+    """Direct-live execution fence. Re-read state and gateway before consequential writes."""
+    try:
+        validate_state_carrier(state,request)
+    except Exception:
+        return False
+    if state.get("status")!="queued" or state.get("claim") is not None:
+        return False
+    carrier=state.get("carrier")
+    if not isinstance(carrier,dict) or carrier.get("mode")!="live" or carrier.get("carrier_id")!=carrier_id:
+        return False
+    if now>=base.parse_time(carrier["lease_until"]):
+        return False
+    if gateway_lease.get("task_id")==request["task_id"] and gateway_lease.get("state") in {"reserved","active"}:
+        return False
+    return True
 
 def retry_policy(request:dict[str,Any])->dict[str,Any]:
     policy=copy.deepcopy(request.get("retry_policy") or DEFAULT_POLICY)
@@ -162,16 +272,14 @@ def build_invocation(registry:dict[str,Any],request:dict[str,Any],state:dict[str
       ]
     }
 
-def validate_result(result:dict[str,Any],request:dict[str,Any])->None:
-    base.require_fields(result,["schema_version","task_id","request_digest","request_blob_sha","execution_id","generation","outcome","summary","evidence","completed_at"],"result")
+def _validate_result_common(result:dict[str,Any],request:dict[str,Any])->None:
+    base.require_fields(result,["schema_version","task_id","request_digest","request_blob_sha","outcome","summary","evidence","completed_at"],"result")
     if result["schema_version"]!=1 or result["task_id"]!=request["task_id"] or result["outcome"]!="success":
         raise base.ControlPlaneError("invalid success result")
     if result["request_digest"]!=base.request_digest(request):
         raise base.ControlPlaneError("result/request digest mismatch")
     if not isinstance(result["request_blob_sha"],str) or len(result["request_blob_sha"])!=40:
         raise base.ControlPlaneError("result must bind to request blob")
-    if not isinstance(result["generation"],int) or result["generation"]<1 or not result["execution_id"]:
-        raise base.ControlPlaneError("result must bind to execution fence")
     base.parse_time(result["completed_at"])
     if not isinstance(result["evidence"],list):
         raise base.ControlPlaneError("evidence must be list")
@@ -180,6 +288,20 @@ def validate_result(result:dict[str,Any],request:dict[str,Any])->None:
         if e["verified"] is not True or not e["verified_by"]:
             raise base.ControlPlaneError("evidence is not verified")
         base.parse_time(e["verified_at"])
+
+def validate_result(result:dict[str,Any],request:dict[str,Any])->None:
+    _validate_result_common(result,request)
+    mode=result.get("execution_mode","autonomous")
+    if mode=="autonomous":
+        base.require_fields(result,["execution_id","generation"],"autonomous result")
+        if not isinstance(result["generation"],int) or result["generation"]<1 or not result["execution_id"]:
+            raise base.ControlPlaneError("autonomous result must bind to execution fence")
+    elif mode=="live":
+        base.require_fields(result,["carrier_id"],"live result")
+        if not isinstance(result["carrier_id"],str) or not result["carrier_id"]:
+            raise base.ControlPlaneError("live result must bind to carrier")
+    else:
+        raise base.ControlPlaneError("invalid result execution_mode")
 
 def completion_satisfied(request:dict[str,Any],result:dict[str,Any]):
     validate_result(result,request)
@@ -194,6 +316,8 @@ def completion_satisfied(request:dict[str,Any],result:dict[str,Any]):
 
 def complete_task(lease:dict[str,Any],state:dict[str,Any],request:dict[str,Any],gates:list[dict[str,Any]],result:dict[str,Any]):
     base.validate_state(state,request)
+    if result.get("execution_mode","autonomous")!="autonomous":
+        raise base.ControlPlaneError("gateway completion requires autonomous result")
     for gate in gates:
         validate_gate(gate,request)
         if gate["status"]!="satisfied":
@@ -210,8 +334,32 @@ def complete_task(lease:dict[str,Any],state:dict[str,Any],request:dict[str,Any],
     ok,missing=completion_satisfied(request,result)
     if not ok:
         raise base.ControlPlaneError("missing completion evidence: "+",".join(missing))
-    new_state=copy.deepcopy(state); new_state["status"]="completed"; new_state["claim"]=None
+    new_state=copy.deepcopy(state); new_state["status"]="completed"; new_state["claim"]=None; new_state["carrier"]=None
     return idle_after(lease),new_state
+
+def complete_live_task(state:dict[str,Any],request:dict[str,Any],gates:list[dict[str,Any]],result:dict[str,Any],gateway_lease:dict[str,Any],*,carrier_id:str,now:datetime)->dict[str,Any]:
+    """Terminalize direct-live work before its carrier can expire into autonomous fallback."""
+    validate_state_carrier(state,request)
+    if result.get("execution_mode")!="live":
+        raise base.ControlPlaneError("live completion requires execution_mode=live")
+    for gate in gates:
+        validate_gate(gate,request)
+        if gate["status"]!="satisfied":
+            raise base.ControlPlaneError(f"unsatisfied gate {gate['gate_id']}")
+    if not live_carrier_fence_valid(state,request,gateway_lease,carrier_id=carrier_id,now=now):
+        raise base.ControlPlaneError("live carrier fence is not valid")
+    if result["request_blob_sha"]!=state.get("request_blob_sha"):
+        raise base.ControlPlaneError("result/request blob mismatch")
+    if result.get("carrier_id")!=carrier_id:
+        raise base.ControlPlaneError("result does not belong to current live carrier")
+    ok,missing=completion_satisfied(request,result)
+    if not ok:
+        raise base.ControlPlaneError("missing completion evidence: "+",".join(missing))
+    out=copy.deepcopy(state)
+    out["status"]="completed"
+    out["claim"]=None
+    out["carrier"]=None
+    return out
 
 def repair_completed_projection(lease:dict[str,Any],state:dict[str,Any],request:dict[str,Any],gates:list[dict[str,Any]],result:dict[str,Any])->dict[str,Any]:
     base.validate_lease(lease); base.validate_state(state,request)
@@ -276,3 +424,210 @@ def gateway_execution_admitted(state:dict[str,Any],request:dict[str,Any],gateway
 def claimed_execution_ready(state:dict[str,Any],request:dict[str,Any],gateway_lease:dict[str,Any])->bool:
     """Allows a later dispatcher to begin target reinstantiation only after a durable activation receipt."""
     return state.get("status")=="claimed" and gateway_execution_admitted(state,request,gateway_lease,require_active_state=False)
+
+def expired_live_carrier_requires_result_reconciliation(state:dict[str,Any],request:dict[str,Any],*,now:datetime)->bool:
+    validate_state_carrier(state,request)
+    carrier=state.get("carrier")
+    if not isinstance(carrier,dict) or carrier.get("mode")!="live":
+        return False
+    if carrier.get("fallback_after_expiry") is not True:
+        return False
+    return now>=base.parse_time(carrier["lease_until"]) and state.get("status")=="queued" and state.get("claim") is None
+
+def repair_expired_live_completion(state:dict[str,Any],request:dict[str,Any],gates:list[dict[str,Any]],result:dict[str,Any]|None,*,result_committed_at:datetime|None,now:datetime)->dict[str,Any]|None:
+    """Repair a live success left between durable result write and terminal state CAS.
+
+    Invalid/mismatched/late results do not suppress legitimate expiry fallback.
+    """
+    validate_state_carrier(state,request)
+    if not expired_live_carrier_requires_result_reconciliation(state,request,now=now):
+        return None
+    if result is None:
+        return None
+    if isinstance(result_committed_at,str):
+        result_committed_at=base.parse_time(result_committed_at)
+    if not isinstance(result_committed_at,datetime):
+        raise base.ControlPlaneError("present live result requires authoritative Git commit time")
+    carrier=state["carrier"]
+    lease_until=base.parse_time(carrier["lease_until"])
+    if result_committed_at>now or result_committed_at>lease_until:
+        return None
+    try:
+        validate_result(result,request)
+    except Exception:
+        return None
+    if result.get("execution_mode")!="live" or result.get("carrier_id")!=carrier.get("carrier_id"):
+        return None
+    if result.get("request_blob_sha")!=state.get("request_blob_sha"):
+        return None
+    for gate in gates:
+        try:
+            validate_gate(gate,request)
+        except Exception:
+            return None
+        if gate["status"]!="satisfied":
+            return None
+    ok,_=completion_satisfied(request,result)
+    if not ok:
+        return None
+    out=copy.deepcopy(state)
+    out["status"]="completed"
+    out["claim"]=None
+    out["carrier"]=None
+    return out
+
+def scheduler_preflight(registry:dict[str,Any],bundles:list[tuple],result_records:dict[str,Any],now:datetime)->tuple[list[dict[str,Any]],list[tuple[str,dict[str,Any]]]]:
+    """Resolve carrier state before scheduler claim.
+
+    For every expired live-carried queued task, result_records MUST contain an
+    explicit observation: None when result.json is absent, or
+    {"result": <dict>, "committed_at": <datetime>} when present.
+    """
+    eligible=[]
+    repairs=[]
+    for bundle in bundles:
+        req,state,gates,meta=normalize(bundle)
+        validate_task_runtime(meta,req)
+        if task_carrier_blocks_scheduler(state,req,now=now):
+            continue
+        if expired_live_carrier_requires_result_reconciliation(state,req,now=now):
+            task_id=req["task_id"]
+            if task_id not in result_records:
+                raise base.ControlPlaneError("expired live carrier requires explicit result reconciliation before scheduler claim")
+            record=result_records[task_id]
+            if record is not None:
+                if not isinstance(record,dict) or "result" not in record or "committed_at" not in record:
+                    raise base.ControlPlaneError("invalid result reconciliation record")
+                if record["committed_at"] is None:
+                    raise base.ControlPlaneError("present live result requires authoritative Git commit time")
+                repaired=repair_expired_live_completion(
+                    state,req,gates,record["result"],
+                    result_committed_at=record["committed_at"],now=now
+                )
+                if repaired is not None:
+                    repairs.append((task_id,repaired))
+                    continue
+        eligible.append((req,state,gates,meta))
+    return ready_tasks(registry,eligible,now),repairs
+
+def scheduler_ready_tasks(registry:dict[str,Any],bundles:list[tuple],now:datetime)->list[dict[str,Any]]:
+    """READY resolution for tasks that do not require expired-live result reconciliation."""
+    for bundle in bundles:
+        req,state,_,meta=normalize(bundle)
+        validate_task_runtime(meta,req)
+        if expired_live_carrier_requires_result_reconciliation(state,req,now=now):
+            raise base.ControlPlaneError("expired live carrier requires result-aware scheduler_preflight")
+    eligible=[]
+    for bundle in bundles:
+        req,state,gates,meta=normalize(bundle)
+        if task_carrier_blocks_scheduler(state,req,now=now):
+            continue
+        eligible.append((req,state,gates,meta))
+    return ready_tasks(registry,eligible,now)
+
+def scheduler_claimed_execution_ready(state:dict[str,Any],request:dict[str,Any],gateway_lease:dict[str,Any],*,now:datetime)->bool:
+    """Scheduler Phase-B admission. A fresh carrier on this exact task blocks reinstantiation."""
+    if task_carrier_blocks_scheduler(state,request,now=now):
+        return False
+    return claimed_execution_ready(state,request,gateway_lease)
+
+WAKE_RECENT_KEY_LIMIT=32
+
+def validate_wake_state(wake:dict[str,Any])->None:
+    base.require_fields(wake,[
+      "desired_generation","armed_generation","served_generation",
+      "recent_request_keys","last_request","last_armed_at","last_served_at","last_worker_run_id"
+    ],"wake state")
+    for key in ("desired_generation","armed_generation","served_generation"):
+        if not isinstance(wake[key],int) or wake[key]<0:
+            raise base.ControlPlaneError(f"{key} must be a non-negative integer")
+    if wake["armed_generation"]>wake["desired_generation"]:
+        raise base.ControlPlaneError("armed generation cannot exceed desired generation")
+    if wake["served_generation"]>wake["armed_generation"]:
+        raise base.ControlPlaneError("served generation cannot exceed armed generation")
+    keys=wake["recent_request_keys"]
+    if not isinstance(keys,list) or len(keys)>WAKE_RECENT_KEY_LIMIT or any(not isinstance(x,str) or not x for x in keys):
+        raise base.ControlPlaneError("invalid recent wake request keys")
+    if len(keys)!=len(set(keys)):
+        raise base.ControlPlaneError("recent wake request keys must be unique")
+    for ts in ("last_armed_at","last_served_at"):
+        if wake[ts] is not None:
+            base.parse_time(wake[ts])
+    req=wake["last_request"]
+    if req is not None:
+        base.require_fields(req,["generation","request_key","reason","requested_by","requested_at"],"wake request")
+        if req["generation"]!=wake["desired_generation"]:
+            raise base.ControlPlaneError("last wake request must match desired generation")
+        if not req["request_key"] or not req["reason"] or not req["requested_by"]:
+            raise base.ControlPlaneError("wake request fields must be non-empty")
+        base.parse_time(req["requested_at"])
+
+def wake_pending(wake:dict[str,Any])->bool:
+    validate_wake_state(wake)
+    return wake["desired_generation"]>wake["served_generation"]
+
+def wake_needs_arming(wake:dict[str,Any])->bool:
+    validate_wake_state(wake)
+    return wake["desired_generation"]>wake["armed_generation"]
+
+def request_wake(wake:dict[str,Any],*,request_key:str,reason:str,requested_by:str,now:datetime):
+    validate_wake_state(wake)
+    if not request_key or not reason or not requested_by:
+        raise base.ControlPlaneError("wake request requires key, reason and requester")
+    if request_key in wake["recent_request_keys"]:
+        return copy.deepcopy(wake),False
+    out=copy.deepcopy(wake)
+    out["desired_generation"]+=1
+    keys=list(out["recent_request_keys"])+[request_key]
+    out["recent_request_keys"]=keys[-WAKE_RECENT_KEY_LIMIT:]
+    out["last_request"]={
+      "generation":out["desired_generation"],
+      "request_key":request_key,
+      "reason":reason,
+      "requested_by":requested_by,
+      "requested_at":base.format_time(now)
+    }
+    return out,True
+
+def mark_wake_armed(wake:dict[str,Any],*,generation:int,now:datetime)->dict[str,Any]:
+    validate_wake_state(wake)
+    if generation<1 or generation>wake["desired_generation"]:
+        raise base.ControlPlaneError("cannot arm unknown wake generation")
+    out=copy.deepcopy(wake)
+    out["armed_generation"]=max(out["armed_generation"],generation)
+    out["last_armed_at"]=base.format_time(now)
+    validate_wake_state(out)
+    return out
+
+def mark_wake_served(wake:dict[str,Any],*,generation:int,now:datetime,worker_run_id:str)->dict[str,Any]:
+    validate_wake_state(wake)
+    if generation<1 or generation>wake["armed_generation"]:
+        raise base.ControlPlaneError("cannot serve unarmed wake generation")
+    if not worker_run_id:
+        raise base.ControlPlaneError("worker_run_id is required")
+    out=copy.deepcopy(wake)
+    out["served_generation"]=max(out["served_generation"],generation)
+    out["last_served_at"]=base.format_time(now)
+    out["last_worker_run_id"]=worker_run_id
+    validate_wake_state(out)
+    return out
+
+def stale_armed_wake(wake:dict[str,Any],*,now:datetime,stale_after_minutes:int)->bool:
+    validate_wake_state(wake)
+    if stale_after_minutes<1:
+        raise base.ControlPlaneError("stale_after_minutes must be positive")
+    if wake["armed_generation"]<=wake["served_generation"]:
+        return False
+    if wake["last_armed_at"] is None:
+        return True
+    return now>=base.parse_time(wake["last_armed_at"])+timedelta(minutes=stale_after_minutes)
+
+def broker_generation_to_arm(wake:dict[str,Any],*,now:datetime,stale_after_minutes:int)->int|None:
+    """Return the next global wake generation to deliver. Per-task carrier admission occurs at task selection/execution."""
+    validate_wake_state(wake)
+    if wake["desired_generation"]>wake["armed_generation"]:
+        return wake["desired_generation"]
+    if stale_armed_wake(wake,now=now,stale_after_minutes=stale_after_minutes):
+        return wake["armed_generation"]
+    return None
+

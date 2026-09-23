@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-AUDIT-EVENT-WAKE-003",
+  "status": "completed",
+  "request_digest": "sha256:b50ffd4b08ce27c246212bd7f89b77facb82a59f8b1f810e2c6a8eed2f862940",
+  "attempt": 0,
+  "runtime_loss_count": 0,
+  "claim": null,
+  "latest_checkpoint": null,
+  "request_blob_sha": "656583efa25d2726df5ce041d8449eaa39d9f758"
+}

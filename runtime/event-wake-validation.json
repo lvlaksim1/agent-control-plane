@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "validation_id": "VAL-2026-09-23-ACP-EVENT-WAKE-001",
+  "owner_directive": "OWNER-2026-09-23-EVENT-WAKE-REDESIGN",
+  "branch": "event-wake-redesign",
+  "validated_at": "2026-09-23T16:39:33Z",
+  "topology": {
+    "execution_worker_automation_id": "6aac8b1d8888819180cc4af0c009669e",
+    "hourly_watchdog_automation_id": "6aac8b23fff4819180fb12916df071a8",
+    "retired_polling_automation_ids": [
+      "6aac85d181108191bb95bfe823f18edc",
+      "6aac8b3402048191b4fc6d735aa8f38c",
+      "6aac8b15fd088191a4a2b169de4dd3be"
+    ],
+    "max_concurrent_target_executions": 1
+  },
+  "checks": [
+    {
+      "id": "E2E-PHASE-A-B",
+      "status": "passed",
+      "evidence": [
+        "tasks/TASK-EVENT-WAKE-E2E-001/state.json status=completed",
+        "tasks/TASK-EVENT-WAKE-E2E-001/result.json outcome=success",
+        "gateway generation 41 activation followed by completion-before-release",
+        "gateway now idle generation 42"
+      ]
+    },
+    {
+      "id": "WAKE-GENERATION-FENCE",
+      "status": "passed",
+      "evidence": [
+        "tools/workflow_runtime.py enforces served_generation <= armed_generation <= desired_generation",
+        "tests/test_workflow_runtime.py rejects serving an unarmed desired generation"
+      ]
+    },
+    {
+      "id": "WATCHDOG-LOST-WAKE-RECOVERY",
+      "status": "passed",
+      "evidence": [
+        "fc96cfc1787ea68160448b650a8fbf9a868930bc injected controlled stale armed generation 6",
+        "27d315fab3e59a4c17b073db67c148e2fff35a9c watchdog re-armed the same stale generation 6 without incrementing desired_generation",
+        "ec49597f5ae5e5b3d43280e34f7132d1a84bb4e0 execution worker reconciled generation 6 to served_generation=6"
+      ]
+    },
+    {
+      "id": "TERMINAL-RUNTIME",
+      "status": "passed",
+      "evidence": [
+        "runtime/dispatcher-health.json desired_generation=6 armed_generation=6 served_generation=6",
+        "authoritative gateway idle generation 42",
+        "Execution Worker one-shot disabled after run",
+        "Hourly Watchdog remains enabled",
+        "retired :24/:36/:48 polling slots remain disabled"
+      ]
+    }
+  ],
+  "limitations": [
+    "agent-control-plane currently has no GitHub Actions workflow on this branch, so no CI run is claimed for this redesign",
+    "final acceptance requires independent project-manager-auditor review"
+  ],
+  "scaling_boundary": "Agent Catalog, Agent Factory and item 20 remain inactive",
+  "status": "superseded",
+  "superseded_at": "2026-09-23T16:57:00Z",
+  "superseded_reason": "Live independent-audit dispatch exposed unsafe one-shot self-rearm/catch-up semantics after the pinned validation snapshot: rearming the same active one-shot can be overwritten by its own completion. Candidate scheduler changed to a cross-task Wake Broker relay.",
+  "successor_validation": "pending broker-relay v2 validation",
+  "audit_task": "TASK-AUDIT-EVENT-WAKE-001 superseded before Auditor target execution"
+}

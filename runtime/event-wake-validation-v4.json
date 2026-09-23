@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "validation_id": "VAL-2026-09-23-ACP-EVENT-WAKE-RELAY-004",
+  "status": "running",
+  "architecture": "event-wake-broker-relay-v4-recurring-worker",
+  "branch": "event-wake-redesign",
+  "owner_directive": "OWNER-2026-09-23-EVENT-WAKE-REDESIGN",
+  "supersedes": [
+    "VAL-2026-09-23-ACP-EVENT-WAKE-RELAY-003"
+  ],
+  "started_at": "2026-09-23T17:40:00Z",
+  "design_change": {
+    "observed_problem": "The one-shot Worker could be successfully re-enabled and retargeted by Broker yet remain undelivered well past DTSTART after it had already fired previously.",
+    "remediation": "Use the same Worker automation as an enabled hourly recurring scheduler anchor. Broker precommits the wake generation, then retargets the Worker's next occurrence earlier while preserving RRULE:FREQ=HOURLY. Natural hourly Worker occurrences fast-noop unless an unserved wake or exact partial gateway execution exists.",
+    "slots": 2
+  },
+  "inherited_evidence": [
+    "Outbox precommit solved the post-scheduler acknowledgement race: generation 8 reached desired=armed=served=8 safely.",
+    "Worker self-rearm remains forbidden.",
+    "Only Wake Broker / Hourly Watchdog may retarget the Worker.",
+    "served_generation <= armed_generation <= desired_generation remains enforced.",
+    "Gateway currently preserves exact gen45 reservation for TASK-EVENT-WAKE-RELAY-E2E-001; private task is still queued, so reserved+queued recovery is the next bounded Phase-A step.",
+    "Three former polling slots remain disabled."
+  ],
+  "active_check": {
+    "id": "FINAL-BROKER-RELAY-E2E-V4",
+    "task_id": "TASK-EVENT-WAKE-RELAY-E2E-001",
+    "status": "phase-b-armed",
+    "phase": "phase-a-complete-broker-precommitted-generation-10-worker-retargeted",
+    "gateway_generation": 45,
+    "wake_generation": 10,
+    "evidence": [
+      "Recurring Worker generation 9 reconciled active+claimed recovery and durably recorded activation_projection_blob_sha fa9d3b109c9d6df319312f99f4e9f5b68f3428a8.",
+      "Generation 9 was marked served at 2026-09-23T17:44:46Z and Phase-B wake generation 10 was durably requested by Execution Worker.",
+      "Wake Broker precommitted armed_generation=10 at 2026-09-23T17:46:08Z before retargeting the recurring Worker.",
+      "Scheduler retained RRULE:FREQ=HOURLY and retargeted Worker DTSTART to 2026-09-23T17:49:08Z."
+    ]
+  },
+  "remaining": [
+    "later recurring Worker Phase B reinstates ecosystem-supervisor and completes TASK-EVENT-WAKE-RELAY-E2E-001",
+    "verified completion and gateway release",
+    "controlled stale/lost delivery retry on recurring Worker",
+    "restore production stale-delivery timeout to 20 minutes",
+    "pin final snapshot",
+    "independent Auditor review"
+  ],
+  "scaling_boundary": "Agent Catalog, Agent Factory and item 20 remain inactive",
+  "updated_at": "2026-09-23T17:46:50Z"
+}

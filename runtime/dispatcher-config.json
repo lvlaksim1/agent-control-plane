@@ -1,11 +1,42 @@
 {
-  "schema_version": 1,
+  "schema_version": 8,
   "lease_minutes": 45,
   "runtime_loss_quarantine_after": 3,
   "one_target_agent_per_dispatch": true,
   "authoritative_time": "github_commit_time",
   "dispatcher_protocol": "docs/SCHEDULED_CHAT_DISPATCHER.md",
+  "scheduler_topology": "runtime/dispatcher-pool.json",
+  "wake_state": "runtime/dispatcher-health.json#wake",
   "automatic_execution_activation": "registry-per-agent-explicit",
+  "scheduler_model": "event-wake-broker-relay-v10-partial-live-recovery",
+  "execution_worker": {
+    "slot_id": "execution-worker",
+    "automation_id": "6aac8b1d8888819180cc4af0c009669e",
+    "rearm_mode": "retarget-recurring-hourly",
+    "minimum_rearm_delay_minutes": 3,
+    "self_rearm_allowed": false,
+    "arm_owner": "wake-broker-watchdog",
+    "baseline_cadence": "hourly",
+    "preserve_rrule": true,
+    "no_pending_wake_behavior": "fast-noop-unless-gateway-partial",
+    "interactive_mode_behavior": "deprecated-global-mode; enforce per-task carrier before claim/phase-B"
+  },
+  "watchdog": {
+    "slot_id": "wake-broker-watchdog",
+    "automation_id": "6aac8b23fff4819180fb12916df071a8",
+    "cadence": "hourly",
+    "target_execution_allowed": false,
+    "stale_armed_after_minutes": 1,
+    "mode": "event-broker-plus-hourly-watchdog",
+    "worker_arm_allowed": true,
+    "self_schedule_update_while_running": false,
+    "event_nudge_supported": true,
+    "event_nudge_delay_minutes": 2,
+    "arm_commit_order": "persist-before-scheduler",
+    "post_scheduler_ack_required": false,
+    "delivery_semantics": "outbox-precommit-to-recurring-worker",
+    "interactive_mode_behavior": "deprecated-global-mode; Broker remains available for unrelated autonomous tasks"
+  },
   "authoritative_lease": {
     "repository": "lvlaksim1/agent-control-plane-gateway",
     "ref": "main",
@@ -13,5 +44,31 @@
     "request_issue_title": "[ACP_LEASE]",
     "transition_mode": "github-actions-serialized"
   },
-  "private_lease_status": "legacy-foundation-reference-not-runtime-authority"
+  "private_lease_status": "legacy-foundation-reference-not-runtime-authority",
+  "result_time_semantics": {
+    "completed_at": "execution-local metadata; not authoritative for lifecycle ordering",
+    "lifecycle_order": "derive from durable Git commit chronology and gateway commits",
+    "live_result": "execution_mode=live binds result to carrier_id; lifecycle order is durable state/result chronology",
+    "live_partial_recovery": "authoritative Git result commit time must not be later than the carrier lease expiry; result.completed_at is not used for recovery authority"
+  },
+  "task_carrier_policy": {
+    "metadata_location": "tasks/<task_id>/state.json#carrier",
+    "ownership_update": "CAS on the same state.json projection used by scheduler claim",
+    "scope": "per-task-or-work-chain",
+    "live_acquire_precondition": "state=queued, claim=null; carrier CAS races against scheduler claim on the same state object",
+    "live_write_fence": "fresh matching carrier_id + queued/unclaimed state + no same-task reserved/active gateway ownership",
+    "live_completion": "evidence-backed live result terminalizes state=completed and clears carrier before lease expiry",
+    "live_handoff": "when Owner is online, GitHub carries durable handoff and next agent is reinstantiated immediately in the same live runtime",
+    "unrelated_autonomous_tasks": "remain scheduler-eligible",
+    "fallback_after_expiry": true,
+    "explicit_hold": "per-task hold blocks only that task without expiry",
+    "scheduler_global_shutdown_on_owner_presence": false,
+    "partial_completion_recovery": {
+      "trigger": "expired live carrier + queued/unclaimed state before scheduler claim",
+      "result_check": "inspect result.json and authoritative Git commit time",
+      "valid_result": "execution_mode=live, exact carrier_id/request digest/request blob/evidence, result commit not later than carrier lease expiry",
+      "action": "CAS-repair state=completed with claim=null and carrier=null; do not execute target",
+      "absent_or_invalid_result": "normal expiry fallback remains eligible"
+    }
+  }
 }

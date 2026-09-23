@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-AUDIT-PER-TASK-CARRIER-001",
+  "request_digest": "sha256:77b16997e68f413db2048d3c25991646ba78d5b63c58cc6448d31ed67baca714",
+  "request_blob_sha": "09893bdfa973ef1b1b573aa3ad1b7bacb0f5e355",
+  "execution_mode": "live",
+  "carrier_id": "owner-live-runtime-per-task-carrier-audit-001",
+  "outcome": "success",
+  "summary": "Independent task-scoped carrier acceptance audit completed in the live Owner-facing runtime; canonical report published by project-manager-auditor.",
+  "evidence": [
+    {
+      "kind": "audit",
+      "reference": "lvlaksim1/project-manager-auditor@1f4572412d98354ed8c2250539d087ac40067c3c:audits/AUD-2026-09-24-PER-TASK-CARRIER-001.md",
+      "verified": true,
+      "verified_by": "project-manager-auditor",
+      "verified_at": "2026-09-23T22:01:46Z"
+    }
+  ],
+  "completed_at": "2026-09-23T22:09:28Z"
+}

@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 4,
   "claim": {
     "required_fields": [
       "execution_id",
@@ -35,7 +35,12 @@
       "verified_at"
     ],
     "evidence_verified_must_be_true": true,
-    "completion_rule": "all completion_contract evidence minima satisfied before state=completed"
+    "completion_rule": "all completion_contract evidence minima satisfied before state=completed",
+    "completed_at_semantics": "execution-local metadata; parseable timestamp only; never authoritative for lifecycle ordering",
+    "execution_modes": {
+      "autonomous": "execution_id + generation required",
+      "live": "carrier_id required; no autonomous gateway fence is implied"
+    }
   },
   "completion": {
     "order": [
@@ -48,7 +53,9 @@
     "completed_state_requirements": {
       "status": "completed",
       "claim": null
-    }
+    },
+    "authoritative_order_source": "Git commit chronology for result/state plus authoritative gateway transition commits",
+    "ordering_rule": "result.json durable commit precedes completed-state durable commit; completed-state durable commit precedes accepted gateway release commit"
   },
   "reservation": {
     "gateway_claim_result": "reserved",
@@ -75,5 +82,30 @@
       "activation_projection_blob_sha"
     ],
     "same_invocation_as_reservation": false
+  },
+  "live_carrier": {
+    "canonical_location": "tasks/<task_id>/state.json#carrier",
+    "acquisition": [
+      "require state=queued and claim=null",
+      "CAS the same state.json object used by scheduler claims to install carrier",
+      "re-read state after CAS",
+      "before every consequential live write re-read state and authoritative gateway and validate the same fresh carrier_id",
+      "if gateway owns the same task as reserved/active, do not perform direct-live target work until reconciled"
+    ],
+    "completion": [
+      "write result.json with execution_mode=live and exact carrier_id while carrier fence is fresh",
+      "verify completion_contract evidence",
+      "CAS state=completed with claim=null and carrier=null before carrier expiry",
+      "re-read terminal state; expired carrier cannot be used to complete"
+    ],
+    "fallback": "if live runtime disappears before terminal completion, expired carrier with fallback_after_expiry=true permits scheduler execution",
+    "partial_completion_recovery": [
+      "before scheduler claim of an expired live-carried queued task, explicitly inspect whether result.json exists",
+      "when present, use authoritative Git commit chronology for the current result blob; do not trust result.completed_at for ownership timing",
+      "if result.json exists but authoritative commit chronology for its current blob cannot be established, fail closed and do not execute the target",
+      "if result is a valid live success bound to the exact immutable request/blob and exact carrier_id, all completion evidence/gates are satisfied, and the result commit is not later than carrier lease expiry, CAS-repair state=completed with claim=null and carrier=null",
+      "re-read repaired terminal state and do not execute the target",
+      "if result is absent, invalid, mismatched, or committed after lease expiry, ordinary expiry fallback remains eligible"
+    ]
   }
 }
