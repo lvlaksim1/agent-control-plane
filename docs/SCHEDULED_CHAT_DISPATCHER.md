@@ -7,6 +7,31 @@ The scheduler uses two infrastructure automations:
 
 Direct Owner↔agent conversations remain first-class and do not use scheduler transport. A wake changes only *when* work is reconsidered. It never grants authority.
 
+## Interactive-first execution gate
+
+Before any scheduler work, read `runtime/execution-mode.json`.
+
+If `mode=interactive` or `autonomous_scheduler_allowed=false`:
+
+- Wake Broker / Watchdog MUST NOT arm or nudge the Execution Worker.
+- Execution Worker MUST NOT claim a new task, reinstate a target agent, or perform target work.
+- Any durable task remains in GitHub for direct handoff by the live runtime.
+- Existing gateway partial execution may be inspected only to preserve safety; new autonomous progress is forbidden unless a separate recovery action is required to prevent corruption.
+- The scheduler stays dormant until the live runtime intentionally switches the execution mode to autonomous, or the Owner explicitly requests autonomous/background continuation.
+
+In interactive mode, inter-agent continuation is:
+
+```
+live Owner runtime
+      ↓
+persist task / engagement in GitHub
+      ↓
+reinstantiate next persistent agent directly
+in the same live runtime
+```
+
+Scheduled Tasks are therefore fallback execution carriers, not the normal agent-to-agent transport while the Owner is present.
+
 ## Why the relay exists
 
 Live validation showed two scheduler hazards: self-rearming a currently running one-shot can race with completion, and repeatedly reusing an already-fired one-shot can leave a newly requested occurrence enabled but undelivered for an unbounded interval. Therefore v4 uses a recurring hourly Worker as a stable scheduler anchor; only the Broker may retarget its next occurrence earlier, and the hourly RRULE must be preserved.
