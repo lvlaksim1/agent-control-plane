@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-SUP-AUDIT-001",
+  "request_digest": "sha256:1d06359e07c6901fe00ad9a50a3f8530bbce89c9e0a24f8b0ead1163fe18a9d0",
+  "request_blob_sha": "1c96c05c2ff7af29afdf7fc622b69486ea4e85ea",
+  "execution_id": "EXEC-SUP-AUDIT-001-DIRECT",
+  "generation": 29,
+  "outcome": "success",
+  "summary": "Independent read-only Supervisor governance audit completed on pinned snapshot 4ed6ab3d08ef7a3b763cd1d0be9564e5ec8cd10f. Verified Owner-highest authority, coordination-only project boundary, direct Owner↔Project Manager communication, Auditor independence, non-escalating control-plane policy, stable release/migration boundaries, and stable identity/Core provenance. Open findings: SUP-001 Medium/High confidence (autonomously routable Supervisor remains on pre-item-19 Service Agent execution contract) and SUP-002 Medium/High confidence (stale active portfolio/belief claims contradict live Registry/audit evidence). No target mutation was performed.",
+  "evidence": [
+    {
+      "kind": "audit",
+      "reference": "lvlaksim1/project-manager-auditor@6cb7e12ff037677f5c04f6e3ad624b2ede02531d:audits/AUD-2026-09-23-SUPERVISOR-001.md",
+      "verified": true,
+      "verified_by": "project-manager-auditor",
+      "verified_at": "2026-09-23T14:10:33Z"
+    }
+  ],
+  "completed_at": "2026-09-23T14:11:00Z"
+}
