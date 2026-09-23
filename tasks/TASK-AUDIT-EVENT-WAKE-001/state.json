@@ -1,11 +1,18 @@
 {
   "schema_version": 1,
   "task_id": "TASK-AUDIT-EVENT-WAKE-001",
-  "status": "queued",
+  "status": "claimed",
   "request_digest": "sha256:e991c6a069e8e56805b3054013fba80fcc3edd3e9cd7693b596de069e5376de0",
   "attempt": 0,
   "runtime_loss_count": 0,
-  "claim": null,
+  "claim": {
+    "execution_id": "TASK-AUDIT-EVENT-WAKE-001-g43",
+    "generation": 43,
+    "slot_id": "execution-worker",
+    "claimed_at": "2026-09-23T16:45:32Z",
+    "request_blob_sha": "8f873d54af443f30d407e7f485d075d596c2134a",
+    "activation_projection_blob_sha": null
+  },
   "latest_checkpoint": null,
   "request_blob_sha": "8f873d54af443f30d407e7f485d075d596c2134a"
 }
