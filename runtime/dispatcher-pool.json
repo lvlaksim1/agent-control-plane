@@ -1,16 +1,18 @@
 {
   "schema_version": 2,
-  "purpose": "event-driven Scheduled Chat execution topology with cross-task broker relay",
+  "purpose": "event-driven Scheduled Chat execution topology with recurring retargetable worker and broker/watchdog",
   "max_concurrent_target_executions": 1,
   "authoritative_lease": "lvlaksim1/agent-control-plane-gateway@main:runtime/lease.json",
   "execution_worker": {
     "slot_id": "execution-worker",
     "automation_id": "6aac8b1d8888819180cc4af0c009669e",
     "source_automation": "ACP Dispatcher :00",
-    "mode": "reusable-one-shot",
-    "normally_dormant": true,
+    "mode": "reusable-hourly-retargetable",
+    "normally_dormant": false,
     "self_rearm_allowed": false,
-    "arm_owner": "wake-broker-watchdog"
+    "arm_owner": "wake-broker-watchdog",
+    "baseline_cadence": "hourly",
+    "idle_behavior": "health-and-gateway-fast-noop"
   },
   "watchdog": {
     "slot_id": "wake-broker-watchdog",
@@ -37,7 +39,7 @@
     "one worker invocation executes at most one target-agent task",
     "active gateway lease prevents a second target-agent execution",
     "phase A and phase B remain separate worker invocations",
-    "execution worker never schedules itself",
+    "execution worker never schedules itself and preserves its hourly RRULE",
     "only wake-broker-watchdog arms the execution worker",
     "watchdog never performs target-agent work",
     "direct Owner-agent conversations do not use scheduler transport"
