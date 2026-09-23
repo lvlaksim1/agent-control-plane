@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "task_id": "TASK-SUP-REMEDIATION-002",
-  "status": "claimed",
+  "status": "active",
   "request_digest": "sha256:1519a3ae00187ae4cc277adcce522405972b53b8bd90367db1fb88c6be575d1f",
   "attempt": 1,
   "runtime_loss_count": 0,
