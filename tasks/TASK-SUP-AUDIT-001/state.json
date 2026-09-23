@@ -1,11 +1,16 @@
 {
   "schema_version": 1,
   "task_id": "TASK-SUP-AUDIT-001",
-  "status": "queued",
+  "status": "claimed",
   "request_digest": "sha256:1d06359e07c6901fe00ad9a50a3f8530bbce89c9e0a24f8b0ead1163fe18a9d0",
-  "attempt": 0,
+  "attempt": 1,
   "runtime_loss_count": 0,
-  "claim": null,
+  "claim": {
+    "execution_id": "EXEC-SUP-AUDIT-001-DIRECT",
+    "generation": 29,
+    "slot_id": "direct-owner-runtime",
+    "claimed_at": "2026-09-23T13:49:24Z"
+  },
   "latest_checkpoint": null,
   "request_blob_sha": "1c96c05c2ff7af29afdf7fc622b69486ea4e85ea"
 }
