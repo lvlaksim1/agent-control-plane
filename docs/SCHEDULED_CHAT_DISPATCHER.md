@@ -66,6 +66,33 @@ If the runtime is lost before any valid success result becomes durable, carrier 
 
 If a valid live `result.json` is already durable but the runtime is lost before step 4 terminalizes `state.json`, that partial completion MUST be reconciled before scheduler claim. Use the authoritative Git commit time for the current result blob, not `result.completed_at`. When the live result is bound to the exact immutable request/blob and exact carrier_id, satisfies all completion evidence/gates, and its Git commit is not later than the carrier lease expiry, CAS-repair `state.json` to `completed`, clear claim/carrier, re-read, and do not execute the target. If the result is absent, invalid, mismatched, or authoritatively committed after expiry, normal fallback remains eligible. If a result is present but the authoritative Git commit time for its current blob cannot be established, fail closed: do not claim or execute the task until chronology is resolved.
 
+## Live delegation return contract
+
+A live agent-to-agent call MUST state its responsibility semantics in immutable `request.json#responsibility`.
+
+### Bounded delegation
+
+`mode=bounded_delegation` means:
+
+- the caller keeps the active commitment and project responsibility;
+- authority is not transferred by transport;
+- `commitment_owner_agent_id` MUST equal the caller / `issuer_agent_id`;
+- `return_to_agent_id` MUST equal that same caller;
+- after the callee reaches verified terminal live completion, the runtime MUST build the deterministic return package, reinstate `return_to_agent_id` from Registry, execute that agent's ENTRYPOINT, re-read the completed child result from GitHub, restore the caller's durable active commitment, and continue without requiring a user reinvocation.
+
+Nested bounded delegations unwind one caller at a time through each immutable child request. `parent_task_id` and `workflow_id` preserve call-chain structure; no central Supervisor hop is required.
+
+### Explicit handoff
+
+`mode=explicit_handoff` is a different operation:
+
+- responsibility transfers explicitly to the target agent within the authorized scope;
+- `commitment_owner_agent_id` MUST equal `target_agent_id`;
+- `return_to_agent_id` MUST be null;
+- terminal completion does not imply automatic return to the issuer.
+
+A live agent-to-agent task without an explicit responsibility contract is invalid for live continuation. Direct Owner invocation without an inter-agent task remains first-class and does not require synthetic return metadata.
+
 ## Why the relay exists
 
 Live validation showed two scheduler hazards: self-rearming a currently running one-shot can race with completion, and repeatedly reusing an already-fired one-shot can leave a newly requested occurrence enabled but undelivered for an unbounded interval. Therefore v4 uses a recurring hourly Worker as a stable scheduler anchor; only the Broker may retarget its next occurrence earlier, and the hourly RRULE must be preserved.
