@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "incident": "completion-projection-drift",
+  "observed_execution_id": "exec-20260923T031732Z-probe1-e2e-supervisor-001",
+  "observed_generation": 1,
+  "result_commit": "a22aeda07df491325089856f672f1c318924f6b6",
+  "marker_commit": "0e8fe05f2750a844b048bb0b5591310078c9c8b3",
+  "lease_release_commit": "528aae5e158be4d74a5ddb7a69212c825170bde0",
+  "repair_basis": "Owner-authorized Supervisor reconciliation after verifying bounded E2E result and idle fenced lease generation 2.",
+  "superseded_by_protocol_fix": "ecdfd5bf025392a4de7c363dc3149de8c0c83840"
+}
