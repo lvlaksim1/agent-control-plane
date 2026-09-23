@@ -219,6 +219,15 @@ class TaskCarrierTests(unittest.TestCase):
   self.assertEqual([x["task_id"] for x in ready],["A"])
   self.assertEqual(repairs,[])
 
+ def test_present_live_result_without_commit_time_fails_closed(self):
+  a,sa=self.live_state("A","2026-09-23T00:05:00Z")
+  later=datetime(2026,9,23,0,10,tzinfo=timezone.utc)
+  with self.assertRaises(cp.ControlPlaneError):
+   wr.scheduler_preflight(
+    registry(),[(a,sa,[],wr.task_runtime("A"))],
+    {"A":{"result":self.live_result(a,sa),"committed_at":None}},later
+   )
+
  def test_hold_blocks_only_its_task_without_expiry(self):
   a=request("A"); sa=state(a)
   sa["carrier"]={
