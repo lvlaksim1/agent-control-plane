@@ -6,7 +6,7 @@ The former five-slot polling pool is superseded by an Owner-authorized two-slot 
 
 Interactive-first routing is **per task / per work chain**, not a global scheduler mode.
 
-A task carried by the live Owner-facing runtime records a renewable carrier lease in its own `tasks/<task_id>/runtime.json#carrier`:
+A scheduler-visible task carried by the live Owner-facing runtime MUST record a renewable carrier lease in the same CAS projection the scheduler claims: `tasks/<task_id>/state.json#carrier`:
 
 - `mode=live`: the task is owned by the live chat/runtime until `lease_until`; scheduler selection and scheduler Phase-B execution for that task are blocked while the lease is fresh.
 - expired `live` lease with `fallback_after_expiry=true`: the scheduler may pick up that task if the live runtime disappeared or stopped renewing it.
@@ -29,6 +29,26 @@ in the same live runtime
 ```
 
 No scheduler wait is introduced into the interactive path. Scheduler slots are fallback delivery for unattended tasks and for live-carried tasks whose carrier lease later expires.
+
+### Live-carrier ownership transition
+
+Carrier acquisition is an execution-ownership transition, not advisory metadata.
+
+- for a new live-carried task, publish the immutable request first and create the queued state with the live carrier already present; do not expose a carrier-free queued state;
+- for an existing queued task, install the carrier by CAS-updating the exact same `state.json` object a Worker would CAS to `claimed`;
+- acquisition is valid only from `status=queued`, `claim=null`;
+- if scheduler claim and carrier acquisition race, only one CAS may win; the loser re-reads and stops/reconciles;
+- before each consequential direct-live write, re-read task state and the authoritative gateway and verify the same fresh `carrier_id`; if the gateway owns this same task as reserved/active, do not perform direct-live target work until that scheduler ownership is reconciled.
+
+### Live completion and fallback
+
+Successful live execution MUST terminalize the ACP projection before carrier expiry:
+
+1. persist evidence-backed `result.json` with `execution_mode=live` and exact `carrier_id`;
+2. while the same live-carrier fence is still fresh, CAS `state.json` to `status=completed`, `claim=null`, `carrier=null`;
+3. re-read the terminal state.
+
+If the live runtime disappears before terminalization, it performs no completion write; after the carrier lease expires, normal scheduler fallback may execute the still-nonterminal task. This prevents successful interactive work from being resurrected later by lease expiry.
 
 ## Runtime roles
 
