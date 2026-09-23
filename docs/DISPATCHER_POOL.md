@@ -42,7 +42,7 @@ Exact DTSTART delivery is not an invariant. Re-enabling a one-shot can be delive
 Wake transport state is stored under `runtime/dispatcher-health.json#wake`:
 
 - `desired_generation`: newest durable wake request;
-- `armed_generation`: newest generation the Broker has successfully scheduled on the Worker;
+- `armed_generation`: newest generation the Broker has durably committed as a Worker delivery attempt before the scheduler call;
 - `served_generation`: newest armed generation actually reconciled by a Worker run.
 
 Invariant:
@@ -72,12 +72,15 @@ A Worker run by itself is never sufficient reason for a new wake.
 
 ## Broker arming order
 
-1. A durable wake already exists.
-2. Broker schedules the existing Execution Worker one-shot and enables it.
-3. Broker verifies the returned scheduler state identifies the exact Worker and leaves a runnable occurrence.
-4. Broker persists the corresponding `armed_generation`.
+Live validation proved that an enabled one-shot may catch up immediately and begin before a post-scheduler acknowledgement can be committed. Therefore delivery state is an **outbox-style precommit**:
 
-If step 4 is lost, a duplicate arm is safe. If the Worker never runs, the hourly Broker detects an outstanding stale armed generation and re-arms it.
+1. A durable wake already exists.
+2. Broker deterministically selects the generation to deliver.
+3. Broker CAS-persists that generation as `armed_generation` and refreshes `last_armed_at`.
+4. Broker schedules the existing Execution Worker one-shot and enables it.
+5. Broker verifies the returned scheduler state identifies the exact Worker and leaves a runnable occurrence, but no post-scheduler repository write is required for correctness.
+
+If scheduling fails after step 3, the durable state is intentionally `armed > served`. Once stale, the hourly Broker retries the **same** generation. If the Worker starts immediately after step 4, it already sees the correct armed generation and can safely serve it.
 
 ## Event nudge order
 
