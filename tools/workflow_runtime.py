@@ -289,8 +289,8 @@ def validate_wake_state(wake:dict[str,Any])->None:
             raise base.ControlPlaneError(f"{key} must be a non-negative integer")
     if wake["armed_generation"]>wake["desired_generation"]:
         raise base.ControlPlaneError("armed generation cannot exceed desired generation")
-    if wake["served_generation"]>wake["desired_generation"]:
-        raise base.ControlPlaneError("served generation cannot exceed desired generation")
+    if wake["served_generation"]>wake["armed_generation"]:
+        raise base.ControlPlaneError("served generation cannot exceed armed generation")
     keys=wake["recent_request_keys"]
     if not isinstance(keys,list) or len(keys)>WAKE_RECENT_KEY_LIMIT or any(not isinstance(x,str) or not x for x in keys):
         raise base.ControlPlaneError("invalid recent wake request keys")
@@ -347,8 +347,8 @@ def mark_wake_armed(wake:dict[str,Any],*,generation:int,now:datetime)->dict[str,
 
 def mark_wake_served(wake:dict[str,Any],*,generation:int,now:datetime,worker_run_id:str)->dict[str,Any]:
     validate_wake_state(wake)
-    if generation<1 or generation>wake["desired_generation"]:
-        raise base.ControlPlaneError("cannot serve unknown wake generation")
+    if generation<1 or generation>wake["armed_generation"]:
+        raise base.ControlPlaneError("cannot serve unarmed wake generation")
     if not worker_run_id:
         raise base.ControlPlaneError("worker_run_id is required")
     out=copy.deepcopy(wake)
