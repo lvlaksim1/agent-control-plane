@@ -58,5 +58,10 @@
     "agent-control-plane currently has no GitHub Actions workflow on this branch, so no CI run is claimed for this redesign",
     "final acceptance requires independent project-manager-auditor review"
   ],
-  "scaling_boundary": "Agent Catalog, Agent Factory and item 20 remain inactive"
+  "scaling_boundary": "Agent Catalog, Agent Factory and item 20 remain inactive",
+  "status": "superseded",
+  "superseded_at": "2026-09-23T16:57:00Z",
+  "superseded_reason": "Live independent-audit dispatch exposed unsafe one-shot self-rearm/catch-up semantics after the pinned validation snapshot: rearming the same active one-shot can be overwritten by its own completion. Candidate scheduler changed to a cross-task Wake Broker relay.",
+  "successor_validation": "pending broker-relay v2 validation",
+  "audit_task": "TASK-AUDIT-EVENT-WAKE-001 superseded before Auditor target execution"
 }
