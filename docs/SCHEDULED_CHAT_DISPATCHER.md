@@ -27,7 +27,7 @@ At every Execution Worker invocation:
 6. Proceed only if canonical gateway lease is `active` and records that exact receipt.
 7. Record the same activation receipt in the private claim and re-read.
 8. Persist a new durable wake request keyed by this exact activated execution, because Phase B must occur in a later invocation.
-9. Re-arm the same Execution Worker for a near-future one-shot run and only after confirmed scheduler update record the corresponding armed generation.
+9. Re-arm the same Execution Worker for a future one-shot run using the configured minimum delay and set `is_enabled=true`; verify both the future schedule and enabled state before recording the corresponding armed generation.
 10. Mark the current wake generation served.
 11. **STOP. Do not reinstate the target agent and do not perform target writes.**
 
@@ -79,8 +79,8 @@ Wake requests use deterministic `request_key` values. Recent keys suppress repla
 Re-arm ordering is mandatory:
 
 1. durable wake request;
-2. scheduler update of the existing Execution Worker;
-3. verify update;
+2. scheduler update of the existing Execution Worker with a future one-shot schedule and `is_enabled=true`;
+3. verify the worker is enabled and scheduled in the future;
 4. durable armed-generation acknowledgement.
 
 Duplicate invocation is safe because task state and the gateway lease remain authoritative.
