@@ -6,8 +6,8 @@ Each run is a reconciliation loop:
 
 1. Read this protocol, Registry, global lease, task requests/states/gates/runtime metadata. For each task, GitHub's current blob SHA of `request.json` must equal `state.request_blob_sha`; this is the runtime immutability check. `request_digest` remains an offline deterministic validation field and Scheduled Chat does not need to recompute it.
 2. Runtime lease authority is `lvlaksim1/agent-control-plane-gateway@main:runtime/lease.json`. The private `runtime/lease.json` is no longer runtime authority. Lease transitions are requested by creating a `[ACP_LEASE]` issue in the gateway with the exact JSON operation; the gateway serializes transitions in GitHub Actions and commits the lease before reporting acceptance.
-3. If the lease is active and not proven expired, exit without claiming another task.
-4. If an active lease is proven expired, fence it first by CAS (generation N -> idle generation N+1), then repair/requeue/quarantine the task projection.
+3. If the lease is active, reconcile it before any new claim. Special safe-resume case: when the exact leased task still has private state `queued`, its `request_blob_sha` matches the lease, and no claimed projection was ever made durable, treat this as a pre-projection runtime loss. CAS-repair that same task to `claimed` using the lease's existing execution_id, generation, slot_id, and claimed_at; re-read it; then continue reinstantiation under the SAME lease. Do not create a new claim. If private state is already `claimed` or `active`, do not start another runtime while the lease is valid.
+4. If an active lease is proven expired, fence it first by gateway release/recovery transition (generation N -> newer idle generation), then repair/requeue/quarantine the task projection. A queued pre-projection task may be requeued without incrementing execution attempt because target work never started.
 5. Compute READY deterministically: queued, retry window elapsed, all gates satisfied, dependencies completed, target agent executable and automatic_execution_allowed.
 6. Select one task by effective priority, age, then task_id.
 7. Read the authoritative gateway lease. If idle, create one `[ACP_LEASE]` Issue with operation `claim`, opaque task/agent IDs, unique execution_id, slot_id, current request_blob_sha and lease_minutes.
@@ -39,3 +39,7 @@ The public gateway is a transactional lock service only. It never sees objective
 Supervisor is not a mandatory gateway. The Owner may directly work with any persistent agent. A task may be issued by the Owner or by a registered active agent with an explicit authority basis. For an agent-issued task, dispatcher verifies issuer registration and the presence of an authority reference; the reinstantiated target agent still validates actual mandate/engagement authority before acting.
 
 Direct Owner↔Project Manager chat is outside dispatcher scheduling and remains the normal path for interactive project development.
+
+### Pre-projection runtime loss
+
+A gateway claim may commit after the Scheduled Chat invocation that requested it has already ended. This is recoverable without waiting for lease expiry because the protocol forbids target-agent reinstantiation before the private claimed projection is durable. Therefore an exact active gateway lease + matching private `queued` state proves that no authorized target execution could have started under this protocol. A replacement dispatcher may repair `queued → claimed` from that exact lease and continue the same execution token. It must never generate a second claim for that task.
