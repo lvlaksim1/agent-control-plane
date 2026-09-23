@@ -22,8 +22,9 @@ def idle(g=0):
 def gate(r,status="waiting"):
  return {"schema_version":1,"gate_id":"G1","task_id":r["task_id"],"gate_type":"owner_decision","status":status,"required_actor_id":"owner","requested_at":"2026-09-22T00:00:00Z","resolved_at":"2026-09-22T01:00:00Z" if status=="satisfied" else None,"resolution":{"decision":"approved"} if status=="satisfied" else None}
 
-def result(task_id,kind="commit"):
- return {"schema_version":1,"task_id":task_id,"outcome":"success","summary":"done","evidence":[{"kind":kind,"reference":"o/r@abc","verified":True,"verified_by":"ecosystem-supervisor","verified_at":"2026-09-23T00:30:00Z"}],"completed_at":"2026-09-23T00:30:00Z"}
+def result(task_id,kind="commit",req=None,execution_id="e1",generation=1):
+ r=req or request(task_id)
+ return {"schema_version":1,"task_id":task_id,"request_digest":cp.request_digest(r),"execution_id":execution_id,"generation":generation,"outcome":"success","summary":"done","evidence":[{"kind":kind,"reference":"o/r@abc","verified":True,"verified_by":"ecosystem-supervisor","verified_at":"2026-09-23T00:30:00Z"}],"completed_at":"2026-09-23T00:30:00Z"}
 
 class WorkflowRuntimeTests(unittest.TestCase):
  def test_gate_blocks_then_owner_resolves(self):
@@ -54,13 +55,23 @@ class WorkflowRuntimeTests(unittest.TestCase):
 
  def test_completion_requires_verified_contract_evidence(self):
   r=request("A"); l,s=cp.claim_plan(idle(),r,state(r),slot_id="s",execution_id="e1",now=NOW); s=cp.activate_state(s,r,l)
-  with self.assertRaises(cp.ControlPlaneError): wr.complete_task(l,s,r,[],result("A","report"))
-  l,s=wr.complete_task(l,s,r,[],result("A"))
+  with self.assertRaises(cp.ControlPlaneError): wr.complete_task(l,s,r,[],result("A","report",req=r))
+  l,s=wr.complete_task(l,s,r,[],result("A",req=r))
   self.assertEqual((l["state"],s["status"]),("idle","completed"))
 
  def test_unsatisfied_gate_blocks_completion(self):
   r=request("A"); l,s=cp.claim_plan(idle(),r,state(r),slot_id="s",execution_id="e1",now=NOW); s=cp.activate_state(s,r,l)
-  with self.assertRaises(cp.ControlPlaneError): wr.complete_task(l,s,r,[gate(r)],result("A"))
+  with self.assertRaises(cp.ControlPlaneError): wr.complete_task(l,s,r,[gate(r)],result("A",req=r))
+
+ def test_result_projection_repair_prevents_duplicate_execution(self):
+  r=request("A"); s=state(r); res=result("A",req=r,execution_id="old-exec",generation=7)
+  repaired=wr.repair_completed_projection(idle(8),s,r,[],res)
+  self.assertEqual(repaired["status"],"completed")
+  self.assertEqual(wr.ready_tasks(registry(),[(r,repaired,[],wr.task_runtime("A"))],NOW),[])
+
+ def test_result_digest_mismatch_is_rejected(self):
+  r=request("A"); res=result("A",req=r); res["request_digest"]="sha256:"+"0"*64
+  with self.assertRaises(cp.ControlPlaneError): wr.completion_satisfied(r,res)
 
  def test_completion_unblocks_dependency(self):
   a=request("A"); b=request("B",deps=["A"])
@@ -75,10 +86,10 @@ class WorkflowRuntimeTests(unittest.TestCase):
   l,sa=cp.claim_plan(idle(),a,sa,slot_id="1",execution_id="a1",now=NOW); sa=cp.activate_state(sa,a,l)
   l,sa=cp.recover_expired_plan(l,sa,a,now=datetime(2026,9,23,1,0,tzinfo=timezone.utc))
   self.assertFalse(cp.fence_valid(l,task_id="A",agent_id="pm",execution_id="a1",generation=1))
-  l,sa=cp.claim_plan(l,a,sa,slot_id="2",execution_id="a2",now=datetime(2026,9,23,1,1,tzinfo=timezone.utc)); sa=cp.activate_state(sa,a,l); l,sa=wr.complete_task(l,sa,a,[ga],result("A"))
+  l,sa=cp.claim_plan(l,a,sa,slot_id="2",execution_id="a2",now=datetime(2026,9,23,1,1,tzinfo=timezone.utc)); sa=cp.activate_state(sa,a,l); l,sa=wr.complete_task(l,sa,a,[ga],result("A",req=a,execution_id="a2",generation=3))
   self.assertEqual([x["task_id"] for x in wr.ready_tasks(reg,[(a,sa,[ga],ma),(b,sb,[],mb),(c,sc,[],mc)],NOW)],["B"])
-  l,sb=cp.claim_plan(l,b,sb,slot_id="3",execution_id="b1",now=NOW); sb=cp.activate_state(sb,b,l); l,sb=wr.complete_task(l,sb,b,[],result("B"))
-  l,sc=cp.claim_plan(l,c,sc,slot_id="4",execution_id="c1",now=NOW); sc=cp.activate_state(sc,c,l); l,sc=wr.complete_task(l,sc,c,[],result("C"))
+  l,sb=cp.claim_plan(l,b,sb,slot_id="3",execution_id="b1",now=NOW); sb=cp.activate_state(sb,b,l); l,sb=wr.complete_task(l,sb,b,[],result("B",req=b,execution_id="b1",generation=5))
+  l,sc=cp.claim_plan(l,c,sc,slot_id="4",execution_id="c1",now=NOW); sc=cp.activate_state(sc,c,l); l,sc=wr.complete_task(l,sc,c,[],result("C",req=c,execution_id="c1",generation=7))
   self.assertEqual((sa["status"],sb["status"],sc["status"],l["state"]),("completed","completed","completed","idle"))
 
 if __name__=="__main__": unittest.main()

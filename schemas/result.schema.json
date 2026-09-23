@@ -5,6 +5,9 @@
   "required": [
     "schema_version",
     "task_id",
+    "request_digest",
+    "execution_id",
+    "generation",
     "outcome",
     "summary",
     "evidence",
@@ -16,6 +19,18 @@
     },
     "task_id": {
       "type": "string"
+    },
+    "request_digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "execution_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "generation": {
+      "type": "integer",
+      "minimum": 1
     },
     "outcome": {
       "const": "success"
@@ -40,4 +55,4 @@
       "type": "string"
     }
   }
-}\n
+}
