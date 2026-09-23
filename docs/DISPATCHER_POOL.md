@@ -1,37 +1,77 @@
-# Five-slot shared dispatcher pool
+# Event-driven scheduler topology
 
-The pool contains five identical Scheduled Chat workers offset by 12 minutes within each hour.
+The former five-slot polling pool is superseded by an Owner-authorized event-driven design.
 
-| slot | minute |
-| --- | ---: |
-| dispatcher-00 | 00 |
-| dispatcher-12 | 12 |
-| dispatcher-24 | 24 |
-| dispatcher-36 | 36 |
-| dispatcher-48 | 48 |
+## Runtime roles
 
-The pool does **not** create five agent runtimes in parallel. All workers reconcile the same queue and the same public transactional gateway lease. Exactly one target-agent execution may hold that lease.
+### Execution Worker
 
-## Wake semantics
+One reusable Scheduled Chat automation performs autonomous control-plane execution. It is a one-shot worker that is normally dormant and is re-armed only when durable control-plane state requires another reconciliation/execution cycle.
 
-A slot invocation performs one bounded reconciliation cycle and at most one target-agent task. If the global lease is already held, it may only perform protocol-defined recovery for that exact execution; otherwise it exits without starting another agent.
+The worker remains infrastructure, never an agent identity. It may execute at most one target-agent task per invocation.
 
-Five hourly clocks therefore reduce average autonomous wake latency while respecting the user's plan limit and the one-runtime invariant.
+### Hourly Watchdog
 
-## Human interaction
+One separate recurring Scheduled Chat automation runs hourly. It does not execute target-agent work. It reconciles task readiness, wake delivery state and the authoritative gateway lease, and re-arms the Execution Worker only when durable work or recovery is required.
 
-The pool is irrelevant to direct interactive chats. Owner ↔ Project Manager, Owner ↔ Auditor, Owner ↔ Supervisor, and Owner ↔ future Specialists remain direct entry points.
+## Durable wake generations
 
-## Gateway requirement
+Wake transport state is stored under `runtime/dispatcher-health.json#wake`:
 
-The lease gateway must serialize concurrent requests without dropping pending workflows. Its GitHub Actions concurrency group therefore uses `queue: max`; the lease state machine itself still accepts at most one active claim.
+- `desired_generation`: newest durable wake request;
+- `armed_generation`: newest generation successfully scheduled on the worker;
+- `served_generation`: newest generation actually reconciled by a worker run.
 
-## Admission test
+A bounded `recent_request_keys` list suppresses replay of the same wake-producing transition.
 
-Before treating the pool as operational:
+Interpretation:
 
-1. all five scheduler objects must carry the same protocol revision, differing only by slot_id and schedule;
-2. two or more near-simultaneous probe claims must produce one accepted active lease and rejected/no-op competitors, with no duplicate target write;
-3. after release, the gateway must return idle at a newer generation;
-4. no dispatcher may mutate another dispatcher schedule;
-5. no project target is used for the concurrency probe.
+- desired > armed: the worker still needs to be scheduled;
+- armed > served: a worker invocation is outstanding or was lost;
+- desired <= served: no wake request is pending.
+
+## Wake-worthy transitions
+
+A new wake is justified only by durable state that may permit progress, including:
+
+- new READY task;
+- dependency or Gate completion;
+- successful Phase A activation requiring later Phase B;
+- retry becoming due;
+- recovery/requeue after runtime loss;
+- reconciliation leaving follow-up work.
+
+A worker run by itself is never sufficient reason to re-arm.
+
+## Re-arm ordering
+
+1. Persist a wake request.
+2. Re-arm the existing Execution Worker.
+3. Verify the scheduler update.
+4. Persist the corresponding armed generation.
+
+If step 4 is lost, a duplicate re-arm is safe. If the worker never runs, the Watchdog detects an outstanding stale armed generation and re-arms it.
+
+## Preserved invariants
+
+The topology does not change:
+
+- global maximum one autonomous target-agent execution;
+- authoritative lease in `lvlaksim1/agent-control-plane-gateway`;
+- exact gateway fencing;
+- immutable task requests;
+- Phase A reserve/activate then STOP;
+- Phase B in a later invocation;
+- target-agent mandate validation;
+- completion evidence requirements;
+- direct Owner↔agent conversations outside scheduler transport.
+
+## Scheduler capacity
+
+Deployment target:
+
+- former `dispatcher-00` automation → reusable Execution Worker;
+- former `dispatcher-12` automation → hourly Watchdog;
+- former `dispatcher-24`, `dispatcher-36`, `dispatcher-48` → retired/disabled.
+
+The historical five-slot race validation remains useful evidence for the gateway lease, but five continuously polling slots are no longer the production scheduler model.
