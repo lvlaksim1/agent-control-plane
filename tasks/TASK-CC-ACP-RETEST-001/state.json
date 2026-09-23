@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-CC-ACP-RETEST-001",
+  "status": "queued",
+  "request_digest": "sha256:1cfc9f9748fc6e2aa9acd7737aca978f210cd41b327afc187391f929202f14dc",
+  "attempt": 0,
+  "runtime_loss_count": 0,
+  "claim": null,
+  "latest_checkpoint": null,
+  "request_blob_sha": "c66c42764aa318f3f44f1de5ab13565320f5243c"
+}
