@@ -31,61 +31,6 @@
         "object",
         "null"
       ]
-    },
-    "carrier": {
-      "oneOf": [
-        {
-          "type": "null"
-        },
-        {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "mode",
-            "carrier_id",
-            "set_by",
-            "reason",
-            "heartbeat_at",
-            "lease_until",
-            "fallback_after_expiry"
-          ],
-          "properties": {
-            "mode": {
-              "enum": [
-                "live",
-                "hold"
-              ]
-            },
-            "carrier_id": {
-              "type": "string",
-              "minLength": 1
-            },
-            "set_by": {
-              "type": "string",
-              "minLength": 1
-            },
-            "reason": {
-              "type": "string",
-              "minLength": 1
-            },
-            "heartbeat_at": {
-              "type": [
-                "string",
-                "null"
-              ]
-            },
-            "lease_until": {
-              "type": [
-                "string",
-                "null"
-              ]
-            },
-            "fallback_after_expiry": {
-              "type": "boolean"
-            }
-          }
-        }
-      ]
     }
   },
   "additionalProperties": false
