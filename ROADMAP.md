@@ -19,9 +19,9 @@
 - [x] 12. Completion evidence verifier
 - [x] 13. Automatic DAG continuation
 - [x] 14. First Scheduled Chat dispatcher (runtime proven; transactional gateway added after live safety-layer discovery)
-- [ ] 15. Sandbox E2E (first run found and fixed completion projection drift; corrected gateway-backed run pending)
+- [x] 15. Sandbox E2E (completion-projection drift found, protocol corrected, gateway-backed E2E passed)
 - [ ] 16. Real PM/Auditor integration
-- [ ] 17. Supervisor human-facing routing
+- [ ] 17. Multi-entry human routing: direct Owner↔agent conversations remain first-class; Supervisor is optional coordination, never a mandatory project-development proxy
 - [ ] 18. Five-slot shared dispatcher pool
 - [ ] 19. Fold proven protocol into Context Capsule / Service Agent Base
 - [ ] 20. Resume Agent Catalog / Agent Factory scaling

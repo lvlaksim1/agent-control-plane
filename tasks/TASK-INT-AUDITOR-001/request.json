@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-INT-AUDITOR-001",
+  "issuer_agent_id": "owner",
+  "target_agent_id": "project-manager-auditor",
+  "objective": "Reinstate the existing persistent Auditor and independently verify the completed TASK-INT-PM-001 attestation against live read-only evidence from lvlaksim1/context-capsule@v2-manager-runtime. Confirm or reject the PM attestation, preserve Auditor independence, and persist only the bounded audit result/evidence in Agent Control Plane.",
+  "authority_basis": {
+    "kind": "owner-directive",
+    "reference": "OWNER-2026-09-23-ACP-9-20"
+  },
+  "scope": [
+    "read-only verification of TASK-INT-PM-001 result",
+    "read-only inspection of lvlaksim1/context-capsule@v2-manager-runtime",
+    "control-plane task/result/checkpoint state required for this task"
+  ],
+  "constraints": [
+    "Do not modify lvlaksim1/context-capsule.",
+    "Do not reopen prior audit findings unless new evidence objectively establishes a conflict.",
+    "Do not alter Auditor methodology, mandate, or scheduler configuration.",
+    "Do not use Work."
+  ],
+  "target": {
+    "repository": "lvlaksim1/context-capsule",
+    "ref": "v2-manager-runtime"
+  },
+  "priority": "high",
+  "dependencies": [
+    {
+      "task_id": "TASK-INT-PM-001",
+      "relation": "depends_on"
+    }
+  ],
+  "workflow_id": "WF-REAL-PM-AUDITOR-001",
+  "parent_task_id": "TASK-INT-PM-001",
+  "relation": "independent-verification",
+  "retry_policy": {
+    "max_attempts": 2,
+    "backoff_minutes": [
+      0,
+      15
+    ],
+    "quarantine_on_exhaustion": true
+  },
+  "completion_contract": {
+    "required_evidence": [
+      {
+        "kind": "audit",
+        "minimum": 1
+      }
+    ]
+  },
+  "created_at": "2026-09-23T11:55:01Z"
+}
