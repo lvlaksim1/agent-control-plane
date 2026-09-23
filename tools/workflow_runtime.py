@@ -11,8 +11,35 @@ GATE_TYPES={"owner_decision","authority","external_dependency","audit","release_
 GATE_STATUSES={"waiting","satisfied","cancelled"}
 DEFAULT_POLICY={"max_attempts":3,"backoff_minutes":[0,15,60],"quarantine_on_exhaustion":True}
 
+TASK_CARRIER_MODES={"live","hold"}
+
 def task_runtime(task_id:str)->dict[str,Any]:
-    return {"schema_version":1,"task_id":task_id,"failure_count":0,"retry_not_before":None,"last_failure":None}
+    return {"schema_version":1,"task_id":task_id,"failure_count":0,"retry_not_before":None,"last_failure":None,"carrier":None}
+
+def validate_task_carrier(carrier:dict[str,Any]|None)->None:
+    if carrier is None:
+        return
+    if not isinstance(carrier,dict):
+        raise base.ControlPlaneError("task carrier must be an object or null")
+    base.require_fields(carrier,["mode","carrier_id","set_by","reason","heartbeat_at","lease_until","fallback_after_expiry"],"task carrier")
+    if carrier["mode"] not in TASK_CARRIER_MODES:
+        raise base.ControlPlaneError("invalid task carrier mode")
+    if not carrier["carrier_id"] or not carrier["set_by"] or not carrier["reason"]:
+        raise base.ControlPlaneError("task carrier identity/provenance must be non-empty")
+    if not isinstance(carrier["fallback_after_expiry"],bool):
+        raise base.ControlPlaneError("task carrier fallback_after_expiry must be boolean")
+    if carrier["mode"]=="live":
+        if not carrier["heartbeat_at"] or not carrier["lease_until"]:
+            raise base.ControlPlaneError("live task carrier requires heartbeat_at and lease_until")
+        heartbeat=base.parse_time(carrier["heartbeat_at"])
+        lease_until=base.parse_time(carrier["lease_until"])
+        if lease_until<=heartbeat:
+            raise base.ControlPlaneError("live task carrier lease must expire after heartbeat")
+    else:
+        if carrier["heartbeat_at"] is not None or carrier["lease_until"] is not None:
+            raise base.ControlPlaneError("hold task carrier must not expire")
+        if carrier["fallback_after_expiry"] is not False:
+            raise base.ControlPlaneError("hold task carrier cannot allow expiry fallback")
 
 def validate_task_runtime(meta:dict[str,Any],request:dict[str,Any])->None:
     base.require_fields(meta,["schema_version","task_id","failure_count","retry_not_before","last_failure"],"task runtime")
@@ -22,6 +49,55 @@ def validate_task_runtime(meta:dict[str,Any],request:dict[str,Any])->None:
         raise base.ControlPlaneError("failure_count must be non-negative")
     if meta["retry_not_before"] is not None:
         base.parse_time(meta["retry_not_before"])
+    validate_task_carrier(meta.get("carrier"))
+
+def task_carrier_blocks_scheduler(meta:dict[str,Any],request:dict[str,Any],*,now:datetime)->bool:
+    validate_task_runtime(meta,request)
+    carrier=meta.get("carrier")
+    if carrier is None:
+        return False
+    if carrier["mode"]=="hold":
+        return True
+    lease_until=base.parse_time(carrier["lease_until"])
+    if now < lease_until:
+        return True
+    return carrier["fallback_after_expiry"] is not True
+
+def set_live_task_carrier(meta:dict[str,Any],request:dict[str,Any],*,carrier_id:str,set_by:str,reason:str,now:datetime,lease_minutes:int=45)->dict[str,Any]:
+    validate_task_runtime(meta,request)
+    if not carrier_id or not set_by or not reason or not isinstance(lease_minutes,int) or lease_minutes<1:
+        raise base.ControlPlaneError("invalid live task carrier parameters")
+    out=copy.deepcopy(meta)
+    out["carrier"]={
+      "mode":"live",
+      "carrier_id":carrier_id,
+      "set_by":set_by,
+      "reason":reason,
+      "heartbeat_at":base.format_time(now),
+      "lease_until":base.format_time(now+timedelta(minutes=lease_minutes)),
+      "fallback_after_expiry":True
+    }
+    return out
+
+def renew_live_task_carrier(meta:dict[str,Any],request:dict[str,Any],*,carrier_id:str,now:datetime,lease_minutes:int=45)->dict[str,Any]:
+    validate_task_runtime(meta,request)
+    carrier=meta.get("carrier")
+    if not isinstance(carrier,dict) or carrier.get("mode")!="live":
+        raise base.ControlPlaneError("task has no live carrier")
+    if carrier.get("carrier_id")!=carrier_id:
+        raise base.ControlPlaneError("task carrier mismatch")
+    if now>=base.parse_time(carrier["lease_until"]):
+        raise base.ControlPlaneError("expired live task carrier cannot be renewed without reconciliation")
+    out=copy.deepcopy(meta)
+    out["carrier"]["heartbeat_at"]=base.format_time(now)
+    out["carrier"]["lease_until"]=base.format_time(now+timedelta(minutes=lease_minutes))
+    return out
+
+def clear_task_carrier(meta:dict[str,Any],request:dict[str,Any])->dict[str,Any]:
+    validate_task_runtime(meta,request)
+    out=copy.deepcopy(meta)
+    out["carrier"]=None
+    return out
 
 def retry_policy(request:dict[str,Any])->dict[str,Any]:
     policy=copy.deepcopy(request.get("retry_policy") or DEFAULT_POLICY)
@@ -277,120 +353,20 @@ def claimed_execution_ready(state:dict[str,Any],request:dict[str,Any],gateway_le
     """Allows a later dispatcher to begin target reinstantiation only after a durable activation receipt."""
     return state.get("status")=="claimed" and gateway_execution_admitted(state,request,gateway_lease,require_active_state=False)
 
-EXECUTION_MODES={"interactive","autonomous","hold"}
+def scheduler_ready_tasks(registry:dict[str,Any],bundles:list[tuple],now:datetime)->list[dict[str,Any]]:
+    """Scheduler-only READY resolution: skip only tasks whose own carrier is live/held."""
+    eligible=[]
+    for bundle in bundles:
+        req,state,gates,meta=normalize(bundle)
+        validate_task_runtime(meta,req)
+        if task_carrier_blocks_scheduler(meta,req,now=now):
+            continue
+        eligible.append((req,state,gates,meta))
+    return ready_tasks(registry,eligible,now)
 
-def validate_execution_mode(state:dict[str,Any])->None:
-    base.require_fields(state,[
-      "schema_version","mode","autonomous_scheduler_allowed",
-      "fallback_after_presence_expiry","set_by","authority","reason","set_at",
-      "presence","owner_hold"
-    ],"execution mode")
-    if state["schema_version"]!=2:
-        raise base.ControlPlaneError("execution mode schema_version must be 2")
-    if state["mode"] not in EXECUTION_MODES:
-        raise base.ControlPlaneError("invalid execution mode")
-    if not isinstance(state["autonomous_scheduler_allowed"],bool):
-        raise base.ControlPlaneError("autonomous_scheduler_allowed must be boolean")
-    if not isinstance(state["fallback_after_presence_expiry"],bool):
-        raise base.ControlPlaneError("fallback_after_presence_expiry must be boolean")
-    if not state["set_by"] or not state["authority"] or not state["reason"]:
-        raise base.ControlPlaneError("execution mode provenance fields must be non-empty")
-    base.parse_time(state["set_at"])
-
-    hold=state["owner_hold"]
-    if not isinstance(hold,dict):
-        raise base.ControlPlaneError("owner_hold must be an object")
-    base.require_fields(hold,["enabled","reason","set_by","set_at"],"owner hold")
-    if not isinstance(hold["enabled"],bool):
-        raise base.ControlPlaneError("owner_hold.enabled must be boolean")
-    if hold["enabled"]:
-        if state["mode"]!="hold":
-            raise base.ControlPlaneError("enabled owner hold requires mode=hold")
-        if not hold["reason"] or not hold["set_by"] or not hold["set_at"]:
-            raise base.ControlPlaneError("enabled owner hold requires provenance")
-        base.parse_time(hold["set_at"])
-    elif state["mode"]=="hold":
-        raise base.ControlPlaneError("mode=hold requires enabled owner hold")
-
-    presence=state["presence"]
-    if state["mode"]=="interactive":
-        if state["autonomous_scheduler_allowed"] is not False:
-            raise base.ControlPlaneError("interactive mode cannot explicitly allow scheduler")
-        if hold["enabled"]:
-            raise base.ControlPlaneError("interactive mode cannot also be owner hold")
-        if not isinstance(presence,dict):
-            raise base.ControlPlaneError("interactive mode requires presence lease")
-        base.require_fields(presence,["carrier_id","heartbeat_at","lease_until"],"interactive presence")
-        if not presence["carrier_id"]:
-            raise base.ControlPlaneError("interactive presence carrier_id is required")
-        heartbeat=base.parse_time(presence["heartbeat_at"])
-        lease_until=base.parse_time(presence["lease_until"])
-        if lease_until<=heartbeat:
-            raise base.ControlPlaneError("interactive presence lease must expire after heartbeat")
-    else:
-        if presence is not None:
-            raise base.ControlPlaneError("non-interactive mode must not carry presence lease")
-
-    if state["mode"]=="autonomous":
-        if state["autonomous_scheduler_allowed"] is not True:
-            raise base.ControlPlaneError("autonomous mode must explicitly allow scheduler")
-        if hold["enabled"]:
-            raise base.ControlPlaneError("autonomous mode cannot carry owner hold")
-    if state["mode"]=="hold" and state["autonomous_scheduler_allowed"] is not False:
-        raise base.ControlPlaneError("owner hold must block scheduler")
-
-def interactive_presence_fresh(state:dict[str,Any],*,now:datetime)->bool:
-    validate_execution_mode(state)
-    if state["mode"]!="interactive":
-        return False
-    return now < base.parse_time(state["presence"]["lease_until"])
-
-def renew_interactive_presence(state:dict[str,Any],*,carrier_id:str,now:datetime,lease_minutes:int)->dict[str,Any]:
-    """Renew only a still-fresh lease owned by the same carrier; expired carriers cannot silently reclaim."""
-    validate_execution_mode(state)
-    if state["mode"]!="interactive":
-        raise base.ControlPlaneError("only interactive presence can be renewed")
-    if not isinstance(lease_minutes,int) or lease_minutes<1:
-        raise base.ControlPlaneError("lease_minutes must be a positive integer")
-    presence=state["presence"]
-    if presence["carrier_id"]!=carrier_id:
-        raise base.ControlPlaneError("interactive presence carrier mismatch")
-    if not interactive_presence_fresh(state,now=now):
-        raise base.ControlPlaneError("expired interactive presence cannot be renewed without reconciliation")
-    out=copy.deepcopy(state)
-    out["presence"]["heartbeat_at"]=base.format_time(now)
-    out["presence"]["lease_until"]=base.format_time(now+timedelta(minutes=lease_minutes))
-    validate_execution_mode(out)
-    return out
-
-def scheduler_admission_allowed(state:dict[str,Any],*,now:datetime)->bool:
-    validate_execution_mode(state)
-    if state["mode"]=="hold":
-        return False
-    if state["mode"]=="autonomous":
-        return True
-    if interactive_presence_fresh(state,now=now):
-        return False
-    return state["fallback_after_presence_expiry"] is True
-
-def interactive_fallback_wake_at(state:dict[str,Any],*,now:datetime)->datetime|None:
-    """Return when the Broker should be parked so no Scheduled Task executes during fresh interactive presence."""
-    validate_execution_mode(state)
-    if state["mode"]!="interactive" or not interactive_presence_fresh(state,now=now):
-        return None
-    if state["fallback_after_presence_expiry"] is not True:
-        return None
-    return base.parse_time(state["presence"]["lease_until"])
-
-def scheduler_ready_tasks(execution_mode:dict[str,Any],registry:dict[str,Any],bundles:list[tuple],now:datetime)->list[dict[str,Any]]:
-    """Scheduler-only READY resolution; interactive admission is checked before discovery."""
-    if not scheduler_admission_allowed(execution_mode,now=now):
-        return []
-    return ready_tasks(registry,bundles,now)
-
-def scheduler_claimed_execution_ready(execution_mode:dict[str,Any],state:dict[str,Any],request:dict[str,Any],gateway_lease:dict[str,Any],*,now:datetime)->bool:
-    """Scheduler-only Phase-B admission; a fresh interactive carrier blocks target reinstantiation."""
-    if not scheduler_admission_allowed(execution_mode,now=now):
+def scheduler_claimed_execution_ready(meta:dict[str,Any],state:dict[str,Any],request:dict[str,Any],gateway_lease:dict[str,Any],*,now:datetime)->bool:
+    """Scheduler-only Phase-B admission for one task; unrelated live chains do not block it."""
+    if task_carrier_blocks_scheduler(meta,request,now=now):
         return False
     return claimed_execution_ready(state,request,gateway_lease)
 
@@ -485,11 +461,9 @@ def stale_armed_wake(wake:dict[str,Any],*,now:datetime,stale_after_minutes:int)-
         return True
     return now>=base.parse_time(wake["last_armed_at"])+timedelta(minutes=stale_after_minutes)
 
-def broker_generation_to_arm(wake:dict[str,Any],execution_mode:dict[str,Any],*,now:datetime,stale_after_minutes:int)->int|None:
-    """Return the wake generation the Broker may schedule, after deterministic execution-mode admission."""
+def broker_generation_to_arm(wake:dict[str,Any],*,now:datetime,stale_after_minutes:int)->int|None:
+    """Return the next global wake generation to deliver. Per-task carrier admission occurs at task selection/execution."""
     validate_wake_state(wake)
-    if not scheduler_admission_allowed(execution_mode,now=now):
-        return None
     if wake["desired_generation"]>wake["armed_generation"]:
         return wake["desired_generation"]
     if stale_armed_wake(wake,now=now,stale_after_minutes=stale_after_minutes):
