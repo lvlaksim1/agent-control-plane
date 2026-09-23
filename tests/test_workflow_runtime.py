@@ -194,4 +194,36 @@ class EventWakeTests(unittest.TestCase):
    wr.mark_wake_served(w,generation=2,now=NOW,worker_run_id="run-too-new")
 
 
+class BrokerRelayTests(unittest.TestCase):
+ def wake(self):
+  return {
+   "desired_generation":0,
+   "armed_generation":0,
+   "served_generation":0,
+   "recent_request_keys":[],
+   "last_request":None,
+   "last_armed_at":None,
+   "last_served_at":None,
+   "last_worker_run_id":None
+  }
+
+ def test_broker_arms_newest_unarmed_desired_generation(self):
+  w,_=wr.request_wake(self.wake(),request_key="relay:new",reason="ready",requested_by="issuer",now=NOW)
+  self.assertEqual(wr.broker_generation_to_arm(w,now=NOW,stale_after_minutes=20),1)
+
+ def test_broker_rearms_same_stale_generation_without_increment(self):
+  w,_=wr.request_wake(self.wake(),request_key="relay:stale",reason="ready",requested_by="issuer",now=NOW)
+  w=wr.mark_wake_armed(w,generation=1,now=NOW)
+  later=datetime(2026,9,23,0,21,tzinfo=timezone.utc)
+  self.assertEqual(wr.broker_generation_to_arm(w,now=later,stale_after_minutes=20),1)
+  self.assertEqual(w["desired_generation"],1)
+
+ def test_broker_noops_after_generation_is_served(self):
+  w,_=wr.request_wake(self.wake(),request_key="relay:done",reason="ready",requested_by="issuer",now=NOW)
+  w=wr.mark_wake_armed(w,generation=1,now=NOW)
+  w=wr.mark_wake_served(w,generation=1,now=NOW,worker_run_id="run-1")
+  later=datetime(2026,9,23,0,30,tzinfo=timezone.utc)
+  self.assertIsNone(wr.broker_generation_to_arm(w,now=later,stale_after_minutes=20))
+
+
 if __name__=="__main__": unittest.main()
