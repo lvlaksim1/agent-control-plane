@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "purpose": "shared Scheduled Chat dispatcher pool",
+  "max_concurrent_target_executions": 1,
+  "authoritative_lease": "lvlaksim1/agent-control-plane-gateway@main:runtime/lease.json",
+  "gateway_concurrency": {
+    "group": "agent-control-plane-global-lease",
+    "queue": "max"
+  },
+  "slots": [
+    {
+      "slot_id": "dispatcher-00",
+      "minute": 0
+    },
+    {
+      "slot_id": "dispatcher-12",
+      "minute": 12
+    },
+    {
+      "slot_id": "dispatcher-24",
+      "minute": 24
+    },
+    {
+      "slot_id": "dispatcher-36",
+      "minute": 36
+    },
+    {
+      "slot_id": "dispatcher-48",
+      "minute": 48
+    }
+  ],
+  "cadence": "each slot hourly; aggregate wake opportunity approximately every 12 minutes",
+  "invariants": [
+    "slots are infrastructure workers, never agent identities",
+    "a slot may execute at most one target-agent task per invocation",
+    "active gateway lease prevents any second target-agent execution",
+    "pre-projection recovery continues the same execution token",
+    "scheduler tasks must never edit scheduler configuration themselves",
+    "direct Owner-agent conversations do not use this pool"
+  ]
+}
