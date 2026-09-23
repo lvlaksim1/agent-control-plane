@@ -79,5 +79,39 @@ class Tests(unittest.TestCase):
         with self.assertRaises(cp.ControlPlaneError):
             cp.renew_lease(l,execution_id="old",generation=1,now=datetime(2026,9,23,0,20,tzinfo=timezone.utc))
 
+    def test_bounded_delegation_keeps_commitment_and_returns_to_caller(self):
+        r=request("D"); r["issuer_agent_id"]="agent-a"; r["responsibility"]={
+            "mode":"bounded_delegation",
+            "commitment_owner_agent_id":"agent-a",
+            "return_to_agent_id":"agent-a"
+        }
+        cp.validate_request(r)
+
+    def test_bounded_delegation_rejects_ownership_transfer(self):
+        r=request("D"); r["issuer_agent_id"]="agent-a"; r["responsibility"]={
+            "mode":"bounded_delegation",
+            "commitment_owner_agent_id":"agent-b",
+            "return_to_agent_id":"agent-a"
+        }
+        with self.assertRaises(cp.ControlPlaneError):
+            cp.validate_request(r)
+
+    def test_explicit_handoff_transfers_commitment_and_has_no_automatic_return(self):
+        r=request("H",target="agent-a"); r["issuer_agent_id"]="agent-b"; r["responsibility"]={
+            "mode":"explicit_handoff",
+            "commitment_owner_agent_id":"agent-a",
+            "return_to_agent_id":None
+        }
+        cp.validate_request(r)
+
+    def test_explicit_handoff_rejects_implicit_return(self):
+        r=request("H",target="agent-a"); r["issuer_agent_id"]="agent-b"; r["responsibility"]={
+            "mode":"explicit_handoff",
+            "commitment_owner_agent_id":"agent-a",
+            "return_to_agent_id":"agent-b"
+        }
+        with self.assertRaises(cp.ControlPlaneError):
+            cp.validate_request(r)
+
 if __name__=="__main__":
     unittest.main()
