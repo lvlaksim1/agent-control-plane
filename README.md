@@ -49,7 +49,7 @@ docs/ — normative protocol
 ## Critical invariants
 
 - request.json is immutable after task creation. state.json.request_digest detects mutation.
-- runtime/lease.json is the only atomic ownership record.
+- The authoritative runtime lease is the public transactional `lvlaksim1/agent-control-plane-gateway@main:runtime/lease.json`; private `runtime/lease.json` is retained only as the original foundation reference.
 - Claim persistence order is lease CAS first, task projection second.
 - Recovery persistence order is fence first, task requeue/quarantine second.
 - GitHub 409 Conflict on lease update means claim loss; the caller stops.
@@ -67,3 +67,6 @@ python3 -m unittest discover -s tests -v
 
 There is intentionally no OS/Python matrix and no always-on CI requirement: the control plane itself is GitHub state plus the ordinary-Chat protocol.
 \n## Workflow runtime\n\n`tools/workflow_runtime.py` extends the foundation state machine without changing the authority of `runtime/lease.json`. It adds retry/backoff, gates, reinstantiation packages, completion evidence, and DAG continuation. The scheduled dispatcher must follow `docs/SCHEDULED_CHAT_DISPATCHER.md`.\n
+## Transactional gateway
+
+Live Scheduled Chat E2E showed that direct private-repository lease acquisition can be declined by the Scheduled Chat tool safety layer. The solution does not weaken fencing: an isolated public GitHub Actions gateway now performs only serialized lease state transitions. It stores no private task content. The Chat runtime requests claim/release and verifies the committed lease before acting.

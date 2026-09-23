@@ -5,5 +5,13 @@
   "one_target_agent_per_dispatch": true,
   "authoritative_time": "github_commit_time",
   "dispatcher_protocol": "docs/SCHEDULED_CHAT_DISPATCHER.md",
-  "automatic_execution_activation": "registry-per-agent-explicit"
-}\n
+  "automatic_execution_activation": "registry-per-agent-explicit",
+  "authoritative_lease": {
+    "repository": "lvlaksim1/agent-control-plane-gateway",
+    "ref": "main",
+    "path": "runtime/lease.json",
+    "request_issue_title": "[ACP_LEASE]",
+    "transition_mode": "github-actions-serialized"
+  },
+  "private_lease_status": "legacy-foundation-reference-not-runtime-authority"
+}

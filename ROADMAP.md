@@ -18,8 +18,8 @@
 - [x] 11. Runtime reinstantiation contract/invocation package
 - [x] 12. Completion evidence verifier
 - [x] 13. Automatic DAG continuation
-- [ ] 14. First Scheduled Chat dispatcher
-- [ ] 15. Sandbox E2E
+- [x] 14. First Scheduled Chat dispatcher (runtime proven; transactional gateway added after live safety-layer discovery)
+- [ ] 15. Sandbox E2E (first run found and fixed completion projection drift; corrected gateway-backed run pending)
 - [ ] 16. Real PM/Auditor integration
 - [ ] 17. Supervisor human-facing routing
 - [ ] 18. Five-slot shared dispatcher pool

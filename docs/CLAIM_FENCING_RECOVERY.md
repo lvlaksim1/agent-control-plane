@@ -52,3 +52,7 @@ Checkpoint files are immutable. latest_checkpoint is only a navigation pointer.
 Store completed externally meaningful steps, verified evidence refs, exact target refs/commits where relevant, and next action. Never store private chain-of-thought.
 
 On resume, select newest valid checkpoint, reinstate the same agent, then revalidate live state before acting.
+
+## Runtime authority revision after live E2E
+
+The private control-plane lease defined the original CAS model and remains useful for deterministic tests. In deployed Scheduled Chat runtime, the authoritative lease is held by `lvlaksim1/agent-control-plane-gateway`, whose public GitHub Actions workflow serializes claim/renew/release/recover transitions. This preserves the same fencing invariant while avoiding dependence on a Scheduled Chat being permitted to make the lock mutation itself.
