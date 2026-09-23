@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "gate_id": "OWNER-OVERSIGHT-001",
+  "task_id": "TASK-SUP-AUDIT-001",
+  "gate_type": "owner_decision",
+  "status": "satisfied",
+  "required_actor_id": "owner",
+  "requested_at": "2026-09-23T13:44:00Z",
+  "resolved_at": "2026-09-23T13:44:00Z",
+  "resolution": {
+    "decision": "approved",
+    "reference": "Master Plan item 6.5 / Owner continue execution"
+  }
+}

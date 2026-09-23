@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-SUP-AUDIT-001",
+  "status": "queued",
+  "request_digest": "sha256:null",
+  "attempt": 0,
+  "runtime_loss_count": 0,
+  "claim": null,
+  "latest_checkpoint": null,
+  "request_blob_sha": "1c96c05c2ff7af29afdf7fc622b69486ea4e85ea"
+}

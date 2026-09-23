@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-SUP-AUDIT-001",
+  "issuer_agent_id": "owner",
+  "target_agent_id": "project-manager-auditor",
+  "objective": "Perform Master Plan item 6.5: an independent read-only governance audit of persistent Supervisor ecosystem-supervisor on the exact pinned snapshot. Verify identity/reinstantiation continuity, mandate and owner relationship, coordination-only boundary, preservation of direct Owner↔Project Manager communication, control-plane authority non-escalation, target/project ownership isolation, evidence/provenance and current-state reconciliation, self-modification limits, audit independence handling, scheduler/control-plane claims, and whether current durable state is coherent with live evidence. Publish a canonical Auditor report with findings, severity/confidence, verified passes, limitations, and retest requirements.",
+  "authority_basis": {
+    "kind": "owner-directive",
+    "reference": "Ecosystem Master Plan item 6.5 + current Owner instruction to continue execution"
+  },
+  "scope": [
+    "lvlaksim1/supervisor@4ed6ab3d08ef7a3b763cd1d0be9564e5ec8cd10f",
+    "persistent Supervisor governance and continuity",
+    "read-only reconciliation against live Agent Control Plane, Context Capsule/Auditor evidence, and current scheduler state"
+  ],
+  "constraints": [
+    "Read-only toward lvlaksim1/supervisor.",
+    "Owner oversight is explicit because Supervisor is the audit target.",
+    "Supervisor must not define, suppress, or adjudicate its own findings.",
+    "Do not broaden into remediation during this engagement.",
+    "Prefer deterministic evidence; behavioral probes only if a material property cannot otherwise be established.",
+    "Do not use Work."
+  ],
+  "target": {
+    "repository": "lvlaksim1/supervisor",
+    "ref": "4ed6ab3d08ef7a3b763cd1d0be9564e5ec8cd10f"
+  },
+  "priority": "high",
+  "dependencies": [],
+  "workflow_id": "WF-SUPERVISOR-AUDIT-001",
+  "parent_task_id": null,
+  "relation": "audit_of",
+  "retry_policy": {
+    "max_attempts": 2,
+    "backoff_minutes": [
+      0,
+      15
+    ],
+    "quarantine_on_exhaustion": true
+  },
+  "completion_contract": {
+    "required_evidence": [
+      {
+        "kind": "audit",
+        "minimum": 1
+      }
+    ]
+  },
+  "created_at": "2026-09-23T13:44:00Z"
+}
