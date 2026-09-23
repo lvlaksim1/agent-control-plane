@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-INT-AUDITOR-002",
+  "issuer_agent_id": "context-capsule-project-manager",
+  "target_agent_id": "project-manager-auditor",
+  "objective": "Independently verify TASK-INT-PM-002 against live read-only Context Capsule evidence and verify that the PM result envelope itself satisfies the dispatcher write contract. Preserve Auditor independence, perform no target mutation, and emit a strict audit result envelope.",
+  "authority_basis": {
+    "kind": "engagement",
+    "reference": "OWNER-2026-09-23-ACP-9-20 / WF-REAL-PM-AUDITOR-002"
+  },
+  "scope": [
+    "read-only verification of TASK-INT-PM-002 result",
+    "read-only inspection of lvlaksim1/context-capsule@v2-manager-runtime",
+    "control-plane task/result/checkpoint state required for this task"
+  ],
+  "constraints": [
+    "Do not modify lvlaksim1/context-capsule.",
+    "Do not change Auditor mandate or methodology.",
+    "Do not reopen prior findings without new objective evidence.",
+    "Do not use Work."
+  ],
+  "target": {
+    "repository": "lvlaksim1/context-capsule",
+    "ref": "v2-manager-runtime"
+  },
+  "priority": "high",
+  "dependencies": [
+    {
+      "task_id": "TASK-INT-PM-002",
+      "relation": "depends_on"
+    }
+  ],
+  "workflow_id": "WF-REAL-PM-AUDITOR-002",
+  "parent_task_id": "TASK-INT-PM-002",
+  "relation": "independent-verification",
+  "retry_policy": {
+    "max_attempts": 2,
+    "backoff_minutes": [
+      0,
+      15
+    ],
+    "quarantine_on_exhaustion": true
+  },
+  "completion_contract": {
+    "required_evidence": [
+      {
+        "kind": "audit",
+        "minimum": 1
+      }
+    ]
+  },
+  "created_at": "2026-09-23T12:20:01Z"
+}

@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "claim": {
+    "required_fields": [
+      "execution_id",
+      "generation",
+      "slot_id",
+      "claimed_at"
+    ],
+    "claimed_at_source": "authoritative gateway claim/commit time",
+    "state_status": "claimed"
+  },
+  "result": {
+    "required_fields": [
+      "schema_version",
+      "task_id",
+      "request_digest",
+      "request_blob_sha",
+      "execution_id",
+      "generation",
+      "outcome",
+      "summary",
+      "evidence",
+      "completed_at"
+    ],
+    "fixed_values": {
+      "schema_version": 1,
+      "outcome": "success"
+    },
+    "evidence_required_fields": [
+      "kind",
+      "reference",
+      "verified",
+      "verified_by",
+      "verified_at"
+    ],
+    "evidence_verified_must_be_true": true,
+    "completion_rule": "all completion_contract evidence minima satisfied before state=completed"
+  },
+  "completion": {
+    "order": [
+      "result.json durable",
+      "state=completed durable and re-read",
+      "gateway release accepted",
+      "dispatcher heartbeat"
+    ],
+    "lease_must_remain_active_until": "completed state re-read succeeds"
+  }
+}

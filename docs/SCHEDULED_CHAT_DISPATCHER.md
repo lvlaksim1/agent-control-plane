@@ -13,14 +13,14 @@ Each run is a reconciliation loop:
 7. Read the authoritative gateway lease. If idle, create one `[ACP_LEASE]` Issue with operation `claim`, opaque task/agent IDs, unique execution_id, slot_id, current request_blob_sha and lease_minutes.
 8. Read the gateway Issue result and authoritative lease. Continue only if the gateway reports `accepted:true` and the committed lease exactly matches task_id + agent_id + execution_id + request_blob_sha. A denied claim means another dispatcher owns the runtime; stop.
 9. Gateway generation returned by the accepted claim is the execution fencing generation.
-10. CAS-update private task state to claimed with the exact gateway execution_id/generation, then re-fetch it. **Do not reinstate the agent and do not perform any target write unless this claimed projection is durably visible and matches the authoritative gateway lease.** If this state write fails, request an exact gateway `release` and stop.
+10. Read `runtime/dispatcher-write-contract.json`. CAS-update private task state to claimed using its exact claim contract: `execution_id`, `generation`, `slot_id`, and authoritative `claimed_at`; then re-fetch it. **Do not reinstate the agent and do not perform any target write unless this claimed projection is durably visible and matches the authoritative gateway lease.** If this state write fails, request an exact gateway `release` and stop.
 11. Only then reinstate the existing target agent from Registry home_repository@authority_ref and run its ENTRYPOINT protocol.
 12. The target agent validates task authority against its own mandate. Task delivery and tool access never create authority.
 13. Mark active only after successful reinstantiation/authority validation.
 14. Before every consequential write, re-fetch the authoritative gateway lease and require exact task_id + agent_id + execution_id + generation + request_blob_sha.
 15. Write immutable checkpoints after meaningful durable progress.
 16. On execution failure, fence/release first, then apply retry/backoff/quarantine policy.
-17. Completion requires verified evidence satisfying completion_contract. While the gateway lease is still active: write result.json bound to request_digest + request_blob_sha + execution_id + generation; CAS-update and re-read task state as completed; **only after completed state is durable** request an exact gateway `release` and verify the committed gateway lease is idle at a newer generation.
+17. Completion requires verified evidence satisfying completion_contract. While the gateway lease is still active: write `result.json` exactly to `runtime/dispatcher-write-contract.json`, including `outcome=success` and per-evidence `kind/reference/verified/verified_by/verified_at`; reject completion if any required result/evidence field is absent. Bind result to request_digest + request_blob_sha + execution_id + generation; CAS-update and re-read task state as completed; **only after completed state is durable** request an exact gateway `release` and verify the committed gateway lease is idle at a newer generation.
 18. At the start of every run, reconcile completed-result drift before READY: if the authoritative gateway lease is idle and a valid result.json exists but task state is not completed, verify result/gates and repair task state to completed. Such a task must never be selected again.
 19. Do not manually start a dependent task; the next dispatcher run recomputes READY.
 20. Persist a bounded infrastructure heartbeat to `runtime/dispatcher-health.json` using CAS: observed control-plane HEAD, slot_id, run outcome, and dispatch timestamp. This heartbeat grants no task ownership.
@@ -33,3 +33,9 @@ Runtime result binding: `result.json.request_blob_sha` must equal the immutable 
 ## Gateway trust boundary
 
 The public gateway is a transactional lock service only. It never sees objectives, target repositories, completion evidence, mandates, Context Capsules, or project content. READY selection and authority validation remain private/control-plane responsibilities.
+
+## Human and issuer routing
+
+Supervisor is not a mandatory gateway. The Owner may directly work with any persistent agent. A task may be issued by the Owner or by a registered active agent with an explicit authority basis. For an agent-issued task, dispatcher verifies issuer registration and the presence of an authority reference; the reinstantiated target agent still validates actual mandate/engagement authority before acting.
+
+Direct Owner↔Project Manager chat is outside dispatcher scheduling and remains the normal path for interactive project development.

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "task_id": "TASK-INT-AUDITOR-001",
-  "status": "queued",
+  "status": "superseded",
   "request_digest": "sha256:54b53bee75b274ffee4d48269985358b271bf2ebd2c1492ab4b360e1a76481c4",
   "attempt": 0,
   "runtime_loss_count": 0,

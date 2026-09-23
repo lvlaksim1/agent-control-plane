@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "incident": "scheduled-result-envelope-contract-violation",
+  "affected_task": "TASK-INT-PM-001",
+  "observed_result": "tasks/TASK-INT-PM-001/result.json",
+  "findings": [
+    "result envelope omitted required outcome=success field",
+    "evidence item omitted required reference/verified/verified_by/verified_at fields",
+    "claimed projection omitted claimed_at"
+  ],
+  "runtime_safety": "lease/fencing/reinstantiation/completion-order/release all succeeded; defect limited to persisted envelope shape",
+  "disposition": "TASK-INT-AUDITOR-001 superseded; rerun as WF-REAL-PM-AUDITOR-002 under machine-readable write contract",
+  "owner_authority": "OWNER-2026-09-23-ACP-9-20"
+}
