@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-SUP-RETEST-001",
+  "issuer_agent_id": "owner",
+  "target_agent_id": "project-manager-auditor",
+  "objective": "Perform a focused independent read-only retest of Supervisor audit findings SUP-001 and SUP-002 against the exact remediation snapshot. Verify that the existing ecosystem-supervisor was repaired in place to the current independently verified item-19 Service Agent Base without changing stable identity, mandate, Supervisor profile, goals or professional memory; verify current external-task and supplied-fence requirements, fresh reinstantiation/readiness evidence and generation-31 fenced smoke; verify stale portfolio and auto-execution claims are reconciled and explicitly superseded across beliefs/projects/agents/current/master-plan/handoff; verify the new mandatory portfolio reconciliation safeguard; preserve project ownership, direct Owner-to-Project-Manager access, Auditor independence and Owner gates. Publish a canonical focused retest report and close or retain each finding strictly from evidence.",
+  "authority_basis": {
+    "kind": "owner-directive",
+    "reference": "Owner instruction to remediate Supervisor and close Master Plan 6.5"
+  },
+  "scope": [
+    "read-only focused retest of SUP-001 and SUP-002",
+    "lvlaksim1/supervisor@f37fb991d27b4fedaaf4ed8452513269bf8a5450",
+    "control-plane remediation result and generation-31 checkpoint smoke evidence"
+  ],
+  "constraints": [
+    "Do not modify lvlaksim1/supervisor.",
+    "Do not broaden into unrelated remediation or Agent Catalog/Factory work.",
+    "Do not weaken Auditor methodology or independence.",
+    "Do not treat infrastructure/tool access as target authority.",
+    "Do not use Work."
+  ],
+  "target": {
+    "repository": "lvlaksim1/supervisor",
+    "ref": "f37fb991d27b4fedaaf4ed8452513269bf8a5450"
+  },
+  "priority": "high",
+  "dependencies": [
+    {
+      "task_id": "TASK-SUP-REMEDIATION-001",
+      "relation": "depends_on"
+    }
+  ],
+  "workflow_id": "WF-SUPERVISOR-AUDIT-REMEDIATION-001",
+  "parent_task_id": "TASK-SUP-REMEDIATION-001",
+  "relation": "retest_of",
+  "retry_policy": {
+    "max_attempts": 2,
+    "backoff_minutes": [
+      0,
+      15
+    ],
+    "quarantine_on_exhaustion": true
+  },
+  "completion_contract": {
+    "required_evidence": [
+      {
+        "kind": "audit",
+        "minimum": 1
+      }
+    ]
+  },
+  "created_at": "2026-09-23T14:31:00Z"
+}

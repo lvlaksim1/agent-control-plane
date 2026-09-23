@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-SUP-RETEST-001",
+  "status": "queued",
+  "request_digest": "sha256:2955255bff07359a2ad42d913b676b569b9f258ea50e72e7a2f6396a8f46d846",
+  "attempt": 0,
+  "runtime_loss_count": 0,
+  "claim": null,
+  "latest_checkpoint": null,
+  "request_blob_sha": "e8e24dc643aa78205ff25963f6f76b6a92cf0c31"
+}
