@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "mode": "interactive",
+  "autonomous_scheduler_allowed": false,
+  "set_by": "ecosystem-supervisor",
+  "authority": "Owner interactive-first execution directive, 2026-09-23",
+  "reason": "Owner is actively carrying the current ACP item 19.5 remediation/audit chain in a live chat. Durable handoffs remain in GitHub; Scheduled Tasks must not advance this chain.",
+  "set_at": "2026-09-23T20:52:00Z"
+}
