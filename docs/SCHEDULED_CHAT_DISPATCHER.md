@@ -28,7 +28,7 @@ if continuation is needed:
 persist new wake → nudge Broker → STOP
 ```
 
-The Broker may run immediately or near the requested time; correctness never depends on exact wall-clock delivery. The only required semantic boundary is that Phase B occurs in a later Execution Worker invocation.
+The Broker or Worker may run immediately as catch-up delivery; correctness never depends on exact wall-clock delivery. Live validation also showed that a Worker can start before a Broker performs a post-scheduler acknowledgement, so the Broker must commit the delivery generation **before** scheduling the Worker. The required semantic boundary is a later Execution Worker invocation plus the exact durable fence.
 
 ## Entry reconciliation
 
@@ -101,7 +101,7 @@ A Worker invocation never schedules the Worker itself.
 Wake state is `runtime/dispatcher-health.json#wake`.
 
 - `desired_generation`: latest requested wake;
-- `armed_generation`: latest generation the Broker has successfully scheduled on the Worker;
+- `armed_generation`: latest generation the Broker has durably committed as a Worker delivery attempt before touching scheduler state;
 - `served_generation`: latest armed generation actually reconciled by a Worker invocation.
 
 Invariant:
@@ -124,10 +124,12 @@ Each Broker run:
 1. reconcile Registry, task/gate/runtime metadata, wake state and authoritative gateway lease;
 2. detect READY work, due retry, partial reserved/active transitions, stale/lost wake delivery, or protocol-defined lease recovery;
 3. create a deterministic durable wake if work exists but no sufficient wake is pending;
-4. if `desired_generation > armed_generation`, or an already-armed unserved generation is stale, schedule the existing Execution Worker for a one-shot run and set `is_enabled=true`;
-5. verify the returned scheduler state names the exact Worker and is enabled for a runnable one-shot occurrence; exact wall-clock timing is not a correctness assumption;
-6. only then persist the matching `armed_generation` and `last_armed_at`;
-7. otherwise no-op.
+4. if `desired_generation > armed_generation`, choose `desired_generation`; if an already-armed unserved generation is stale, choose that same `armed_generation`;
+5. **before any scheduler call**, CAS-persist the chosen generation as `armed_generation` with a fresh `last_armed_at`; this durable delivery intent makes an immediate/catch-up Worker invocation safe;
+6. schedule the existing Execution Worker for a one-shot run and set `is_enabled=true`;
+7. verify the returned scheduler state names the exact Worker and is enabled/runnable; exact wall-clock timing is not a correctness assumption;
+8. do not require any post-scheduler GitHub write for correctness. If the scheduler call fails or the Broker runtime dies after step 5, `armed_generation > served_generation` becomes stale and the hourly Broker retries the **same** generation;
+9. otherwise no-op.
 
 The Broker never updates its own schedule while it is executing.
 
