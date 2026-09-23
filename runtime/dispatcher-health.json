@@ -4,26 +4,27 @@
   "last_slot_id": "execution-worker",
   "last_outcome": "bounded-no-work-release-verified",
   "last_observed_head": "8cc4937c55fb1d6f56d95e2f2c28603d3482bf47",
-  "last_reason": "Verified canonical gateway release for TASK-EVENT-WAKE-E2E-001-g41: authoritative gateway is idle at generation 42; completed task remains durable and no new task-state changes occurred since the prior observed head, so no READY/recoverable work remains.",
+  "last_reason": "Injected controlled stale armed wake generation 6 to validate hourly Watchdog lost-wake recovery after event-wake E2E completion.",
   "wake": {
-    "desired_generation": 5,
-    "armed_generation": 5,
+    "desired_generation": 6,
+    "armed_generation": 6,
     "served_generation": 5,
     "recent_request_keys": [
       "validation-wake-001",
       "validation-wake-002",
       "validation-lost-wake-003",
       "phase-b:TASK-EVENT-WAKE-E2E-001-g41",
-      "release-verify:TASK-EVENT-WAKE-E2E-001-g41"
+      "release-verify:TASK-EVENT-WAKE-E2E-001-g41",
+      "validation-watchdog-lost-wake-006"
     ],
     "last_request": {
-      "generation": 5,
-      "request_key": "release-verify:TASK-EVENT-WAKE-E2E-001-g41",
-      "reason": "verify-canonical-gateway-release:TASK-EVENT-WAKE-E2E-001-g41",
-      "requested_by": "execution-worker",
-      "requested_at": "2026-09-23T16:30:02Z"
+      "generation": 6,
+      "request_key": "validation-watchdog-lost-wake-006",
+      "reason": "validate-hourly-watchdog-stale-armed-recovery",
+      "requested_by": "ecosystem-supervisor",
+      "requested_at": "2026-09-23T16:35:30Z"
     },
-    "last_armed_at": "2026-09-23T16:30:19Z",
+    "last_armed_at": "2026-09-23T16:00:00Z",
     "last_served_at": "2026-09-23T16:34:23Z",
     "last_worker_run_id": "execution-worker-generation-5"
   }
