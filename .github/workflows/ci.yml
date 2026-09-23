@@ -1,0 +1,35 @@
+name: Agent Control Plane CI
+
+on:
+  push:
+    branches:
+      - main
+      - event-wake-redesign
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Compile control-plane modules
+        run: python -m compileall -q tools
+      - name: Run deterministic tests
+        run: python -m unittest discover -s tests -v
+      - name: Validate execution-mode fixture
+        run: |
+          python - <<'PY'
+          import json, sys
+          from datetime import datetime, timezone
+          sys.path.insert(0, "tools")
+          import workflow_runtime as wr
+          state = json.load(open("runtime/execution-mode.json", encoding="utf-8"))
+          wr.validate_execution_mode(state)
+          print("execution-mode VALID")
+          PY
