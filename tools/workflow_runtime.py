@@ -442,8 +442,12 @@ def repair_expired_live_completion(state:dict[str,Any],request:dict[str,Any],gat
     validate_state_carrier(state,request)
     if not expired_live_carrier_requires_result_reconciliation(state,request,now=now):
         return None
-    if result is None or result_committed_at is None:
+    if result is None:
         return None
+    if isinstance(result_committed_at,str):
+        result_committed_at=base.parse_time(result_committed_at)
+    if not isinstance(result_committed_at,datetime):
+        raise base.ControlPlaneError("present live result requires authoritative Git commit time")
     carrier=state["carrier"]
     lease_until=base.parse_time(carrier["lease_until"])
     if result_committed_at>now or result_committed_at>lease_until:
@@ -494,6 +498,8 @@ def scheduler_preflight(registry:dict[str,Any],bundles:list[tuple],result_record
             if record is not None:
                 if not isinstance(record,dict) or "result" not in record or "committed_at" not in record:
                     raise base.ControlPlaneError("invalid result reconciliation record")
+                if record["committed_at"] is None:
+                    raise base.ControlPlaneError("present live result requires authoritative Git commit time")
                 repaired=repair_expired_live_completion(
                     state,req,gates,record["result"],
                     result_committed_at=record["committed_at"],now=now
