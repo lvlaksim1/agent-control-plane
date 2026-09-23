@@ -8,7 +8,7 @@ This repository is **infrastructure, not an agent**. It has no Project Manager o
 
 Intended execution model:
 
-ordinary ChatGPT Scheduled Task -> GitHub control plane -> reinstate target persistent agent from its home Context Capsule -> execute bounded task -> persist evidence
+durable wake -> reusable Scheduled Chat Execution Worker -> GitHub control plane -> reinstate target persistent agent from its home Context Capsule -> execute bounded task -> persist evidence
 
 Constraints:
 
@@ -20,7 +20,7 @@ Constraints:
 - persistent agent identity and memory remain in each agent's home repository;
 - tool access never grants authority.
 
-This repository has proven items 1–17, including real persistent Project Manager → Auditor routing. Direct Owner↔agent conversations remain first-class and do not use dispatcher slots.
+This repository has proven items 1–19, including real persistent Project Manager → Auditor routing and Context Capsule interoperability. Direct Owner↔agent conversations remain first-class and do not use scheduler transport.
 
 ## Implemented foundation
 
@@ -87,3 +87,15 @@ The strict workflow `WF-REAL-PM-AUDITOR-002` proved:
 - the Project Manager can issue a dependent task directly to the persistent Auditor without Supervisor as issuer;
 - the Auditor can reinstate independently, verify the PM evidence read-only, publish its own audit evidence, and complete under the same fencing rules;
 - direct human project-development chat remains separate from autonomous dispatcher latency.
+
+
+## Event-driven scheduler redesign
+
+The legacy five-slot polling dispatcher pool is being replaced, before any Agent Catalog/Factory scaling, by an Owner-authorized event-driven topology:
+
+- one reusable one-shot Execution Worker;
+- one hourly Watchdog;
+- durable wake generations in `runtime/dispatcher-health.json#wake`;
+- the same authoritative gateway lease, two-phase activation, fencing, authority validation and completion evidence.
+
+The Watchdog is recovery-only and never executes target-agent work. See `docs/DISPATCHER_POOL.md` and `docs/SCHEDULED_CHAT_DISPATCHER.md`.
