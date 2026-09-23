@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "task_id": "TASK-EVENT-WAKE-E2E-001",
-  "status": "claimed",
+  "status": "active",
   "request_digest": "sha256:3f96c919a8ca160012af93f38cc02b6926ac0b4f6a11ec82f49e061eec027171",
   "attempt": 0,
   "runtime_loss_count": 0,
