@@ -11,7 +11,7 @@ Direct Owner↔agent conversations remain first-class and do not use scheduler t
 
 There is no global interactive shutdown.
 
-For every candidate task, read and validate its `runtime.json#carrier` before scheduler claim or Phase-B target reinstantiation:
+For every candidate task, read and validate its canonical `state.json#carrier` before scheduler claim or Phase-B target reinstantiation:
 
 - fresh `mode=live` carrier lease → this task is not scheduler-eligible;
 - expired `mode=live` with `fallback_after_expiry=true` → this task becomes scheduler-eligible;
@@ -25,15 +25,44 @@ For the task currently carried by the live Owner runtime, continuation is immedi
 ```
 live Owner runtime
       ↓
-persist task / engagement in GitHub
+persist immutable request / engagement in GitHub
       ↓
-record/renew TASK-specific live carrier
+CAS-persist TASK-specific live carrier in state.json
+before exposing/continuing scheduler-visible queued work
       ↓
 reinstantiate the next persistent agent directly
 in the same live runtime
 ```
 
 If that live runtime disappears, its task becomes eligible after the carrier lease expires. This is a continuity fallback, not a scheduled delay in the interactive path.
+
+### Direct-live acquisition and execution fence
+
+A scheduler-visible task MUST have its live carrier established before direct interactive execution proceeds.
+
+For a new task, create the immutable request, then create the queued state with its carrier already present. For an existing queued task, acquire the carrier by CAS on that same state projection. Acquisition is allowed only from `queued + claim=null`; a claimed/active task cannot be taken over silently.
+
+Because scheduler Phase A also CAS-updates `state.json`, carrier-vs-claim races resolve on one object. After carrier acquisition, and immediately before every consequential direct-live write, re-read both state and the authoritative gateway. Require:
+
+- the same task remains `queued` with `claim=null`;
+- the same fresh `carrier_id` remains present;
+- the gateway does not own this same task as `reserved` or `active`.
+
+If any check fails, direct-live work stops and ownership is reconciled before target effects.
+
+### Direct-live completion
+
+Direct-live completion does not use the autonomous gateway fence. It has its own carrier fence.
+
+Before declaring the live engagement complete:
+
+1. require the exact fresh live-carrier fence;
+2. write evidence-backed `result.json` with `execution_mode=live`, immutable request binding, and exact `carrier_id`;
+3. verify the completion contract;
+4. CAS `state.json` to `completed` with `claim=null` and `carrier=null`;
+5. re-read the terminal state.
+
+If the runtime is lost before this terminalization, it writes no success completion. Carrier expiry then permits autonomous fallback. A successful live task must never remain queued until expiry.
 
 ## Why the relay exists
 
