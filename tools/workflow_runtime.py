@@ -309,6 +309,8 @@ def build_live_return_package(registry:dict[str,Any],request:dict[str,Any],resul
     validate_result(result,request)
     responsibility=request.get("responsibility")
     if responsibility is None:
+        if request.get("issuer_agent_id")!="owner" and result.get("execution_mode")=="live":
+            raise base.ControlPlaneError("live agent-to-agent task requires explicit responsibility contract")
         return None
     if responsibility["mode"]=="explicit_handoff":
         return None
