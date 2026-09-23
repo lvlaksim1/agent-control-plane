@@ -1,14 +1,14 @@
 {
   "schema_version": 2,
-  "last_dispatch_at": "2026-09-23T16:34:23Z",
+  "last_dispatch_at": "2026-09-23T16:38:39Z",
   "last_slot_id": "execution-worker",
-  "last_outcome": "bounded-no-work-release-verified",
-  "last_observed_head": "8cc4937c55fb1d6f56d95e2f2c28603d3482bf47",
-  "last_reason": "Injected controlled stale armed wake generation 6 to validate hourly Watchdog lost-wake recovery after event-wake E2E completion.",
+  "last_outcome": "bounded-no-work",
+  "last_observed_head": "27d315fab3e59a4c17b073db67c148e2fff35a9c",
+  "last_reason": "Wake generation 6 reconciled after Watchdog stale-armed recovery; authoritative gateway is idle and no READY or recoverable task exists.",
   "wake": {
     "desired_generation": 6,
     "armed_generation": 6,
-    "served_generation": 5,
+    "served_generation": 6,
     "recent_request_keys": [
       "validation-wake-001",
       "validation-wake-002",
@@ -25,7 +25,7 @@
       "requested_at": "2026-09-23T16:35:30Z"
     },
     "last_armed_at": "2026-09-23T16:37:38Z",
-    "last_served_at": "2026-09-23T16:34:23Z",
-    "last_worker_run_id": "execution-worker-generation-5"
+    "last_served_at": "2026-09-23T16:38:39Z",
+    "last_worker_run_id": "execution-worker-generation-6"
   }
 }
