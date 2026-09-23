@@ -4,7 +4,7 @@
   "last_slot_id": "execution-worker",
   "last_outcome": "bounded-no-work",
   "last_observed_head": "27d315fab3e59a4c17b073db67c148e2fff35a9c",
-  "last_reason": "Independent Auditor task TASK-AUDIT-EVENT-WAKE-001 queued and ready for event-driven dispatch.",
+  "last_reason": "Recovering exact reserved+queued execution TASK-AUDIT-EVENT-WAKE-001-g43; same wake generation 7 re-armed without creating a second claim.",
   "wake": {
     "desired_generation": 7,
     "armed_generation": 7,
@@ -25,7 +25,7 @@
       "requested_by": "ecosystem-supervisor",
       "requested_at": "2026-09-23T16:42:30Z"
     },
-    "last_armed_at": "2026-09-23T16:42:26Z",
+    "last_armed_at": "2026-09-23T16:46:20Z",
     "last_served_at": "2026-09-23T16:38:39Z",
     "last_worker_run_id": "execution-worker-generation-6"
   }
