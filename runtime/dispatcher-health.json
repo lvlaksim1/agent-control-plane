@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "last_dispatch_at": "2026-09-23T12:46:37Z",
-  "last_slot_id": "dispatcher-48",
-  "last_outcome": "no-ready-work",
-  "last_observed_head": "df1206e7e766ab41ce08e41ac9d130f7923499fa",
-  "last_reason": "Authoritative gateway lease was idle at generation 16. Reconciled registered task projections: existing executable task states are terminal (completed or superseded), while staged request-only task directories have no state.json and therefore are not READY. No target-agent execution, gateway claim, target change, or scheduler mutation was performed."
+  "last_dispatch_at": "2026-09-23T12:56:18Z",
+  "last_slot_id": "dispatcher-12",
+  "last_outcome": "lease-fenced-before-target-execution",
+  "last_observed_head": "497d81a493476b417b355d7f91583ff997df4616",
+  "last_reason": "Recovered the exact generation-17 pre-projection claim for TASK-CC-ACP-INTEGRATION-001 and completed target Project Manager reinstantiation/authority validation, but the authoritative gateway lease advanced to idle generation 18 before any target write. No target change was performed. Repaired the private task projection back to queued with attempt unchanged for a later fresh claim."
 }
