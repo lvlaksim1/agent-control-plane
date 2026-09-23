@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "validation_id": "VAL-2026-09-23-ACP-EVENT-WAKE-RELAY-004",
+  "status": "running",
+  "architecture": "event-wake-broker-relay-v4-recurring-worker",
+  "branch": "event-wake-redesign",
+  "owner_directive": "OWNER-2026-09-23-EVENT-WAKE-REDESIGN",
+  "supersedes": [
+    "VAL-2026-09-23-ACP-EVENT-WAKE-RELAY-003"
+  ],
+  "started_at": "2026-09-23T17:40:00Z",
+  "design_change": {
+    "observed_problem": "The one-shot Worker could be successfully re-enabled and retargeted by Broker yet remain undelivered well past DTSTART after it had already fired previously.",
+    "remediation": "Use the same Worker automation as an enabled hourly recurring scheduler anchor. Broker precommits the wake generation, then retargets the Worker's next occurrence earlier while preserving RRULE:FREQ=HOURLY. Natural hourly Worker occurrences fast-noop unless an unserved wake or exact partial gateway execution exists.",
+    "slots": 2
+  },
+  "inherited_evidence": [
+    "Outbox precommit solved the post-scheduler acknowledgement race: generation 8 reached desired=armed=served=8 safely.",
+    "Worker self-rearm remains forbidden.",
+    "Only Wake Broker / Hourly Watchdog may retarget the Worker.",
+    "served_generation <= armed_generation <= desired_generation remains enforced.",
+    "Gateway currently preserves exact gen45 reservation for TASK-EVENT-WAKE-RELAY-E2E-001; private task is still queued, so reserved+queued recovery is the next bounded Phase-A step.",
+    "Three former polling slots remain disabled."
+  ],
+  "active_check": {
+    "id": "FINAL-BROKER-RELAY-E2E-V4",
+    "task_id": "TASK-EVENT-WAKE-RELAY-E2E-001",
+    "status": "running",
+    "phase": "convert-worker-to-recurring-anchor-then-reconcile-reserved-plus-queued",
+    "wake_generation": 9,
+    "gateway_generation": 45
+  },
+  "remaining": [
+    "convert Worker automation to recurring hourly anchor and retry same generation 9",
+    "reserved+queued -> claimed -> active receipt -> Phase-B durable wake -> Broker retarget -> later Phase B target execution",
+    "verified completion and gateway release",
+    "controlled stale/lost delivery retry on recurring Worker",
+    "restore production stale-delivery timeout to 20 minutes",
+    "pin final snapshot",
+    "independent Auditor review"
+  ],
+  "scaling_boundary": "Agent Catalog, Agent Factory and item 20 remain inactive"
+}
