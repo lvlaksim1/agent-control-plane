@@ -7,7 +7,7 @@
   "last_reason": "Final broker-relay E2E task TASK-EVENT-WAKE-RELAY-E2E-001 queued and ready.",
   "wake": {
     "desired_generation": 9,
-    "armed_generation": 8,
+    "armed_generation": 9,
     "served_generation": 8,
     "recent_request_keys": [
       "validation-wake-001",
@@ -27,7 +27,7 @@
       "requested_by": "ecosystem-supervisor",
       "requested_at": "2026-09-23T17:19:10Z"
     },
-    "last_armed_at": "2026-09-23T17:09:34Z",
+    "last_armed_at": "2026-09-23T17:20:29Z",
     "last_served_at": "2026-09-23T17:16:11Z",
     "last_worker_run_id": "execution-worker-generation-8-no-work"
   }
