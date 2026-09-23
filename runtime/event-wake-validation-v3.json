@@ -27,21 +27,28 @@
     "wake_generation": 8,
     "status": "passed",
     "initial_state": "desired=8 armed=7 served=7",
-    "expected": "Broker precommits armed=8 before scheduler update; Worker may start immediately but observes invocation_generation=8 and reconciles served=8; Worker ends disabled.",
-    "completed_at": "2026-09-23T17:16:38Z",
     "evidence": [
-      "002424653a9c532d7835fdfcd62e9e793e3be9a0 precommitted wake generation 8 before Worker delivery",
-      "4a3daf1a31c778d9239e04ea953697e609075776 recorded Worker reconciliation of generation 8",
-      "runtime/dispatcher-health.json reached desired_generation=8, armed_generation=8, served_generation=8",
-      "ACP Execution Worker completed the one-shot run and became disabled",
-      "authoritative gateway remained idle at generation 44"
-    ]
+      "Wake Broker durably precommitted armed_generation=8 with last_armed_at=2026-09-23T17:09:34Z before Worker delivery.",
+      "The one-shot Worker was not required to run at its nominal DTSTART; delayed delivery still observed invocation_generation=8 and reconciled generation 8 safely.",
+      "runtime/dispatcher-health.json reached desired_generation=8, armed_generation=8, served_generation=8 with last_worker_run_id=execution-worker-generation-8-no-work.",
+      "Gateway remained idle at generation 44 and no target-agent execution was performed for the no-work probe.",
+      "Execution Worker ended disabled after the one-shot run; Wake Broker / Watchdog remained enabled and recurring."
+    ],
+    "conclusion": "Outbox-style precommit removes the post-scheduler acknowledgement race and tolerates delayed/catch-up one-shot delivery."
   },
   "remaining": [
-    "live Phase A -> wake -> Broker -> later Phase B target execution under relay v3",
-    "V3-specific lost Worker delivery recovery using the same precommitted generation",
+    "live Phase A -> durable wake -> Broker -> later Phase B target execution on v3",
+    "controlled stale/lost Worker delivery recovery using the same precommitted generation",
+    "restore production stale-delivery timeout",
     "pin final snapshot",
     "independent Auditor review"
   ],
-  "scaling_boundary": "Agent Catalog, Agent Factory and item 20 remain inactive"
+  "scaling_boundary": "Agent Catalog, Agent Factory and item 20 remain inactive",
+  "next_check": {
+    "id": "OUTBOX-BROKER-PHASE-A-B-E2E",
+    "task_id": "TASK-EVENT-WAKE-E2E-002",
+    "status": "preparing",
+    "expected": "READY task -> durable wake -> Broker precommit/arm -> Worker Phase A activate and STOP -> new durable Phase-B wake -> Broker precommit/arm -> later Worker Phase B reinstate target agent and complete -> release gateway."
+  },
+  "updated_at": "2026-09-23T17:18:00Z"
 }
