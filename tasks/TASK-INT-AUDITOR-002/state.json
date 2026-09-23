@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "task_id": "TASK-INT-AUDITOR-002",
-  "status": "claimed",
+  "status": "active",
   "request_digest": "sha256:9fda6a0ef5b793a0a95800319fb4e014748e0839cbd18c3198f990c0e58ae5fe",
   "attempt": 1,
   "runtime_loss_count": 1,
