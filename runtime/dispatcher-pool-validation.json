@@ -4,29 +4,34 @@
   "result": "IN_PROGRESS",
   "scheduler_slots": [
     {
-      "slot_id": "dispatcher-00",
+      "slot_id": "execution-worker",
       "automation_id": "6aac8b1d8888819180cc4af0c009669e",
-      "enabled": true
+      "enabled": false,
+      "role": "reusable-one-shot"
     },
     {
-      "slot_id": "dispatcher-12",
+      "slot_id": "watchdog-hourly",
       "automation_id": "6aac8b23fff4819180fb12916df071a8",
-      "enabled": true
+      "enabled": true,
+      "role": "hourly-recovery"
     },
     {
       "slot_id": "dispatcher-24",
       "automation_id": "6aac85d181108191bb95bfe823f18edc",
-      "enabled": true
+      "enabled": false,
+      "role": "retired"
     },
     {
       "slot_id": "dispatcher-36",
       "automation_id": "6aac8b3402048191b4fc6d735aa8f38c",
-      "enabled": true
+      "enabled": false,
+      "role": "retired"
     },
     {
       "slot_id": "dispatcher-48",
       "automation_id": "6aac8b15fd088191a4a2b169de4dd3be",
-      "enabled": true
+      "enabled": false,
+      "role": "retired"
     }
   ],
   "one_shot_probe": {
@@ -82,6 +87,27 @@
       "lost armed wake recoverable by watchdog",
       "phase A creates later phase B wake",
       "legacy gateway one-runtime invariant preserved"
-    ]
+    ],
+    "live_validation": {
+      "generation_1": {
+        "result": "REMEDIATED",
+        "finding": "schedule-only re-arm left the one-shot worker disabled; protocol hardened to require future schedule plus is_enabled=true before armed acknowledgement"
+      },
+      "generation_2": {
+        "result": "PASS",
+        "desired_generation": 2,
+        "armed_generation": 2,
+        "served_generation": 2,
+        "watchdog_armed_at": "2026-09-23T16:05:08Z",
+        "worker_served_at": "2026-09-23T16:05:39Z",
+        "worker_run_id": "execution-worker-generation-2",
+        "outcome": "bounded-no-work",
+        "gateway_lease_after": {
+          "state": "idle",
+          "generation": 40
+        },
+        "evidence_ref": "runtime/dispatcher-health.json@cd24bc0d8e8a0d329d5f2d657f6be8f17990ed09"
+      }
+    }
   }
 }
