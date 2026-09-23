@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "task_id": "TASK-SUP-RETEST-002",
-  "status": "claimed",
+  "status": "active",
   "request_digest": "sha256:33883812cdc7f02bac3afe152c3d37274c203dd8fe278b720262c3d08ec1d080",
   "attempt": 1,
   "runtime_loss_count": 0,
