@@ -140,4 +140,53 @@ class WorkflowRuntimeTests(unittest.TestCase):
   self.assertFalse(wr.gateway_execution_admitted(s,r,lease))
 
 
+class EventWakeTests(unittest.TestCase):
+ def wake(self):
+  return {
+   "desired_generation":0,
+   "armed_generation":0,
+   "served_generation":0,
+   "recent_request_keys":[],
+   "last_request":None,
+   "last_armed_at":None,
+   "last_served_at":None,
+   "last_worker_run_id":None
+  }
+
+ def test_wake_request_is_replay_safe(self):
+  w=self.wake()
+  w,created=wr.request_wake(w,request_key="task-ready:A",reason="task-ready",requested_by="owner",now=NOW)
+  self.assertTrue(created)
+  self.assertEqual(w["desired_generation"],1)
+  again,created=wr.request_wake(w,request_key="task-ready:A",reason="task-ready",requested_by="owner",now=NOW)
+  self.assertFalse(created)
+  self.assertEqual(again["desired_generation"],1)
+
+ def test_wake_arm_and_serve_generations(self):
+  w,_=wr.request_wake(self.wake(),request_key="phase-b:A:e1:9",reason="phase-b",requested_by="execution-worker",now=NOW)
+  self.assertTrue(wr.wake_needs_arming(w))
+  w=wr.mark_wake_armed(w,generation=1,now=NOW)
+  self.assertFalse(wr.wake_needs_arming(w))
+  self.assertTrue(wr.wake_pending(w))
+  w=wr.mark_wake_served(w,generation=1,now=NOW,worker_run_id="run-1")
+  self.assertFalse(wr.wake_pending(w))
+  self.assertEqual(w["served_generation"],1)
+
+ def test_stale_armed_wake_is_detected_for_watchdog(self):
+  w,_=wr.request_wake(self.wake(),request_key="ready:B",reason="task-ready",requested_by="pm",now=NOW)
+  w=wr.mark_wake_armed(w,generation=1,now=NOW)
+  later=datetime(2026,9,23,0,21,tzinfo=timezone.utc)
+  self.assertTrue(wr.stale_armed_wake(w,now=later,stale_after_minutes=20))
+  w=wr.mark_wake_served(w,generation=1,now=later,worker_run_id="run-2")
+  self.assertFalse(wr.stale_armed_wake(w,now=later,stale_after_minutes=20))
+
+ def test_invalid_generation_transitions_are_rejected(self):
+  w=self.wake()
+  with self.assertRaises(cp.ControlPlaneError):
+   wr.mark_wake_armed(w,generation=1,now=NOW)
+  w,_=wr.request_wake(w,request_key="x",reason="ready",requested_by="owner",now=NOW)
+  with self.assertRaises(cp.ControlPlaneError):
+   wr.mark_wake_served(w,generation=2,now=NOW,worker_run_id="run-x")
+
+
 if __name__=="__main__": unittest.main()
