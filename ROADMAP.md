@@ -20,8 +20,8 @@
 - [x] 13. Automatic DAG continuation
 - [x] 14. First Scheduled Chat dispatcher (runtime proven; transactional gateway added after live safety-layer discovery)
 - [x] 15. Sandbox E2E (completion-projection drift found, protocol corrected, gateway-backed E2E passed)
-- [ ] 16. Real PM/Auditor integration
-- [ ] 17. Multi-entry human routing: direct Owner↔agent conversations remain first-class; Supervisor is optional coordination, never a mandatory project-development proxy
+- [x] 16. Real PM/Auditor integration (strict PM attestation → PM-issued Auditor verification; runtime-loss recovery proven)
+- [x] 17. Multi-entry human routing: direct Owner↔agent conversations remain first-class; PM→Auditor routing proven without Supervisor proxy
 - [ ] 18. Five-slot shared dispatcher pool
 - [ ] 19. Fold proven protocol into Context Capsule / Service Agent Base
 - [ ] 20. Resume Agent Catalog / Agent Factory scaling
