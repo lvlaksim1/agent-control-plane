@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-CC-ACP-INTEGRATION-001",
+  "issuer_agent_id": "owner",
+  "target_agent_id": "context-capsule-project-manager",
+  "objective": "As the existing Context Capsule Project Manager, integrate only the proven generic Agent Control Plane interoperability contract into Context Capsule v2 / Service Agent Base on v2-manager-runtime. Preserve direct human invocation as first-class and keep the control plane optional. Do not copy gateway-specific infrastructure into Core. Implement the minimal generic contracts/tests needed for bounded external task intake, non-escalating authority transport, target-side mandate validation, execution fencing before consequential writes when a fence is supplied, durable checkpoint/recovery semantics, strict evidence-backed completion, terminal execution-state cleanup, and agent-to-agent routing without mandatory Supervisor mediation.",
+  "authority_basis": {
+    "kind": "owner-directive",
+    "reference": "OWNER-2026-09-23-ACP-9-20:item-19"
+  },
+  "scope": [
+    "lvlaksim1/context-capsule@v2-manager-runtime ordinary development owned by context-capsule-project-manager",
+    "Project Manager v2 and Universal Service Agent Base contracts/protocols/templates/tests only where the proven abstraction actually applies",
+    "Context Capsule durable Project Manager state and handoff required for continuity"
+  ],
+  "constraints": [
+    "Direct Owner↔Project Manager and Owner↔Service Agent chats remain first-class and must not depend on Scheduled Tasks or Supervisor.",
+    "Supervisor must not become a mandatory issuer or development proxy.",
+    "Tool access, task delivery, registry membership, and execution lease do not expand agent mandate or target authority.",
+    "Agent-issued tasks require explicit authority provenance; the reinstantiated target agent validates actual authority before acting.",
+    "When an external execution fence is present, stale/fenced runtimes must not perform consequential writes.",
+    "Persist stable checkpoints/evidence only; never hidden chain-of-thought.",
+    "Completion must be evidence-backed and terminal execution projection canonicalized.",
+    "Keep infrastructure-specific GitHub gateway paths, scheduler IDs, and lease implementation out of generic Context Capsule Core.",
+    "Do not modify stable main, publish stable v2, or migrate consumers.",
+    "Do not weaken existing CCPM-001 through CCPM-R001 protections.",
+    "Run the full permanent test/compile/VALID/READY/recovery/consumer-compatibility/Service-Agent smoke chain."
+  ],
+  "target": {
+    "repository": "lvlaksim1/context-capsule",
+    "ref": "v2-manager-runtime"
+  },
+  "priority": "high",
+  "dependencies": [],
+  "workflow_id": "WF-CC-ACP-INTEGRATION-001",
+  "parent_task_id": null,
+  "relation": "project-manager-owned-core-integration",
+  "retry_policy": {
+    "max_attempts": 3,
+    "backoff_minutes": [
+      0,
+      15,
+      60
+    ],
+    "quarantine_on_exhaustion": true
+  },
+  "completion_contract": {
+    "required_evidence": [
+      {
+        "kind": "commit",
+        "minimum": 1
+      },
+      {
+        "kind": "ci",
+        "minimum": 1
+      }
+    ]
+  },
+  "created_at": "2026-09-23T12:46:11Z"
+}
