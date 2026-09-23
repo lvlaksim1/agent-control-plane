@@ -1,16 +1,11 @@
 {
   "schema_version": 1,
   "task_id": "TASK-CC-ACP-RETEST-001",
-  "status": "active",
+  "status": "completed",
   "request_digest": "sha256:1cfc9f9748fc6e2aa9acd7737aca978f210cd41b327afc187391f929202f14dc",
   "attempt": 1,
   "runtime_loss_count": 0,
-  "claim": {
-    "execution_id": "EXEC-CC-ACP-RETEST-001-DIRECT",
-    "generation": 25,
-    "slot_id": "direct-owner-runtime",
-    "claimed_at": "2026-09-23T13:31:09Z"
-  },
+  "claim": null,
   "latest_checkpoint": null,
   "request_blob_sha": "c66c42764aa318f3f44f1de5ab13565320f5243c"
 }

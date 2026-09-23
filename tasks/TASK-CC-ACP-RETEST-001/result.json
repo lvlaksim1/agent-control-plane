@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-CC-ACP-RETEST-001",
+  "request_digest": "sha256:1cfc9f9748fc6e2aa9acd7737aca978f210cd41b327afc187391f929202f14dc",
+  "request_blob_sha": "c66c42764aa318f3f44f1de5ab13565320f5243c",
+  "execution_id": "EXEC-CC-ACP-RETEST-001-DIRECT",
+  "generation": 25,
+  "outcome": "success",
+  "summary": "Focused independent read-only retest completed. ACP-CC-001 is CLOSED / High confidence. The external-gate reconciliation mechanism, coherent working views, no-keyword-ontology boundary, exact-snapshot CI, and prior item-19 interoperability safeguards were verified. No new findings. Historical CCPM findings remain closed.",
+  "evidence": [
+    {
+      "kind": "audit",
+      "reference": "lvlaksim1/project-manager-auditor@82166622e607b2e34b3b681a611dca1ad197e2f3:audits/ACP-TASK-CC-ACP-RETEST-001.md",
+      "verified": true,
+      "verified_by": "project-manager-auditor",
+      "verified_at": "2026-09-23T13:33:00Z"
+    }
+  ],
+  "completed_at": "2026-09-23T13:33:00Z"
+}
