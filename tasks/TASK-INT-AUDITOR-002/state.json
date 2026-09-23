@@ -1,16 +1,11 @@
 {
   "schema_version": 1,
   "task_id": "TASK-INT-AUDITOR-002",
-  "status": "active",
+  "status": "completed",
   "request_digest": "sha256:9fda6a0ef5b793a0a95800319fb4e014748e0839cbd18c3198f990c0e58ae5fe",
   "attempt": 1,
   "runtime_loss_count": 1,
-  "claim": {
-    "execution_id": "a154c14f-c9b1-4259-963e-4230b4e74ce3",
-    "generation": 11,
-    "slot_id": "probe-1",
-    "claimed_at": "2026-09-23T12:29:44Z"
-  },
+  "claim": null,
   "latest_checkpoint": null,
   "request_blob_sha": "2ee517310f3127a309b3d3026ee8f157d60afe35"
 }
