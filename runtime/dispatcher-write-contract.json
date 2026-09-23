@@ -1,5 +1,5 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "claim": {
     "required_fields": [
       "execution_id",
@@ -36,7 +36,11 @@
     ],
     "evidence_verified_must_be_true": true,
     "completion_rule": "all completion_contract evidence minima satisfied before state=completed",
-    "completed_at_semantics": "execution-local metadata; parseable timestamp only; never authoritative for lifecycle ordering"
+    "completed_at_semantics": "execution-local metadata; parseable timestamp only; never authoritative for lifecycle ordering",
+    "execution_modes": {
+      "autonomous": "execution_id + generation required",
+      "live": "carrier_id required; no autonomous gateway fence is implied"
+    }
   },
   "completion": {
     "order": [
@@ -78,5 +82,22 @@
       "activation_projection_blob_sha"
     ],
     "same_invocation_as_reservation": false
+  },
+  "live_carrier": {
+    "canonical_location": "tasks/<task_id>/state.json#carrier",
+    "acquisition": [
+      "require state=queued and claim=null",
+      "CAS the same state.json object used by scheduler claims to install carrier",
+      "re-read state after CAS",
+      "before every consequential live write re-read state and authoritative gateway and validate the same fresh carrier_id",
+      "if gateway owns the same task as reserved/active, do not perform direct-live target work until reconciled"
+    ],
+    "completion": [
+      "write result.json with execution_mode=live and exact carrier_id while carrier fence is fresh",
+      "verify completion_contract evidence",
+      "CAS state=completed with claim=null and carrier=null before carrier expiry",
+      "re-read terminal state; expired carrier cannot be used to complete"
+    ],
+    "fallback": "if live runtime disappears before terminal completion, expired carrier with fallback_after_expiry=true permits scheduler execution"
   }
 }
