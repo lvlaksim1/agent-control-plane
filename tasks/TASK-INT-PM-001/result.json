@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-INT-PM-001",
+  "status": "completed",
+  "request_digest": "sha256:b09948e7000a2adfb47a29ffd3abc959c90d2d8a11b5b03527545cc176334a75",
+  "request_blob_sha": "1756c0a3e0c247c16c98715e58c31cdf2684791e",
+  "execution_id": "exec-int-pm-001-20260923T121402Z-p1",
+  "generation": 7,
+  "completed_at": "2026-09-23T12:16:00Z",
+  "summary": "Read-only Project Manager integration attestation completed after reinstantiation. Manager identity context-capsule-project-manager and mandate were verified. Authoritative manager-state branch v2-manager-runtime HEAD is ebefc10e3cb16535d9672daa8c4911d635020757. Current lifecycle stage: Project Manager remediation and self-verification complete; CCPM-R001 remains open pending separate focused Auditor retest. No architecture or hosted-CI blocker is known; remaining gate is that focused Auditor retest. Next action is to commission the focused Auditor retest, then continue ordinary Context Capsule development if it passes. No Context Capsule project mutation was performed by this task.",
+  "evidence": [
+    {
+      "kind": "snapshot",
+      "repository": "lvlaksim1/context-capsule",
+      "ref": "v2-manager-runtime",
+      "head": "ebefc10e3cb16535d9672daa8c4911d635020757",
+      "paths": [
+        ".context/ENTRYPOINT.md",
+        ".context/manager/identity.json",
+        ".context/manager/mandate.md",
+        ".context/current/state.md",
+        ".context/current/blockers.md",
+        ".context/current/next.md"
+      ],
+      "project_mutation": false
+    }
+  ]
+}
