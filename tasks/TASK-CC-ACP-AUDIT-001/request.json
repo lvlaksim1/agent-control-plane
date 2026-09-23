@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-CC-ACP-AUDIT-001",
+  "issuer_agent_id": "context-capsule-project-manager",
+  "target_agent_id": "project-manager-auditor",
+  "objective": "Independently audit the Context Capsule Project Manager's TASK-CC-ACP-INTEGRATION-001 implementation. Verify that the new generic control-plane interoperability contract is evidence-based, applies correctly to both Project Manager and Service Agent profiles where intended, preserves direct Owner↔agent interaction, does not make Supervisor mandatory, does not launder task/tool/registry access into authority, fences consequential writes only through a generic supplied execution context, preserves checkpoint/memory isolation and strict completion semantics, contains no infrastructure-specific gateway/scheduler coupling in Core, and does not regress previously closed findings. Target is read-only.",
+  "authority_basis": {
+    "kind": "engagement",
+    "reference": "OWNER-2026-09-23-ACP-9-20:item-19 / WF-CC-ACP-INTEGRATION-001"
+  },
+  "scope": [
+    "read-only audit of TASK-CC-ACP-INTEGRATION-001 result and exact implementation snapshot",
+    "read-only inspection/tests/CI evidence in lvlaksim1/context-capsule",
+    "Auditor home-repository report/state required by Auditor protocol",
+    "control-plane result/checkpoint state for this task"
+  ],
+  "constraints": [
+    "Do not modify lvlaksim1/context-capsule.",
+    "Preserve Auditor independence and existing methodology.",
+    "Do not reopen prior findings absent new objective evidence.",
+    "Do not use Work.",
+    "Do not alter agent mandates or stable release/migration gates."
+  ],
+  "target": {
+    "repository": "lvlaksim1/context-capsule",
+    "ref": "v2-manager-runtime"
+  },
+  "priority": "high",
+  "dependencies": [
+    {
+      "task_id": "TASK-CC-ACP-INTEGRATION-001",
+      "relation": "depends_on"
+    }
+  ],
+  "workflow_id": "WF-CC-ACP-INTEGRATION-001",
+  "parent_task_id": "TASK-CC-ACP-INTEGRATION-001",
+  "relation": "independent-core-integration-audit",
+  "retry_policy": {
+    "max_attempts": 2,
+    "backoff_minutes": [
+      0,
+      15
+    ],
+    "quarantine_on_exhaustion": true
+  },
+  "completion_contract": {
+    "required_evidence": [
+      {
+        "kind": "audit",
+        "minimum": 1
+      }
+    ]
+  },
+  "created_at": "2026-09-23T12:46:12Z"
+}
