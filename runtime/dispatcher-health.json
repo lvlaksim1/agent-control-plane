@@ -1,14 +1,14 @@
 {
   "schema_version": 2,
-  "last_dispatch_at": "2026-09-23T16:26:24Z",
+  "last_dispatch_at": "2026-09-23T16:27:15Z",
   "last_slot_id": "execution-worker",
-  "last_outcome": "phase-a-activation-reconciled",
-  "last_observed_head": "5138f8edc44db39e32a1df9b227cb687e2d38674",
-  "last_reason": "Verified gateway activation receipt for TASK-EVENT-WAKE-E2E-001-g41 against historical claimed-state blob and requested deterministic Phase-B wake.",
+  "last_outcome": "phase-a-complete-phase-b-armed",
+  "last_observed_head": "22c7cecc747fbd2ee10a3a2dde1694c8d2a574ad",
+  "last_reason": "Verified gateway activation receipt for TASK-EVENT-WAKE-E2E-001-g41; persisted deterministic Phase-B wake generation 4 and verified Execution Worker re-arm.",
   "wake": {
     "desired_generation": 4,
-    "armed_generation": 3,
-    "served_generation": 2,
+    "armed_generation": 4,
+    "served_generation": 3,
     "recent_request_keys": [
       "validation-wake-001",
       "validation-wake-002",
@@ -22,8 +22,8 @@
       "requested_by": "execution-worker",
       "requested_at": "2026-09-23T16:26:24Z"
     },
-    "last_armed_at": "2026-09-23T16:12:11Z",
-    "last_served_at": "2026-09-23T16:05:39Z",
-    "last_worker_run_id": "execution-worker-generation-2"
+    "last_armed_at": "2026-09-23T16:27:15Z",
+    "last_served_at": "2026-09-23T16:27:15Z",
+    "last_worker_run_id": "execution-worker-generation-3"
   }
 }
