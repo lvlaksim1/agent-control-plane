@@ -14,7 +14,7 @@ DEFAULT_POLICY={"max_attempts":3,"backoff_minutes":[0,15,60],"quarantine_on_exha
 TASK_CARRIER_MODES={"live","hold"}
 
 def task_runtime(task_id:str)->dict[str,Any]:
-    return {"schema_version":1,"task_id":task_id,"failure_count":0,"retry_not_before":None,"last_failure":None,"carrier":None}
+    return {"schema_version":1,"task_id":task_id,"failure_count":0,"retry_not_before":None,"last_failure":None}
 
 def validate_task_carrier(carrier:dict[str,Any]|None)->None:
     if carrier is None:
@@ -49,11 +49,14 @@ def validate_task_runtime(meta:dict[str,Any],request:dict[str,Any])->None:
         raise base.ControlPlaneError("failure_count must be non-negative")
     if meta["retry_not_before"] is not None:
         base.parse_time(meta["retry_not_before"])
-    validate_task_carrier(meta.get("carrier"))
 
-def task_carrier_blocks_scheduler(meta:dict[str,Any],request:dict[str,Any],*,now:datetime)->bool:
-    validate_task_runtime(meta,request)
-    carrier=meta.get("carrier")
+def validate_state_carrier(state:dict[str,Any],request:dict[str,Any])->None:
+    base.validate_state(state,request)
+    validate_task_carrier(state.get("carrier"))
+
+def task_carrier_blocks_scheduler(state:dict[str,Any],request:dict[str,Any],*,now:datetime)->bool:
+    validate_state_carrier(state,request)
+    carrier=state.get("carrier")
     if carrier is None:
         return False
     if carrier["mode"]=="hold":
@@ -63,11 +66,20 @@ def task_carrier_blocks_scheduler(meta:dict[str,Any],request:dict[str,Any],*,now
         return True
     return carrier["fallback_after_expiry"] is not True
 
-def set_live_task_carrier(meta:dict[str,Any],request:dict[str,Any],*,carrier_id:str,set_by:str,reason:str,now:datetime,lease_minutes:int=45)->dict[str,Any]:
-    validate_task_runtime(meta,request)
+def set_live_task_carrier(state:dict[str,Any],request:dict[str,Any],*,carrier_id:str,set_by:str,reason:str,now:datetime,lease_minutes:int=45)->dict[str,Any]:
+    """Prepare one CAS update on state.json. Claim-vs-carrier races resolve on the same Git object."""
+    validate_state_carrier(state,request)
+    if state["status"]!="queued" or state.get("claim") is not None:
+        raise base.ControlPlaneError("live carrier can be acquired only from unclaimed queued state")
     if not carrier_id or not set_by or not reason or not isinstance(lease_minutes,int) or lease_minutes<1:
         raise base.ControlPlaneError("invalid live task carrier parameters")
-    out=copy.deepcopy(meta)
+    current=state.get("carrier")
+    if current is not None:
+        if current["mode"]=="hold":
+            raise base.ControlPlaneError("explicit task hold must be cleared before live acquisition")
+        if now < base.parse_time(current["lease_until"]) and current["carrier_id"]!=carrier_id:
+            raise base.ControlPlaneError("task already has a fresh live carrier")
+    out=copy.deepcopy(state)
     out["carrier"]={
       "mode":"live",
       "carrier_id":carrier_id,
@@ -77,27 +89,49 @@ def set_live_task_carrier(meta:dict[str,Any],request:dict[str,Any],*,carrier_id:
       "lease_until":base.format_time(now+timedelta(minutes=lease_minutes)),
       "fallback_after_expiry":True
     }
+    validate_state_carrier(out,request)
     return out
 
-def renew_live_task_carrier(meta:dict[str,Any],request:dict[str,Any],*,carrier_id:str,now:datetime,lease_minutes:int=45)->dict[str,Any]:
-    validate_task_runtime(meta,request)
-    carrier=meta.get("carrier")
+def renew_live_task_carrier(state:dict[str,Any],request:dict[str,Any],*,carrier_id:str,now:datetime,lease_minutes:int=45)->dict[str,Any]:
+    validate_state_carrier(state,request)
+    if state["status"]!="queued" or state.get("claim") is not None:
+        raise base.ControlPlaneError("only unclaimed queued live task can renew carrier")
+    carrier=state.get("carrier")
     if not isinstance(carrier,dict) or carrier.get("mode")!="live":
         raise base.ControlPlaneError("task has no live carrier")
     if carrier.get("carrier_id")!=carrier_id:
         raise base.ControlPlaneError("task carrier mismatch")
     if now>=base.parse_time(carrier["lease_until"]):
         raise base.ControlPlaneError("expired live task carrier cannot be renewed without reconciliation")
-    out=copy.deepcopy(meta)
+    out=copy.deepcopy(state)
     out["carrier"]["heartbeat_at"]=base.format_time(now)
     out["carrier"]["lease_until"]=base.format_time(now+timedelta(minutes=lease_minutes))
     return out
 
-def clear_task_carrier(meta:dict[str,Any],request:dict[str,Any])->dict[str,Any]:
-    validate_task_runtime(meta,request)
-    out=copy.deepcopy(meta)
+def clear_task_carrier(state:dict[str,Any],request:dict[str,Any])->dict[str,Any]:
+    validate_state_carrier(state,request)
+    if state.get("claim") is not None:
+        raise base.ControlPlaneError("cannot clear carrier from claimed task")
+    out=copy.deepcopy(state)
     out["carrier"]=None
     return out
+
+def live_carrier_fence_valid(state:dict[str,Any],request:dict[str,Any],gateway_lease:dict[str,Any],*,carrier_id:str,now:datetime)->bool:
+    """Direct-live execution fence. Re-read state and gateway before consequential writes."""
+    try:
+        validate_state_carrier(state,request)
+    except Exception:
+        return False
+    if state.get("status")!="queued" or state.get("claim") is not None:
+        return False
+    carrier=state.get("carrier")
+    if not isinstance(carrier,dict) or carrier.get("mode")!="live" or carrier.get("carrier_id")!=carrier_id:
+        return False
+    if now>=base.parse_time(carrier["lease_until"]):
+        return False
+    if gateway_lease.get("task_id")==request["task_id"] and gateway_lease.get("state") in {"reserved","active"}:
+        return False
+    return True
 
 def retry_policy(request:dict[str,Any])->dict[str,Any]:
     policy=copy.deepcopy(request.get("retry_policy") or DEFAULT_POLICY)
@@ -238,16 +272,14 @@ def build_invocation(registry:dict[str,Any],request:dict[str,Any],state:dict[str
       ]
     }
 
-def validate_result(result:dict[str,Any],request:dict[str,Any])->None:
-    base.require_fields(result,["schema_version","task_id","request_digest","request_blob_sha","execution_id","generation","outcome","summary","evidence","completed_at"],"result")
+def _validate_result_common(result:dict[str,Any],request:dict[str,Any])->None:
+    base.require_fields(result,["schema_version","task_id","request_digest","request_blob_sha","outcome","summary","evidence","completed_at"],"result")
     if result["schema_version"]!=1 or result["task_id"]!=request["task_id"] or result["outcome"]!="success":
         raise base.ControlPlaneError("invalid success result")
     if result["request_digest"]!=base.request_digest(request):
         raise base.ControlPlaneError("result/request digest mismatch")
     if not isinstance(result["request_blob_sha"],str) or len(result["request_blob_sha"])!=40:
         raise base.ControlPlaneError("result must bind to request blob")
-    if not isinstance(result["generation"],int) or result["generation"]<1 or not result["execution_id"]:
-        raise base.ControlPlaneError("result must bind to execution fence")
     base.parse_time(result["completed_at"])
     if not isinstance(result["evidence"],list):
         raise base.ControlPlaneError("evidence must be list")
@@ -256,6 +288,20 @@ def validate_result(result:dict[str,Any],request:dict[str,Any])->None:
         if e["verified"] is not True or not e["verified_by"]:
             raise base.ControlPlaneError("evidence is not verified")
         base.parse_time(e["verified_at"])
+
+def validate_result(result:dict[str,Any],request:dict[str,Any])->None:
+    _validate_result_common(result,request)
+    mode=result.get("execution_mode","autonomous")
+    if mode=="autonomous":
+        base.require_fields(result,["execution_id","generation"],"autonomous result")
+        if not isinstance(result["generation"],int) or result["generation"]<1 or not result["execution_id"]:
+            raise base.ControlPlaneError("autonomous result must bind to execution fence")
+    elif mode=="live":
+        base.require_fields(result,["carrier_id"],"live result")
+        if not isinstance(result["carrier_id"],str) or not result["carrier_id"]:
+            raise base.ControlPlaneError("live result must bind to carrier")
+    else:
+        raise base.ControlPlaneError("invalid result execution_mode")
 
 def completion_satisfied(request:dict[str,Any],result:dict[str,Any]):
     validate_result(result,request)
@@ -270,6 +316,8 @@ def completion_satisfied(request:dict[str,Any],result:dict[str,Any]):
 
 def complete_task(lease:dict[str,Any],state:dict[str,Any],request:dict[str,Any],gates:list[dict[str,Any]],result:dict[str,Any]):
     base.validate_state(state,request)
+    if result.get("execution_mode","autonomous")!="autonomous":
+        raise base.ControlPlaneError("gateway completion requires autonomous result")
     for gate in gates:
         validate_gate(gate,request)
         if gate["status"]!="satisfied":
@@ -286,8 +334,32 @@ def complete_task(lease:dict[str,Any],state:dict[str,Any],request:dict[str,Any],
     ok,missing=completion_satisfied(request,result)
     if not ok:
         raise base.ControlPlaneError("missing completion evidence: "+",".join(missing))
-    new_state=copy.deepcopy(state); new_state["status"]="completed"; new_state["claim"]=None
+    new_state=copy.deepcopy(state); new_state["status"]="completed"; new_state["claim"]=None; new_state["carrier"]=None
     return idle_after(lease),new_state
+
+def complete_live_task(state:dict[str,Any],request:dict[str,Any],gates:list[dict[str,Any]],result:dict[str,Any],gateway_lease:dict[str,Any],*,carrier_id:str,now:datetime)->dict[str,Any]:
+    """Terminalize direct-live work before its carrier can expire into autonomous fallback."""
+    validate_state_carrier(state,request)
+    if result.get("execution_mode")!="live":
+        raise base.ControlPlaneError("live completion requires execution_mode=live")
+    for gate in gates:
+        validate_gate(gate,request)
+        if gate["status"]!="satisfied":
+            raise base.ControlPlaneError(f"unsatisfied gate {gate['gate_id']}")
+    if not live_carrier_fence_valid(state,request,gateway_lease,carrier_id=carrier_id,now=now):
+        raise base.ControlPlaneError("live carrier fence is not valid")
+    if result["request_blob_sha"]!=state.get("request_blob_sha"):
+        raise base.ControlPlaneError("result/request blob mismatch")
+    if result.get("carrier_id")!=carrier_id:
+        raise base.ControlPlaneError("result does not belong to current live carrier")
+    ok,missing=completion_satisfied(request,result)
+    if not ok:
+        raise base.ControlPlaneError("missing completion evidence: "+",".join(missing))
+    out=copy.deepcopy(state)
+    out["status"]="completed"
+    out["claim"]=None
+    out["carrier"]=None
+    return out
 
 def repair_completed_projection(lease:dict[str,Any],state:dict[str,Any],request:dict[str,Any],gates:list[dict[str,Any]],result:dict[str,Any])->dict[str,Any]:
     base.validate_lease(lease); base.validate_state(state,request)
@@ -354,19 +426,19 @@ def claimed_execution_ready(state:dict[str,Any],request:dict[str,Any],gateway_le
     return state.get("status")=="claimed" and gateway_execution_admitted(state,request,gateway_lease,require_active_state=False)
 
 def scheduler_ready_tasks(registry:dict[str,Any],bundles:list[tuple],now:datetime)->list[dict[str,Any]]:
-    """Scheduler-only READY resolution: skip only tasks whose own carrier is live/held."""
+    """Scheduler READY resolution: skip only tasks whose own state carrier is live/held."""
     eligible=[]
     for bundle in bundles:
         req,state,gates,meta=normalize(bundle)
         validate_task_runtime(meta,req)
-        if task_carrier_blocks_scheduler(meta,req,now=now):
+        if task_carrier_blocks_scheduler(state,req,now=now):
             continue
         eligible.append((req,state,gates,meta))
     return ready_tasks(registry,eligible,now)
 
-def scheduler_claimed_execution_ready(meta:dict[str,Any],state:dict[str,Any],request:dict[str,Any],gateway_lease:dict[str,Any],*,now:datetime)->bool:
-    """Scheduler-only Phase-B admission for one task; unrelated live chains do not block it."""
-    if task_carrier_blocks_scheduler(meta,request,now=now):
+def scheduler_claimed_execution_ready(state:dict[str,Any],request:dict[str,Any],gateway_lease:dict[str,Any],*,now:datetime)->bool:
+    """Scheduler Phase-B admission. A fresh carrier on this exact task blocks reinstantiation."""
+    if task_carrier_blocks_scheduler(state,request,now=now):
         return False
     return claimed_execution_ready(state,request,gateway_lease)
 
