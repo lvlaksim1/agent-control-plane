@@ -25,14 +25,21 @@
   "active_check": {
     "id": "OUTBOX-BROKER-WORKER-NOOP",
     "wake_generation": 8,
-    "status": "pending",
+    "status": "passed",
     "initial_state": "desired=8 armed=7 served=7",
-    "expected": "Broker precommits armed=8 before scheduler update; Worker may start immediately but observes invocation_generation=8 and reconciles served=8; Worker ends disabled."
+    "expected": "Broker precommits armed=8 before scheduler update; Worker may start immediately but observes invocation_generation=8 and reconciles served=8; Worker ends disabled.",
+    "completed_at": "2026-09-23T17:16:38Z",
+    "evidence": [
+      "002424653a9c532d7835fdfcd62e9e793e3be9a0 precommitted wake generation 8 before Worker delivery",
+      "4a3daf1a31c778d9239e04ea953697e609075776 recorded Worker reconciliation of generation 8",
+      "runtime/dispatcher-health.json reached desired_generation=8, armed_generation=8, served_generation=8",
+      "ACP Execution Worker completed the one-shot run and became disabled",
+      "authoritative gateway remained idle at generation 44"
+    ]
   },
   "remaining": [
-    "live outbox broker relay no-op",
-    "live Phase A -> wake -> Broker -> later Phase B target execution",
-    "lost worker delivery recovery using same precommitted generation",
+    "live Phase A -> wake -> Broker -> later Phase B target execution under relay v3",
+    "V3-specific lost Worker delivery recovery using the same precommitted generation",
     "pin final snapshot",
     "independent Auditor review"
   ],
