@@ -4,20 +4,21 @@
   "last_slot_id": "dispatcher-12",
   "last_outcome": "lease-fenced-before-target-execution",
   "last_observed_head": "497d81a493476b417b355d7f91583ff997df4616",
-  "last_reason": "Event-wake validation requested; watchdog should arm the reusable worker.",
+  "last_reason": "Second event-wake validation requested after hardening re-arm to require enabled future worker.",
   "wake": {
-    "desired_generation": 1,
+    "desired_generation": 2,
     "armed_generation": 1,
     "served_generation": 0,
     "recent_request_keys": [
-      "validation-wake-001"
+      "validation-wake-001",
+      "validation-wake-002"
     ],
     "last_request": {
-      "generation": 1,
-      "request_key": "validation-wake-001",
-      "reason": "validate-watchdog-rearm",
+      "generation": 2,
+      "request_key": "validation-wake-002",
+      "reason": "validate-enabled-worker-rearm",
       "requested_by": "ecosystem-supervisor",
-      "requested_at": "2026-09-23T16:00:00Z"
+      "requested_at": "2026-09-23T16:04:00Z"
     },
     "last_armed_at": "2026-09-23T16:00:30Z",
     "last_served_at": null,
