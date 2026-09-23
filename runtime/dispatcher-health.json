@@ -4,13 +4,21 @@
   "last_slot_id": "dispatcher-12",
   "last_outcome": "lease-fenced-before-target-execution",
   "last_observed_head": "497d81a493476b417b355d7f91583ff997df4616",
-  "last_reason": "Historical last result from the five-slot polling topology. Event-wake deployment has not yet served a production wake.",
+  "last_reason": "Event-wake validation requested; watchdog should arm the reusable worker.",
   "wake": {
-    "desired_generation": 0,
+    "desired_generation": 1,
     "armed_generation": 0,
     "served_generation": 0,
-    "recent_request_keys": [],
-    "last_request": null,
+    "recent_request_keys": [
+      "validation-wake-001"
+    ],
+    "last_request": {
+      "generation": 1,
+      "request_key": "validation-wake-001",
+      "reason": "validate-watchdog-rearm",
+      "requested_by": "ecosystem-supervisor",
+      "requested_at": "2026-09-23T16:00:00Z"
+    },
     "last_armed_at": null,
     "last_served_at": null,
     "last_worker_run_id": null
