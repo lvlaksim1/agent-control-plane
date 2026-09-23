@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "last_dispatch_at": "2026-09-23T12:29:35Z",
+  "last_dispatch_at": "2026-09-23T12:40:17Z",
   "last_slot_id": "probe-1",
-  "last_outcome": "blocked",
-  "last_observed_head": "9b443e606869e1738bf3e131c82063a4a1a15636",
-  "last_reason": "TASK-INT-AUDITOR-002 is READY with immutable request blob 2ee517310f3127a309b3d3026ee8f157d60afe35, completed dependency TASK-INT-PM-002, satisfied Owner gate, and automatic execution enabled for project-manager-auditor. Gateway claim Issue #9 was created with execution_id a154c14f-c9b1-4259-963e-4230b4e74ce3, but this invocation did not yet observe accepted=true or an exact matching active authoritative lease; gateway lease remained idle generation 10. Per protocol, no private claimed projection, agent reinstantiation, or target work was performed. A later dispatcher must reconcile Issue #9 before creating any new claim."
+  "last_outcome": "recovered",
+  "last_observed_head": "bf852731a47b65644fe470904cda9c945fa9d785",
+  "last_reason": "Recovered the already-owned TASK-INT-AUDITOR-002 execution after pre-projection runtime loss under gateway fence execution_id a154c14f-c9b1-4259-963e-4230b4e74ce3 generation 11. Repaired queued to claimed with attempt=1 and runtime_loss_count=1, reinstantiated project-manager-auditor, independently verified TASK-INT-PM-002 against live read-only Context Capsule evidence, published canonical audit report audits/ACP-TASK-INT-AUDITOR-002.md, wrote strict success result, and made completed state durable with claim=null. Gateway release Issue #10 was accepted and committed idle generation 12 at commit 1a3fe7f710a419a64b8365dd67db5196ba691bfe. A later unrelated gateway claim advanced the current lease to generation 13; no new claim was created by this execution and Context Capsule was not modified."
 }
