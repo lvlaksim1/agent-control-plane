@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "task_id": "TASK-CC-ACP-RETEST-001",
-  "status": "claimed",
+  "status": "active",
   "request_digest": "sha256:1cfc9f9748fc6e2aa9acd7737aca978f210cd41b327afc187391f929202f14dc",
   "attempt": 1,
   "runtime_loss_count": 0,
