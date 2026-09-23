@@ -96,4 +96,24 @@ class WorkflowRuntimeTests(unittest.TestCase):
   l,sc=cp.claim_plan(l,c,sc,slot_id="4",execution_id="c1",now=NOW); sc=cp.activate_state(sc,c,l); l,sc=wr.complete_task(l,sc,c,[],result("C",req=c,execution_id="c1",generation=7))
   self.assertEqual((sa["status"],sb["status"],sc["status"],l["state"]),("completed","completed","completed","idle"))
 
+ def test_owner_can_route_directly_to_project_manager_without_supervisor(self):
+  reg={"schema_version":1,"agents":[
+   {"agent_id":"pm","agent_type":"project-manager","role":"PM","home_repository":"o/p","authority_ref":"main","entrypoint":".context/ENTRYPOINT.md","status":"ready","automatic_execution_allowed":True},
+   {"agent_id":"ecosystem-supervisor","agent_type":"service-agent","role":"Supervisor","home_repository":"o/s","authority_ref":"main","entrypoint":".context/ENTRYPOINT.md","status":"ready","automatic_execution_allowed":False}]}
+  r=request("DIRECT","pm"); r["issuer_agent_id"]="owner"
+  self.assertEqual([x["task_id"] for x in wr.ready_tasks(reg,[(r,state(r),[],wr.task_runtime("DIRECT"))],NOW)],["DIRECT"])
+
+ def test_project_manager_can_route_directly_to_auditor(self):
+  reg={"schema_version":1,"agents":[
+   {"agent_id":"pm","agent_type":"project-manager","role":"PM","home_repository":"o/p","authority_ref":"main","entrypoint":".context/ENTRYPOINT.md","status":"ready","automatic_execution_allowed":True},
+   {"agent_id":"auditor","agent_type":"service-agent","role":"Auditor","home_repository":"o/a","authority_ref":"main","entrypoint":".context/ENTRYPOINT.md","status":"ready","automatic_execution_allowed":True}]}
+  r=request("AUD","auditor"); r["issuer_agent_id"]="pm"; r["authority_basis"]={"kind":"engagement","reference":"ENG-PM-AUD-001"}
+  self.assertEqual([x["task_id"] for x in wr.ready_tasks(reg,[(r,state(r),[],wr.task_runtime("AUD"))],NOW)],["AUD"])
+
+ def test_unknown_agent_issuer_is_rejected(self):
+  r=request("BAD"); r["issuer_agent_id"]="unknown"; r["authority_basis"]={"kind":"engagement","reference":"ENG-X"}
+  with self.assertRaises(cp.ControlPlaneError):
+   wr.ready_tasks(registry(),[(r,state(r),[],wr.task_runtime("BAD"))],NOW)
+
+
 if __name__=="__main__": unittest.main()

@@ -69,12 +69,32 @@ def normalize(bundle:tuple):
         return bundle
     raise base.ControlPlaneError("bundle must be request,state[,gates[,runtime]]")
 
+def validate_task_routing(registry:dict[str,Any],request:dict[str,Any])->None:
+    """Validate routing identity only; target-agent mandate validation remains runtime responsibility."""
+    agents=base.registry_index(registry)
+    issuer=request.get("issuer_agent_id")
+    if issuer=="owner":
+        return
+    if issuer not in agents:
+        raise base.ControlPlaneError(f"unknown task issuer: {issuer}")
+    if agents[issuer]["status"] not in base.EXECUTABLE_AGENT_STATUSES:
+        raise base.ControlPlaneError(f"task issuer is not active: {issuer}")
+    authority=request.get("authority_basis")
+    if not isinstance(authority,dict) or not authority.get("kind") or not authority.get("reference"):
+        raise base.ControlPlaneError("agent-issued task requires explicit authority basis")
+    if issuer=="ecosystem-supervisor":
+        return
+    # A Project Manager or Service Agent may route work directly. Supervisor is never required.
+    # This structural acceptance does not prove the requested action is within issuer/target mandate;
+    # the reinstantiated target agent must validate that before acting.
+    return
+
 def ready_tasks(registry:dict[str,Any],bundles:list[tuple],now:datetime)->list[dict[str,Any]]:
     normalized=[normalize(b) for b in bundles]
     base_ready={x["task_id"]:x for x in base.ready_tasks(registry,[(r,s) for r,s,_,_ in normalized],now)}
     out=[]
     for req,state,gates,meta in normalized:
-        base.validate_request(req); base.validate_state(state,req); validate_task_runtime(meta,req)
+        base.validate_request(req); validate_task_routing(registry,req); base.validate_state(state,req); validate_task_runtime(meta,req)
         if req["task_id"] not in base_ready:
             continue
         if meta["retry_not_before"] is not None and now<base.parse_time(meta["retry_not_before"]):

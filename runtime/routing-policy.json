@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "human_entry_points": {
+    "owner_may_directly_invoke_any_persistent_agent": true,
+    "supervisor_is_mandatory_human_gateway": false,
+    "direct_project_manager_development_chat": true
+  },
+  "agent_to_agent": {
+    "supervisor_required": false,
+    "allowed_issuers": [
+      "owner",
+      "registered-project-manager",
+      "registered-service-agent"
+    ],
+    "target_must_be_registered": true,
+    "explicit_authority_basis_required_for_agent_issuer": true,
+    "target_agent_must_validate_mandate_before_action": true
+  },
+  "scheduler_role": "autonomous-continuation-only-not-human-message-transport"
+}
