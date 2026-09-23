@@ -1,16 +1,11 @@
 {
   "schema_version": 1,
   "task_id": "TASK-E2E-SUPERVISOR-002",
-  "status": "active",
+  "status": "completed",
   "request_digest": "sha256:36e1dedbd4f62f1e408bb0180433620cf718794832121f89aa365d92ce83811d",
   "attempt": 1,
   "runtime_loss_count": 0,
-  "claim": {
-    "execution_id": "exec-e2e002-20260923T033739Z-probe1",
-    "generation": 5,
-    "slot_id": "probe-1",
-    "claimed_at": "2026-09-23T03:38:27Z"
-  },
+  "claim": null,
   "latest_checkpoint": null,
   "request_blob_sha": "31924828637528f20034fdeec3c83c96d6954574"
 }
