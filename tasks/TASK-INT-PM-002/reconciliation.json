@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "incident": "terminal-claim-projection-drift",
+  "task_id": "TASK-INT-PM-002",
+  "observed_generation": 9,
+  "observed_execution_id": "exec-task-int-pm-002-20260923T122045Z-probe1",
+  "authoritative_gateway_after_release": {
+    "state": "idle",
+    "generation": 10
+  },
+  "repair": "cleared terminal task claim; retained runtime_loss_count=1 and attempt=1",
+  "prevention": "dispatcher write contract now requires completed state with claim=null",
+  "owner_authority": "OWNER-2026-09-23-ACP-9-20"
+}
