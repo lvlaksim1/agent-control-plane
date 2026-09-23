@@ -16,6 +16,10 @@ Interactive state contains `carrier_id`, `heartbeat_at`, and `lease_until`. If t
 
 A live interactive runtime refreshes its own lease while it continues substantial work. It must never use a long-lived Owner hold merely to represent presence.
 
+To honor the stronger rule that Scheduled Task **executions themselves** are reserved for Owner absence, the live carrier parks the Broker's next occurrence exactly at the current presence `lease_until` and keeps the Execution Worker disabled/not due. If the Owner remains active, the same carrier renews the lease and moves the Broker occurrence to the new expiry before the old one fires. If the runtime disappears, no further renewal occurs: the Broker fires at lease expiry, observes that interactive presence is no longer fresh, and becomes the autonomous fallback wake.
+
+`interactive_fallback_wake_at` is the deterministic projection of this parking deadline. An unexpectedly early Broker invocation still checks admission and no-ops while the lease is fresh.
+
 Scheduler availability, a queued task, or a wake never overrides a fresh interactive presence lease. Execution mode is a routing gate, not authority.
 
 ## Runtime roles
