@@ -140,6 +140,58 @@ class WorkflowRuntimeTests(unittest.TestCase):
   self.assertFalse(wr.gateway_execution_admitted(s,r,lease))
 
 
+class LiveReturnTests(unittest.TestCase):
+ def live_result(self,r,carrier_id="live-caller"):
+  return {
+   "schema_version":1,"task_id":r["task_id"],"request_digest":cp.request_digest(r),
+   "request_blob_sha":"a"*40,"execution_mode":"live","carrier_id":carrier_id,
+   "outcome":"success","summary":"done",
+   "evidence":[{"kind":"commit","reference":"o/r@abc","verified":True,"verified_by":"agent-a","verified_at":"2026-09-23T00:30:00Z"}],
+   "completed_at":"2026-09-23T00:30:00Z"
+  }
+
+ def delegated(self,task_id,issuer,target,parent=None,workflow="WF-LIVE"):
+  r=request(task_id,target)
+  r["issuer_agent_id"]=issuer
+  r["authority_basis"]={"kind":"engagement","reference":"ENG-LIVE"}
+  r["parent_task_id"]=parent
+  r["workflow_id"]=workflow
+  r["responsibility"]={
+   "mode":"bounded_delegation",
+   "commitment_owner_agent_id":issuer,
+   "return_to_agent_id":issuer
+  }
+  return r
+
+ def test_live_bounded_delegation_returns_to_caller(self):
+  reg=registry(True,("supervisor","auditor"))
+  r=self.delegated("AUD","supervisor","auditor")
+  pkg=wr.build_live_return_package(reg,r,self.live_result(r))
+  self.assertEqual(pkg["kind"],"return_to_caller")
+  self.assertEqual(pkg["agent_id"],"supervisor")
+  self.assertEqual(pkg["completed_child_task_id"],"AUD")
+  self.assertIn("without requiring a user reinvocation",pkg["required_sequence"][-1])
+
+ def test_explicit_handoff_has_no_automatic_return(self):
+  reg=registry(True,("manager","specialist"))
+  r=request("H","specialist"); r["issuer_agent_id"]="manager"; r["authority_basis"]={"kind":"handoff","reference":"H1"}
+  r["responsibility"]={
+   "mode":"explicit_handoff",
+   "commitment_owner_agent_id":"specialist",
+   "return_to_agent_id":None
+  }
+  self.assertIsNone(wr.build_live_return_package(reg,r,self.live_result(r)))
+
+ def test_nested_delegations_unwind_one_caller_at_a_time(self):
+  reg=registry(True,("supervisor","manager","auditor"))
+  manager_task=self.delegated("M","supervisor","manager",workflow="WF-NEST")
+  audit_task=self.delegated("A","manager","auditor",parent="M",workflow="WF-NEST")
+  first=wr.build_live_return_package(reg,audit_task,self.live_result(audit_task))
+  second=wr.build_live_return_package(reg,manager_task,self.live_result(manager_task))
+  self.assertEqual(first["agent_id"],"manager")
+  self.assertEqual(first["parent_task_id"],"M")
+  self.assertEqual(second["agent_id"],"supervisor")
+
 class TaskCarrierTests(unittest.TestCase):
  def live_state(self,task_id="A",lease_until="2026-09-23T00:30:00Z"):
   r=request(task_id); s=state(r)
