@@ -158,7 +158,7 @@ class TaskCarrierTests(unittest.TestCase):
    "schema_version":1,"task_id":r["task_id"],"request_digest":cp.request_digest(r),
    "request_blob_sha":s["request_blob_sha"],"execution_mode":"live","carrier_id":carrier_id,
    "outcome":"success","summary":"done",
-   "evidence":[{"kind":"audit","reference":"report","verified":True,"verified_by":"agent-a","verified_at":"2026-09-23T00:04:00Z"}],
+   "evidence":[{"kind":"commit","reference":"live-result-commit","verified":True,"verified_by":"agent-a","verified_at":"2026-09-23T00:04:00Z"}],
    "completed_at":"2026-09-23T00:04:00Z"
   }
 
