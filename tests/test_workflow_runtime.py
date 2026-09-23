@@ -223,6 +223,20 @@ class ExecutionModeTests(unittest.TestCase):
  def test_owner_hold_blocks_scheduler_without_expiry(self):
   self.assertFalse(wr.scheduler_admission_allowed(self.hold(),now=datetime(2027,1,1,tzinfo=timezone.utc)))
 
+ def test_fresh_interactive_presence_parks_broker_at_expiry(self):
+  m=self.interactive("2026-09-23T00:30:00Z")
+  self.assertEqual(
+   wr.interactive_fallback_wake_at(m,now=NOW),
+   datetime(2026,9,23,0,30,tzinfo=timezone.utc)
+  )
+  self.assertIsNone(
+   wr.interactive_fallback_wake_at(
+    m,now=datetime(2026,9,23,0,31,tzinfo=timezone.utc)
+   )
+  )
+  self.assertIsNone(wr.interactive_fallback_wake_at(self.hold(),now=NOW))
+  self.assertIsNone(wr.interactive_fallback_wake_at(self.autonomous(),now=NOW))
+
  def test_autonomous_mode_allows_scheduler(self):
   self.assertTrue(wr.scheduler_admission_allowed(self.autonomous(),now=NOW))
 
