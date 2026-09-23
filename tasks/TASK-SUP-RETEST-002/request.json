@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-SUP-RETEST-002",
+  "issuer_agent_id": "owner",
+  "target_agent_id": "project-manager-auditor",
+  "objective": "Perform a focused independent read-only retest of SUP-002 only on Supervisor snapshot e99c8ceda16f56dcb87bfc9f6c60866aff1cde69. Verify that ENG-2026-09-23-ACP-9-20 is reconciled with the later Owner pause, item 20 / Agent Catalog / Agent Factory is not active work, the engagement is blocked pending Owner discussion after Master Plan 6.5, and the mandatory Supervisor reconciliation safeguard explicitly includes service-agent engagements and later Owner revisions. Confirm primary portfolio/current/master-plan/handoff views are coherent. Preserve SUP-001 as CLOSED unless objectively new evidence changes its mechanism. Publish a canonical focused retest report.",
+  "authority_basis": {
+    "kind": "owner-directive",
+    "reference": "Owner instruction to remediate Supervisor and close Master Plan 6.5 before discussion"
+  },
+  "scope": [
+    "lvlaksim1/supervisor@e99c8ceda16f56dcb87bfc9f6c60866aff1cde69",
+    "SUP-002 active-engagement lifecycle and mandatory portfolio reconciliation surfaces only"
+  ],
+  "constraints": [
+    "Read-only toward lvlaksim1/supervisor.",
+    "Do not reopen SUP-001 absent objectively new evidence in its affected mechanism.",
+    "Do not broaden into Agent Catalog or Agent Factory work.",
+    "Do not modify the audited target.",
+    "Do not use Work."
+  ],
+  "target": {
+    "repository": "lvlaksim1/supervisor",
+    "ref": "e99c8ceda16f56dcb87bfc9f6c60866aff1cde69"
+  },
+  "priority": "high",
+  "dependencies": [
+    {
+      "task_id": "TASK-SUP-REMEDIATION-002",
+      "relation": "depends_on"
+    }
+  ],
+  "workflow_id": "WF-SUPERVISOR-AUDIT-REMEDIATION-001",
+  "parent_task_id": "TASK-SUP-REMEDIATION-002",
+  "relation": "retest_of",
+  "retry_policy": {
+    "max_attempts": 2,
+    "backoff_minutes": [
+      0,
+      15
+    ],
+    "quarantine_on_exhaustion": true
+  },
+  "completion_contract": {
+    "required_evidence": [
+      {
+        "kind": "audit",
+        "minimum": 1
+      }
+    ]
+  },
+  "created_at": "2026-09-23T14:47:30Z"
+}
