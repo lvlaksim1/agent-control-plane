@@ -136,18 +136,19 @@ It runs in two modes using the same recurring automation:
 - **event nudge**: another infrastructure/client runtime moves its next occurrence earlier after persisting a durable wake;
 - **hourly watchdog**: the RRULE guarantees eventual recovery if the nudge or worker delivery is lost.
 
-Each Broker run:
+Each Broker run uses a **wake-first fast path**:
 
-1. reconcile Registry, task/gate/runtime metadata, wake state and authoritative gateway lease;
-2. detect READY work, due retry, partial reserved/active transitions, stale/lost wake delivery, or protocol-defined lease recovery;
-3. create a deterministic durable wake if work exists but no sufficient wake is pending;
-4. if `desired_generation > armed_generation`, choose `desired_generation`; if an already-armed unserved generation is stale, choose that same `armed_generation`;
-5. a stale `armed_generation > served_generation` **forces a new Worker scheduling attempt even if the Worker automation still reports enabled or carries an old/past DTSTART**; scheduler metadata is not proof of delivery;
-6. **before any scheduler call**, CAS-persist the chosen generation as `armed_generation` with a fresh `last_armed_at`; this durable delivery intent makes an immediate/catch-up Worker invocation safe;
-7. schedule the existing Execution Worker for a fresh one-shot occurrence and set `is_enabled=true`;
-8. verify the returned scheduler state names the exact Worker and is enabled/runnable for the newly requested occurrence; exact wall-clock timing is not a correctness assumption;
-9. do not require any post-scheduler GitHub write for correctness. If the scheduler call fails or the Broker runtime dies after step 6, `armed_generation > served_generation` becomes stale and the hourly Broker retries the **same** generation;
-10. otherwise no-op.
+1. read `runtime/dispatcher-config.json`, `runtime/dispatcher-health.json`, scheduler topology and the authoritative gateway lease first;
+2. if `desired_generation > armed_generation`, immediately choose `desired_generation` for delivery without scanning unrelated tasks;
+3. if `armed_generation > served_generation` and that delivery is stale, immediately choose the same `armed_generation` for retry without scanning unrelated tasks;
+4. only when no unarmed/stale delivery exists, reconcile Registry and task/gate/runtime metadata to detect new READY work, due retry, partial reserved/active transitions or protocol-defined recovery;
+5. create a deterministic durable wake if such work exists but no sufficient wake is pending, then choose that new generation;
+6. a stale `armed_generation > served_generation` **forces a new Worker scheduling attempt even if the Worker automation still reports enabled or carries an old/past DTSTART**; scheduler metadata is not proof of delivery;
+7. **before any scheduler call**, CAS-persist the chosen generation as `armed_generation` with a fresh `last_armed_at`; this durable delivery intent makes an immediate/catch-up Worker invocation safe;
+8. schedule the existing Execution Worker for a fresh one-shot occurrence and set `is_enabled=true`;
+9. verify the returned scheduler state names the exact Worker and is enabled/runnable for the newly requested occurrence; exact wall-clock timing is not a correctness assumption;
+10. do not require any post-scheduler GitHub write for correctness. If the scheduler call fails or the Broker runtime dies after step 6, `armed_generation > served_generation` becomes stale and the hourly Broker retries the **same** generation;
+11. otherwise no-op.
 
 The Broker never updates its own schedule while it is executing.
 
