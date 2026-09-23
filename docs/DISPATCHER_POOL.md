@@ -4,12 +4,19 @@ The former five-slot polling pool is superseded by an Owner-authorized two-slot 
 
 ## Interactive-first boundary
 
-`runtime/execution-mode.json` is the scheduler admission gate.
+`runtime/execution-mode.json` is a schema-v2 scheduler admission state, validated by `workflow_runtime.validate_execution_mode` / `scheduler_admission_allowed`.
 
-- `interactive`: a live Owner-facing runtime carries the current work. GitHub stores durable handoff state, but Scheduled Tasks do not advance the chain.
-- `autonomous`: no live runtime is carrying the work, or the Owner explicitly requested background/autonomous continuation. Broker/Worker delivery may proceed.
+Modes:
 
-The mode boundary is explicit. Scheduler availability must never be interpreted as permission to prefer autonomous routing over a live Owner session.
+- `interactive`: a live Owner-facing carrier holds a **renewable bounded presence lease**. While `now < presence.lease_until`, Broker and Worker admission is denied.
+- `autonomous`: no live carrier is intentionally carrying the chain (or Owner explicitly delegated background continuation); scheduler admission is allowed.
+- `hold`: explicit Owner pause. This blocks scheduler admission indefinitely and is deliberately distinct from ephemeral interactive presence.
+
+Interactive state contains `carrier_id`, `heartbeat_at`, and `lease_until`. If the live runtime disappears without an explicit handoff, a fresh lease blocks scheduler work only until expiry. When the lease is expired and `fallback_after_presence_expiry=true`, deterministic scheduler admission permits autonomous fallback without needing the vanished runtime to write a transition.
+
+A live interactive runtime refreshes its own lease while it continues substantial work. It must never use a long-lived Owner hold merely to represent presence.
+
+Scheduler availability, a queued task, or a wake never overrides a fresh interactive presence lease. Execution mode is a routing gate, not authority.
 
 ## Runtime roles
 
