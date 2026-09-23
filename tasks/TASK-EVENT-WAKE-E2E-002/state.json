@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-EVENT-WAKE-E2E-002",
+  "status": "queued",
+  "request_digest": "sha256:a3f72701487d7c171a5baeeb186ce2b42ba54f930879b17a5876b49447ebd41b",
+  "attempt": 0,
+  "runtime_loss_count": 0,
+  "claim": null,
+  "latest_checkpoint": null,
+  "request_blob_sha": "8c62aab939fd1fa5dedad159abd65c17cba36d06"
+}
