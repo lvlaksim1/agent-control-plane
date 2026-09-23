@@ -6,7 +6,7 @@
   "last_observed_head": "2f1e49e24b130f34461ad18d1720e2f5f7b25a6f",
   "last_reason": "Canonical gateway release for TASK-EVENT-WAKE-RELAY-E2E-001-g45 is confirmed by idle gateway generation 46; the durable task is completed and no further work is required for invocation generation 10.",
   "wake": {
-    "desired_generation": 10,
+    "desired_generation": 11,
     "armed_generation": 10,
     "served_generation": 10,
     "recent_request_keys": [
@@ -19,14 +19,15 @@
       "task-ready:TASK-AUDIT-EVENT-WAKE-001",
       "validation-broker-relay-noop-008",
       "task-ready:TASK-EVENT-WAKE-RELAY-E2E-001",
-      "phase-b:TASK-EVENT-WAKE-RELAY-E2E-001-g45"
+      "phase-b:TASK-EVENT-WAKE-RELAY-E2E-001-g45",
+      "task-ready:TASK-AUDIT-EVENT-WAKE-002"
     ],
     "last_request": {
-      "generation": 10,
-      "request_key": "phase-b:TASK-EVENT-WAKE-RELAY-E2E-001-g45",
-      "reason": "phase-b",
-      "requested_by": "execution-worker",
-      "requested_at": "2026-09-23T17:44:46Z"
+      "generation": 11,
+      "request_key": "task-ready:TASK-AUDIT-EVENT-WAKE-002",
+      "reason": "task-ready",
+      "requested_by": "ecosystem-supervisor",
+      "requested_at": "2026-09-23T20:40:46Z"
     },
     "last_armed_at": "2026-09-23T17:54:18Z",
     "last_served_at": "2026-09-23T17:56:15Z",
