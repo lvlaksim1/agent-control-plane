@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-SUP-REMEDIATION-001",
+  "request_digest": "sha256:a48fa6b5d38a0aa9b98fb671da00db5e37dc27e38225fc9fe456056de140754c",
+  "request_blob_sha": "622b39d7b7d95de32693df46c06c110fc05d75f3",
+  "execution_id": "EXEC-SUP-REMEDIATION-001-DIRECT",
+  "generation": 31,
+  "outcome": "success",
+  "summary": "Systemic remediation of SUP-001 and SUP-002 completed. The existing ecosystem-supervisor was repaired in place to the current independently verified item-19 Service Agent Base while preserving identity, mandate, Supervisor profile, goals and professional memory. Mandatory portfolio beliefs/projects/agents were reconciled, stale claims explicitly superseded, and a mandatory portfolio reconciliation procedure was added. Exact Core blob/provenance checks, manifest/reference/readiness checks, fresh reinstantiation, and a generation-31 externally fenced checkpoint smoke all passed. Findings remain for independent Auditor closure only.",
+  "evidence": [
+    {
+      "kind": "commit",
+      "reference": "lvlaksim1/supervisor@f37fb991d27b4fedaaf4ed8452513269bf8a5450",
+      "verified": true,
+      "verified_by": "ecosystem-supervisor",
+      "verified_at": "2026-09-23T14:27:00Z"
+    },
+    {
+      "kind": "validation",
+      "reference": "lvlaksim1/supervisor@f37fb991d27b4fedaaf4ed8452513269bf8a5450: exact item-19 Core blobs/provenance + preserved identity/mandate/profile/memory + complete manifest refs + substantive READY/reinstantiation state",
+      "verified": true,
+      "verified_by": "ecosystem-supervisor",
+      "verified_at": "2026-09-23T14:27:00Z"
+    },
+    {
+      "kind": "fenced-smoke",
+      "reference": "lvlaksim1/agent-control-plane@ed687afafc79390ff89bf9813a5abc792c665ce7:tasks/TASK-SUP-REMEDIATION-001/checkpoints/CP-001.json",
+      "verified": true,
+      "verified_by": "ecosystem-supervisor",
+      "verified_at": "2026-09-23T14:22:00Z"
+    }
+  ],
+  "completed_at": "2026-09-23T14:27:00Z"
+}
