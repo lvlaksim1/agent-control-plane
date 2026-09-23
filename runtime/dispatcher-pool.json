@@ -1,7 +1,8 @@
 {
-  "schema_version": 2,
-  "purpose": "event-driven Scheduled Chat execution topology with recurring retargetable worker and broker/watchdog",
+  "schema_version": 3,
+  "purpose": "event-driven autonomous scheduler with explicit interactive-first execution gate",
   "max_concurrent_target_executions": 1,
+  "execution_mode_state": "runtime/execution-mode.json",
   "authoritative_lease": "lvlaksim1/agent-control-plane-gateway@main:runtime/lease.json",
   "execution_worker": {
     "slot_id": "execution-worker",
@@ -12,13 +13,15 @@
     "self_rearm_allowed": false,
     "arm_owner": "wake-broker-watchdog",
     "baseline_cadence": "hourly",
-    "idle_behavior": "health-and-gateway-fast-noop"
+    "idle_behavior": "health-and-gateway-fast-noop",
+    "interactive_behavior": "no-claim-no-target-execution"
   },
   "watchdog": {
     "slot_id": "wake-broker-watchdog",
     "automation_id": "6aac8b23fff4819180fb12916df071a8",
     "source_automation": "ACP Dispatcher :12",
-    "mode": "event-broker-plus-hourly-watchdog"
+    "mode": "event-broker-plus-hourly-watchdog",
+    "interactive_behavior": "no-arm-no-nudge"
   },
   "retired_polling_slots": [
     {
@@ -35,12 +38,15 @@
     }
   ],
   "invariants": [
+    "Owner-active live runtime is the preferred carrier for the current authorized chain",
+    "GitHub remains the durable inter-agent handoff surface in both interactive and autonomous modes",
+    "Scheduled Tasks are autonomous fallback only and must not advance an interactive Owner-carried chain absent explicit Owner background/autonomous instruction",
     "scheduler wake never grants authority",
     "one worker invocation executes at most one target-agent task",
     "active gateway lease prevents a second target-agent execution",
-    "phase A and phase B remain separate worker invocations",
+    "phase A and phase B remain separate autonomous worker invocations",
     "execution worker never schedules itself and preserves its hourly RRULE",
-    "only wake-broker-watchdog arms the execution worker",
+    "only wake-broker-watchdog arms the execution worker in autonomous mode",
     "watchdog never performs target-agent work",
     "direct Owner-agent conversations do not use scheduler transport"
   ]
