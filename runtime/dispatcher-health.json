@@ -1,25 +1,26 @@
 {
   "schema_version": 2,
-  "last_dispatch_at": "2026-09-23T16:05:39Z",
+  "last_dispatch_at": "2026-09-23T16:26:24Z",
   "last_slot_id": "execution-worker",
-  "last_outcome": "bounded-no-work",
-  "last_observed_head": "497d81a493476b417b355d7f91583ff997df4616",
-  "last_reason": "Injected controlled stale armed wake generation 3 to validate hourly Watchdog lost-wake recovery.",
+  "last_outcome": "phase-a-activation-reconciled",
+  "last_observed_head": "5138f8edc44db39e32a1df9b227cb687e2d38674",
+  "last_reason": "Verified gateway activation receipt for TASK-EVENT-WAKE-E2E-001-g41 against historical claimed-state blob and requested deterministic Phase-B wake.",
   "wake": {
-    "desired_generation": 3,
+    "desired_generation": 4,
     "armed_generation": 3,
     "served_generation": 2,
     "recent_request_keys": [
       "validation-wake-001",
       "validation-wake-002",
-      "validation-lost-wake-003"
+      "validation-lost-wake-003",
+      "phase-b:TASK-EVENT-WAKE-E2E-001-g41"
     ],
     "last_request": {
-      "generation": 3,
-      "request_key": "validation-lost-wake-003",
-      "reason": "validate-lost-armed-wake-recovery",
-      "requested_by": "ecosystem-supervisor",
-      "requested_at": "2026-09-23T16:10:00Z"
+      "generation": 4,
+      "request_key": "phase-b:TASK-EVENT-WAKE-E2E-001-g41",
+      "reason": "phase-b-after-verified-activation:TASK-EVENT-WAKE-E2E-001-g41",
+      "requested_by": "execution-worker",
+      "requested_at": "2026-09-23T16:26:24Z"
     },
     "last_armed_at": "2026-09-23T16:12:11Z",
     "last_served_at": "2026-09-23T16:05:39Z",
