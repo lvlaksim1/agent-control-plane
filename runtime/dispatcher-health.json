@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "last_dispatch_at": "2026-09-23T12:16:32Z",
+  "last_dispatch_at": "2026-09-23T12:21:22Z",
   "last_slot_id": "probe-1",
-  "last_outcome": "completed",
-  "last_observed_head": "3b6d082480a6b74adc1867c4625e0d7847436989",
-  "last_reason": "TASK-INT-PM-001 completed as a bounded read-only Project Manager integration attestation under gateway lease generation 7. The manager was reinstantiated from lvlaksim1/context-capsule@v2-manager-runtime, authoritative manager-state HEAD ebefc10e3cb16535d9672daa8c4911d635020757 was verified, no Context Capsule mutation was performed, result/state completion became durable, and exact release was accepted with gateway returning idle generation 8."
+  "last_outcome": "blocked",
+  "last_observed_head": "60bfb29b7a09333e3ce3219f99c4832fe188e50e",
+  "last_reason": "TASK-INT-PM-002 was READY and one exact gateway claim Issue #7 was created, but this run did not observe accepted=true or an exact matching committed active gateway lease before stopping. No private claimed projection, target-agent reinstantiation, or target write was performed. The gateway claim remains pending and must be reconciled before any new claim is attempted."
 }
