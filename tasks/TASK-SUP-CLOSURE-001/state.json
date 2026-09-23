@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "task_id": "TASK-SUP-CLOSURE-001",
-  "status": "claimed",
+  "status": "active",
   "request_digest": "sha256:4263ff868147ad5500ffe69c353c376d5d257c61731541b35933ca689c0fdcf4",
   "attempt": 1,
   "runtime_loss_count": 0,
