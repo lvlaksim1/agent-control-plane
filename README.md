@@ -60,9 +60,9 @@ docs/ — normative protocol
 
 ## Validation
 
-tools/control_plane.py is a deterministic repository validator/planner, not the production runtime. CI uses it only for contract validation and regressions.
+tools/control_plane.py is a deterministic repository validator/planner, not the production runtime. Validation can be run from an external GitHub-hosted validation job when this private repository has no assignable hosted runner.
 
 python3 tools/control_plane.py validate --root .
 python3 -m unittest discover -s tests -v
 
-There is intentionally no OS/Python matrix: the control plane itself is GitHub state plus the ordinary-Chat protocol.
+There is intentionally no OS/Python matrix and no always-on CI requirement: the control plane itself is GitHub state plus the ordinary-Chat protocol.
