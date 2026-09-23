@@ -1,8 +1,7 @@
 {
-  "schema_version": 3,
-  "purpose": "event-driven autonomous scheduler with explicit interactive-first execution gate",
+  "schema_version": 4,
+  "purpose": "event-driven autonomous scheduler with per-task live-carrier isolation",
   "max_concurrent_target_executions": 1,
-  "execution_mode_state": "runtime/execution-mode.json",
   "authoritative_lease": "lvlaksim1/agent-control-plane-gateway@main:runtime/lease.json",
   "execution_worker": {
     "slot_id": "execution-worker",
@@ -14,14 +13,14 @@
     "arm_owner": "wake-broker-watchdog",
     "baseline_cadence": "hourly",
     "idle_behavior": "health-and-gateway-fast-noop",
-    "interactive_behavior": "no-claim-no-target-execution"
+    "interactive_behavior": "deprecated-global-mode; inspect per-task runtime carrier before claim/Phase-B"
   },
   "watchdog": {
     "slot_id": "wake-broker-watchdog",
     "automation_id": "6aac8b23fff4819180fb12916df071a8",
     "source_automation": "ACP Dispatcher :12",
     "mode": "event-broker-plus-hourly-watchdog",
-    "interactive_behavior": "no-arm-no-nudge"
+    "interactive_behavior": "deprecated-global-mode; remain available for unrelated autonomous tasks"
   },
   "retired_polling_slots": [
     {
@@ -38,15 +37,19 @@
     }
   ],
   "invariants": [
-    "Owner-active live runtime is the preferred carrier for the current authorized chain",
-    "GitHub remains the durable inter-agent handoff surface in both interactive and autonomous modes",
-    "Scheduled Tasks are autonomous fallback only and must not advance an interactive Owner-carried chain absent explicit Owner background/autonomous instruction",
+    "Owner-active live runtime is the preferred carrier for the specific authorized task/chain it is carrying",
+    "GitHub remains the durable inter-agent handoff surface in both interactive and autonomous execution",
+    "a fresh per-task live carrier blocks scheduler execution only for that task/chain",
+    "Owner presence never globally disables, parks, or delays Broker/Worker",
+    "unrelated tasks without a fresh live carrier remain autonomously schedulable",
+    "an expired live carrier may fall back to scheduler when fallback_after_expiry=true",
+    "an explicit per-task hold blocks only that task without expiry",
     "scheduler wake never grants authority",
     "one worker invocation executes at most one target-agent task",
     "active gateway lease prevents a second target-agent execution",
     "phase A and phase B remain separate autonomous worker invocations",
     "execution worker never schedules itself and preserves its hourly RRULE",
-    "only wake-broker-watchdog arms the execution worker in autonomous mode",
+    "only wake-broker-watchdog arms the execution worker",
     "watchdog never performs target-agent work",
     "direct Owner-agent conversations do not use scheduler transport"
   ]
