@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-CC-ACP-REMEDIATION-001",
+  "issuer_agent_id": "owner",
+  "target_agent_id": "context-capsule-project-manager",
+  "objective": "Remediate Auditor finding ACP-CC-001 on Context Capsule v2 systemically. Reconcile all primary working views with the already-published closure of historical CCPM-R001, represent ACP-CC-001 as the current separate remediation/retest gate, and add a reusable Project Manager Reconcile/Persist safeguard requiring live re-check of referenced external audit/retest/approval results before carrying a pending external gate forward. Preserve the existing decision not to invent a universal free-form lifecycle ontology. Verify with the full current CI suite and persist coherent manager state.",
+  "authority_basis": {
+    "kind": "owner-directive",
+    "reference": "OWNER-2026-09-23-CONTINUE-ACP-CC-001 + audits/ACP-TASK-CC-ACP-AUDIT-001.md"
+  },
+  "scope": [
+    "lvlaksim1/context-capsule@v2-manager-runtime",
+    "Project Manager working views and generic external-gate reconciliation safeguard",
+    "tests and manifest invariants required to enforce the safeguard"
+  ],
+  "constraints": [
+    "Do not modify stable main or migrate consumers.",
+    "Do not reopen CCPM-001 through CCPM-004 or historical CCPM-R001; preserve them as closed.",
+    "Do not weaken existing ACP interoperability, provenance, recovery, audit, or owner-authority safeguards.",
+    "Do not create a universal free-form lifecycle ontology.",
+    "Do not use Work."
+  ],
+  "target": {
+    "repository": "lvlaksim1/context-capsule",
+    "ref": "v2-manager-runtime"
+  },
+  "priority": "high",
+  "dependencies": [
+    {
+      "task_id": "TASK-CC-ACP-AUDIT-001",
+      "relation": "depends_on"
+    }
+  ],
+  "workflow_id": "WF-ACP-CC-001-REMEDIATION-001",
+  "parent_task_id": "TASK-CC-ACP-AUDIT-001",
+  "relation": "remediation_of",
+  "retry_policy": {
+    "max_attempts": 2,
+    "backoff_minutes": [
+      0,
+      15
+    ],
+    "quarantine_on_exhaustion": true
+  },
+  "completion_contract": {
+    "required_evidence": [
+      {
+        "kind": "commit",
+        "minimum": 1
+      },
+      {
+        "kind": "ci",
+        "minimum": 1
+      }
+    ]
+  },
+  "created_at": "2026-09-23T13:11:00Z"
+}

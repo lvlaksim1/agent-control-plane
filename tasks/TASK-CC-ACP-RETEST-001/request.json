@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-CC-ACP-RETEST-001",
+  "issuer_agent_id": "context-capsule-project-manager",
+  "target_agent_id": "project-manager-auditor",
+  "objective": "Perform a focused independent read-only retest of ACP-CC-001 after TASK-CC-ACP-REMEDIATION-001. Verify all primary working views agree that historical CCPM-R001 is CLOSED, ACP-CC-001 is represented as a separate current gate, the generic external-gate Reconcile/Persist safeguard is durable and enforced without a universal lifecycle ontology, existing item-19 interoperability passes remain intact, and full CI is green. Publish a canonical Auditor report and close or retain ACP-CC-001 strictly from evidence.",
+  "authority_basis": {
+    "kind": "owner-directed-workflow",
+    "reference": "OWNER-2026-09-23-CONTINUE-ACP-CC-001 / WF-ACP-CC-001-REMEDIATION-001"
+  },
+  "scope": [
+    "read-only focused retest of ACP-CC-001",
+    "exact remediation snapshot produced by TASK-CC-ACP-REMEDIATION-001",
+    "working-view consistency and external-gate reconciliation safeguard"
+  ],
+  "constraints": [
+    "Do not modify lvlaksim1/context-capsule.",
+    "Do not reopen CCPM-001 through CCPM-004 or historical CCPM-R001 absent objectively new evidence in those mechanisms.",
+    "Do not broaden into a whole-target PASS.",
+    "Preserve Auditor methodology and independence.",
+    "Do not use Work."
+  ],
+  "target": {
+    "repository": "lvlaksim1/context-capsule",
+    "ref": "v2-manager-runtime"
+  },
+  "priority": "high",
+  "dependencies": [
+    {
+      "task_id": "TASK-CC-ACP-REMEDIATION-001",
+      "relation": "depends_on"
+    }
+  ],
+  "workflow_id": "WF-ACP-CC-001-REMEDIATION-001",
+  "parent_task_id": "TASK-CC-ACP-REMEDIATION-001",
+  "relation": "retest_of",
+  "retry_policy": {
+    "max_attempts": 2,
+    "backoff_minutes": [
+      0,
+      15
+    ],
+    "quarantine_on_exhaustion": true
+  },
+  "completion_contract": {
+    "required_evidence": [
+      {
+        "kind": "audit",
+        "minimum": 1
+      }
+    ]
+  },
+  "created_at": "2026-09-23T13:11:01Z"
+}
