@@ -1,0 +1,18 @@
+name: Control Plane Contract
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate repository state
+        run: python3 tools/control_plane.py validate --root .
+      - name: Run deterministic state-machine tests
+        run: python3 -m unittest discover -s tests -v

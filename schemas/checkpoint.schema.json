@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Immutable Execution Checkpoint",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "checkpoint_id",
+    "task_id",
+    "execution_id",
+    "generation",
+    "sequence",
+    "created_at",
+    "completed_steps",
+    "verified_evidence",
+    "next_action"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "checkpoint_id": {
+      "type": "string"
+    },
+    "task_id": {
+      "type": "string"
+    },
+    "execution_id": {
+      "type": "string"
+    },
+    "generation": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "completed_steps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "verified_evidence": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "target_state_refs": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "next_action": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

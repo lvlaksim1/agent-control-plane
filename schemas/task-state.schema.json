@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Task State",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "task_id",
+    "status",
+    "request_digest",
+    "attempt",
+    "runtime_loss_count",
+    "claim",
+    "latest_checkpoint"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "task_id": {
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "queued",
+        "claimed",
+        "active",
+        "waiting",
+        "blocked",
+        "quarantined",
+        "completed",
+        "cancelled",
+        "superseded"
+      ]
+    },
+    "request_digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "attempt": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "runtime_loss_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "claim": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "latest_checkpoint": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+}

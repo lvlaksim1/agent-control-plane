@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Agent Registry Record",
+  "type": "object",
+  "required": [
+    "agent_id",
+    "agent_type",
+    "role",
+    "home_repository",
+    "authority_ref",
+    "entrypoint",
+    "status",
+    "automatic_execution_allowed"
+  ],
+  "properties": {
+    "agent_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "agent_type": {
+      "enum": [
+        "project-manager",
+        "service-agent"
+      ]
+    },
+    "role": {
+      "type": "string",
+      "minLength": 1
+    },
+    "home_repository": {
+      "type": "string",
+      "minLength": 3
+    },
+    "authority_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "entrypoint": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "enum": [
+        "registered",
+        "ready",
+        "paused",
+        "disabled"
+      ]
+    },
+    "automatic_execution_allowed": {
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false
+}

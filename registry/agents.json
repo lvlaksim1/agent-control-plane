@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "agents": [
+    {
+      "agent_id": "ecosystem-supervisor",
+      "agent_type": "service-agent",
+      "role": "Supervisor",
+      "home_repository": "lvlaksim1/supervisor",
+      "authority_ref": "main",
+      "entrypoint": ".context/ENTRYPOINT.md",
+      "status": "ready",
+      "automatic_execution_allowed": false
+    },
+    {
+      "agent_id": "context-capsule-project-manager",
+      "agent_type": "project-manager",
+      "role": "Project Manager",
+      "home_repository": "lvlaksim1/context-capsule",
+      "authority_ref": "v2-manager-runtime",
+      "entrypoint": ".context/ENTRYPOINT.md",
+      "status": "ready",
+      "automatic_execution_allowed": false
+    },
+    {
+      "agent_id": "project-manager-auditor",
+      "agent_type": "service-agent",
+      "role": "Auditor",
+      "home_repository": "lvlaksim1/project-manager-auditor",
+      "authority_ref": "main",
+      "entrypoint": ".context/ENTRYPOINT.md",
+      "status": "ready",
+      "automatic_execution_allowed": false
+    }
+  ]
+}

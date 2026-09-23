@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Global Runtime Lease",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "state",
+    "generation",
+    "execution_id",
+    "task_id",
+    "agent_id",
+    "slot_id",
+    "claimed_at",
+    "lease_until"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "state": {
+      "enum": [
+        "idle",
+        "active"
+      ]
+    },
+    "generation": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "execution_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "task_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "agent_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "slot_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "claimed_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "lease_until": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+}

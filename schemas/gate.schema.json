@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Reserved Gate Contract",
+  "type": "object",
+  "description": "Reserved for plan item 10; not active in the v1 foundation.",
+  "required": [
+    "schema_version",
+    "gate_id",
+    "task_id",
+    "gate_type",
+    "status"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "gate_id": {
+      "type": "string"
+    },
+    "task_id": {
+      "type": "string"
+    },
+    "gate_type": {
+      "enum": [
+        "owner_decision",
+        "authority",
+        "external_dependency",
+        "audit",
+        "release_approval"
+      ]
+    },
+    "status": {
+      "enum": [
+        "waiting",
+        "open",
+        "satisfied",
+        "cancelled"
+      ]
+    }
+  }
+}
