@@ -6,12 +6,16 @@ A wake changes only *when* work is reconsidered. It never grants authority.
 
 ## Entry reconciliation
 
-At every Execution Worker invocation:
+At every Execution Worker invocation use a **lease-first fast path**:
 
-1. read `runtime/dispatcher-config.json`, `runtime/dispatcher-pool.json`, `runtime/dispatcher-health.json`, Registry, task requests/states/gates/runtime metadata, and the authoritative gateway lease;
+1. read `runtime/dispatcher-config.json`, `runtime/dispatcher-pool.json`, `runtime/dispatcher-health.json`, Registry, and the authoritative gateway lease;
 2. validate the current wake state and capture `desired_generation`;
-3. reconcile partial transitions and any exact existing gateway lease before selecting new work;
-4. execute at most one bounded control-plane cycle.
+3. if the gateway is `reserved` or `active`, fetch only the exact referenced task request/state/runtime/gates plus the contract files needed to reconcile that execution; do not scan unrelated tasks;
+4. reconcile that exact partial/current execution before considering any new claim;
+5. only when the gateway is idle may the worker scan queued task states and compute READY deterministically;
+6. execute at most one bounded control-plane cycle.
+
+This ordering reduces runtime/tool cost without changing authority or ownership. The gateway lease and exact task state remain authoritative.
 
 ## Two-phase target execution
 
