@@ -1,41 +1,42 @@
 {
-  "schema_version": 1,
-  "purpose": "shared Scheduled Chat dispatcher pool",
+  "schema_version": 2,
+  "purpose": "event-driven Scheduled Chat execution topology",
   "max_concurrent_target_executions": 1,
   "authoritative_lease": "lvlaksim1/agent-control-plane-gateway@main:runtime/lease.json",
-  "gateway_concurrency": {
-    "group": "agent-control-plane-global-lease",
-    "queue": "max"
+  "execution_worker": {
+    "slot_id": "execution-worker",
+    "automation_id": "6aac8b1d8888819180cc4af0c009669e",
+    "source_automation": "ACP Dispatcher :00",
+    "mode": "reusable-one-shot",
+    "normally_dormant": true
   },
-  "slots": [
-    {
-      "slot_id": "dispatcher-00",
-      "minute": 0
-    },
-    {
-      "slot_id": "dispatcher-12",
-      "minute": 12
-    },
+  "watchdog": {
+    "slot_id": "watchdog-hourly",
+    "automation_id": "6aac8b23fff4819180fb12916df071a8",
+    "source_automation": "ACP Dispatcher :12",
+    "mode": "hourly-recovery-only"
+  },
+  "retired_polling_slots": [
     {
       "slot_id": "dispatcher-24",
-      "minute": 24
+      "automation_id": "6aac85d181108191bb95bfe823f18edc"
     },
     {
       "slot_id": "dispatcher-36",
-      "minute": 36
+      "automation_id": "6aac8b3402048191b4fc6d735aa8f38c"
     },
     {
       "slot_id": "dispatcher-48",
-      "minute": 48
+      "automation_id": "6aac8b15fd088191a4a2b169de4dd3be"
     }
   ],
-  "cadence": "each slot hourly; aggregate wake opportunity approximately every 12 minutes",
   "invariants": [
-    "slots are infrastructure workers, never agent identities",
-    "a slot may execute at most one target-agent task per invocation",
-    "active gateway lease prevents any second target-agent execution",
-    "pre-projection recovery continues the same execution token",
-    "scheduler tasks must never edit scheduler configuration themselves",
-    "direct Owner-agent conversations do not use this pool"
+    "scheduler wake never grants authority",
+    "one worker invocation executes at most one target-agent task",
+    "active gateway lease prevents a second target-agent execution",
+    "phase A and phase B remain separate worker invocations",
+    "worker re-arm requires a durable wake reason",
+    "watchdog never performs target-agent work",
+    "direct Owner-agent conversations do not use scheduler transport"
   ]
 }
