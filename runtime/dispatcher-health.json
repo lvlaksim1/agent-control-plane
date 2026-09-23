@@ -7,7 +7,7 @@
   "last_reason": "Event-wake validation requested; watchdog should arm the reusable worker.",
   "wake": {
     "desired_generation": 1,
-    "armed_generation": 0,
+    "armed_generation": 1,
     "served_generation": 0,
     "recent_request_keys": [
       "validation-wake-001"
@@ -19,7 +19,7 @@
       "requested_by": "ecosystem-supervisor",
       "requested_at": "2026-09-23T16:00:00Z"
     },
-    "last_armed_at": null,
+    "last_armed_at": "2026-09-23T16:00:30Z",
     "last_served_at": null,
     "last_worker_run_id": null
   }
