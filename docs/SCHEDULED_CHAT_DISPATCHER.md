@@ -21,6 +21,6 @@ Each run is a reconciliation loop:
 15. On execution failure, fence/release first, then apply retry/backoff/quarantine policy.
 16. Completion requires verified evidence satisfying completion_contract. Persist result, then complete task and release/fence the lease.
 17. Do not manually start a dependent task; the next dispatcher run recomputes READY.
-18. If no READY task exists, exit quietly.
+18. Persist a bounded infrastructure heartbeat to `runtime/dispatcher-health.json` using CAS: observed control-plane HEAD, slot_id, run outcome, and dispatch timestamp. This heartbeat grants no task ownership.\n19. If no READY task exists, record `no-ready-work` in the heartbeat and exit.
 
 A Dispatcher may execute at most one target-agent execution per scheduled invocation. It must never combine identities from different agents in one run.
