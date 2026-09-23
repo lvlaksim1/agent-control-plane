@@ -112,3 +112,17 @@ See `docs/DISPATCHER_POOL.md` and `docs/SCHEDULED_CHAT_DISPATCHER.md`.
 
 Agent Catalog / Agent Factory / item 20 remain out of scope and inactive.
 
+## Live delegation return chain
+
+New pre-scaling work distinguishes bounded delegation from explicit responsibility handoff.
+
+For live bounded agent-to-agent delegation, immutable task intent records:
+
+- `responsibility.mode=bounded_delegation`;
+- the caller as `commitment_owner_agent_id`;
+- the same caller as `return_to_agent_id`.
+
+After verified terminal live completion, the current runtime deterministically reinstantiates that caller from Registry and continues the caller's durable commitment without requiring a user reinvocation. Nested calls unwind one caller at a time. Explicit handoff instead transfers commitment ownership to the target and has no implicit return.
+
+This mechanism does not make Supervisor a mandatory dispatcher and does not affect unrelated autonomous scheduler work.
+
