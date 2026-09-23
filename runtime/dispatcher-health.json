@@ -1,14 +1,14 @@
 {
   "schema_version": 2,
-  "last_dispatch_at": "2026-09-23T16:30:19Z",
+  "last_dispatch_at": "2026-09-23T16:34:23Z",
   "last_slot_id": "execution-worker",
-  "last_outcome": "phase-b-completed-release-pending-armed",
-  "last_observed_head": "e1917b250d727a5b75d57895b4ef85488a05e85d",
-  "last_reason": "Completed TASK-EVENT-WAKE-E2E-001 durably; exact gateway release generation 41 is submitted and release-verification wake generation 5 is durably armed.",
+  "last_outcome": "bounded-no-work-release-verified",
+  "last_observed_head": "8cc4937c55fb1d6f56d95e2f2c28603d3482bf47",
+  "last_reason": "Verified canonical gateway release for TASK-EVENT-WAKE-E2E-001-g41: authoritative gateway is idle at generation 42; completed task remains durable and no new task-state changes occurred since the prior observed head, so no READY/recoverable work remains.",
   "wake": {
     "desired_generation": 5,
     "armed_generation": 5,
-    "served_generation": 4,
+    "served_generation": 5,
     "recent_request_keys": [
       "validation-wake-001",
       "validation-wake-002",
@@ -24,7 +24,7 @@
       "requested_at": "2026-09-23T16:30:02Z"
     },
     "last_armed_at": "2026-09-23T16:30:19Z",
-    "last_served_at": "2026-09-23T16:30:19Z",
-    "last_worker_run_id": "execution-worker-generation-4"
+    "last_served_at": "2026-09-23T16:34:23Z",
+    "last_worker_run_id": "execution-worker-generation-5"
   }
 }
