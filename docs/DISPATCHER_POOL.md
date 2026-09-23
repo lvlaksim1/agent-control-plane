@@ -48,7 +48,11 @@ Successful live execution MUST terminalize the ACP projection before carrier exp
 2. while the same live-carrier fence is still fresh, CAS `state.json` to `status=completed`, `claim=null`, `carrier=null`;
 3. re-read the terminal state.
 
-If the live runtime disappears before terminalization, it performs no completion write; after the carrier lease expires, normal scheduler fallback may execute the still-nonterminal task. This prevents successful interactive work from being resurrected later by lease expiry.
+If the live runtime disappears before writing any valid live result, normal scheduler fallback may execute the still-nonterminal task after carrier expiry.
+
+If the runtime disappears **after a valid live result is durable but before the terminal state CAS**, the scheduler MUST reconcile that partial completion before any fallback execution: inspect the exact current `result.json` plus its authoritative Git commit time. If it is a valid live success bound to the exact request/blob and exact carrier_id, all completion evidence/gates are satisfied, and the result commit is not later than the carrier lease expiry, CAS-repair the task to `completed`, clear carrier/claim, re-read, and do not execute the target. Missing, invalid, mismatched, or post-expiry results do not suppress legitimate fallback.
+
+This recovery closes the crash window between durable result publication and terminal task-state projection. `result.completed_at` is metadata only and is never used as ownership timing evidence.
 
 ## Runtime roles
 
