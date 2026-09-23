@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "task_id": "TASK-CC-ACP-AUDIT-001",
-  "status": "claimed",
+  "status": "active",
   "request_digest": "sha256:023e642122a7b391975bfcab6fbb5bfd0ba81280b9ccbfd011776e47846d36b1",
   "attempt": 1,
   "runtime_loss_count": 0,
