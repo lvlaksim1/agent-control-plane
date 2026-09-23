@@ -1,16 +1,11 @@
 {
   "schema_version": 1,
   "task_id": "TASK-CC-ACP-CLOSURE-001",
-  "status": "active",
+  "status": "completed",
   "request_digest": "sha256:07219d8a97e0fe02566d84993e15a7b454c865ae5ab0d1e3f4079dd230546f7c",
   "attempt": 1,
   "runtime_loss_count": 0,
-  "claim": {
-    "execution_id": "EXEC-CC-ACP-CLOSURE-001-DIRECT",
-    "generation": 27,
-    "slot_id": "direct-owner-runtime",
-    "claimed_at": "2026-09-23T13:37:55Z"
-  },
+  "claim": null,
   "latest_checkpoint": null,
   "request_blob_sha": "519df970bdadc006db6e47f2cdcadaa153d9414a"
 }
