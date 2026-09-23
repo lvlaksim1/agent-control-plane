@@ -10,7 +10,8 @@
     "generation": 45,
     "slot_id": "execution-worker",
     "claimed_at": "2026-09-23T17:31:34Z",
-    "request_blob_sha": "36da1ad356766657949ecae7296cdd6c3a7ece00"
+    "request_blob_sha": "36da1ad356766657949ecae7296cdd6c3a7ece00",
+    "activation_projection_blob_sha": "fa9d3b109c9d6df319312f99f4e9f5b68f3428a8"
   },
   "latest_checkpoint": null,
   "request_blob_sha": "36da1ad356766657949ecae7296cdd6c3a7ece00"
