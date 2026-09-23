@@ -91,11 +91,24 @@ The strict workflow `WF-REAL-PM-AUDITOR-002` proved:
 
 ## Event-driven scheduler redesign
 
-The legacy five-slot polling dispatcher pool is being replaced, before any Agent Catalog/Factory scaling, by an Owner-authorized event-driven topology:
+The Owner-authorized pre-scaling scheduler redesign is complete and independently verified.
 
-- one reusable one-shot Execution Worker;
-- one hourly Watchdog;
+Production topology:
+
+- one reusable **hourly-anchored Execution Worker** whose next occurrence may be retargeted earlier by the Broker;
+- one **Wake Broker / Hourly Watchdog** that performs event delivery and recovery but never target-agent work;
 - durable wake generations in `runtime/dispatcher-health.json#wake`;
-- the same authoritative gateway lease, two-phase activation, fencing, authority validation and completion evidence.
+- the authoritative gateway lease, two-phase activation, fencing, immutable task intent, mandate validation, and evidence-backed completion remain preserved;
+- interactive-first routing is task-scoped: a fresh live carrier blocks only its own scheduler-visible task/chain, while unrelated autonomous work remains schedulable;
+- expired live-carried queued work is result-aware before fallback: an exact valid pre-expiry live success repairs to terminal completed state instead of executing twice, while absent/invalid/mismatched/post-expiry results retain legitimate fallback and unverifiable result chronology fails closed.
 
-The Watchdog is recovery-only and never executes target-agent work. See `docs/DISPATCHER_POOL.md` and `docs/SCHEDULED_CHAT_DISPATCHER.md`.
+Independent closure evidence:
+
+- EW-001..EW-003 — CLOSED / High confidence;
+- PTC-001..PTC-003 — CLOSED / High confidence;
+- final focused report: `project-manager-auditor/audits/AUD-2026-09-24-PTC-002-RETEST-002.md`.
+
+See `docs/DISPATCHER_POOL.md` and `docs/SCHEDULED_CHAT_DISPATCHER.md`.
+
+Agent Catalog / Agent Factory / item 20 remain out of scope and inactive.
+
