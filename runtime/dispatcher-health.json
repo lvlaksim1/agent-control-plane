@@ -1,26 +1,27 @@
 {
   "schema_version": 2,
-  "last_dispatch_at": "2026-09-23T16:27:15Z",
+  "last_dispatch_at": "2026-09-23T16:30:02Z",
   "last_slot_id": "execution-worker",
-  "last_outcome": "phase-a-complete-phase-b-armed",
-  "last_observed_head": "22c7cecc747fbd2ee10a3a2dde1694c8d2a574ad",
-  "last_reason": "Verified gateway activation receipt for TASK-EVENT-WAKE-E2E-001-g41; persisted deterministic Phase-B wake generation 4 and verified Execution Worker re-arm.",
+  "last_outcome": "phase-b-completed-release-pending",
+  "last_observed_head": "e1917b250d727a5b75d57895b4ef85488a05e85d",
+  "last_reason": "Completed TASK-EVENT-WAKE-E2E-001 durably and submitted exact gateway release for generation 41; canonical gateway release verification remains pending.",
   "wake": {
-    "desired_generation": 4,
+    "desired_generation": 5,
     "armed_generation": 4,
     "served_generation": 3,
     "recent_request_keys": [
       "validation-wake-001",
       "validation-wake-002",
       "validation-lost-wake-003",
-      "phase-b:TASK-EVENT-WAKE-E2E-001-g41"
+      "phase-b:TASK-EVENT-WAKE-E2E-001-g41",
+      "release-verify:TASK-EVENT-WAKE-E2E-001-g41"
     ],
     "last_request": {
-      "generation": 4,
-      "request_key": "phase-b:TASK-EVENT-WAKE-E2E-001-g41",
-      "reason": "phase-b-after-verified-activation:TASK-EVENT-WAKE-E2E-001-g41",
+      "generation": 5,
+      "request_key": "release-verify:TASK-EVENT-WAKE-E2E-001-g41",
+      "reason": "verify-canonical-gateway-release:TASK-EVENT-WAKE-E2E-001-g41",
       "requested_by": "execution-worker",
-      "requested_at": "2026-09-23T16:26:24Z"
+      "requested_at": "2026-09-23T16:30:02Z"
     },
     "last_armed_at": "2026-09-23T16:27:15Z",
     "last_served_at": "2026-09-23T16:27:15Z",
