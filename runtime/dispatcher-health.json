@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "last_dispatch_at": "2026-09-23T12:21:22Z",
+  "last_dispatch_at": "2026-09-23T12:25:27Z",
   "last_slot_id": "probe-1",
   "last_outcome": "blocked",
-  "last_observed_head": "60bfb29b7a09333e3ce3219f99c4832fe188e50e",
-  "last_reason": "TASK-INT-PM-002 was READY and one exact gateway claim Issue #7 was created, but this run did not observe accepted=true or an exact matching committed active gateway lease before stopping. No private claimed projection, target-agent reinstantiation, or target write was performed. The gateway claim remains pending and must be reconciled before any new claim is attempted."
+  "last_observed_head": "d14bbb5074474df19f1ca5e70a6c260278846ffd",
+  "last_reason": "Recovered the pre-projection runtime loss for TASK-INT-PM-002 under the existing authoritative generation-9 lease, durably projected claimed state, reinstantiated and authority-validated the existing Context Capsule Project Manager, completed the authorized read-only attestation, wrote and verified strict result.json, and durably projected state=completed. Exact gateway release Issue #8 was then created, but this run did not yet observe gateway acceptance or an idle newer-generation lease; no new task may be claimed until that release is reconciled."
 }
