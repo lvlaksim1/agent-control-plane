@@ -25,19 +25,25 @@
   "active_check": {
     "id": "FINAL-BROKER-RELAY-E2E-V4",
     "task_id": "TASK-EVENT-WAKE-RELAY-E2E-001",
-    "status": "running",
-    "phase": "convert-worker-to-recurring-anchor-then-reconcile-reserved-plus-queued",
-    "wake_generation": 9,
-    "gateway_generation": 45
+    "status": "phase-b-armed",
+    "phase": "phase-a-complete-broker-precommitted-generation-10-worker-retargeted",
+    "gateway_generation": 45,
+    "wake_generation": 10,
+    "evidence": [
+      "Recurring Worker generation 9 reconciled active+claimed recovery and durably recorded activation_projection_blob_sha fa9d3b109c9d6df319312f99f4e9f5b68f3428a8.",
+      "Generation 9 was marked served at 2026-09-23T17:44:46Z and Phase-B wake generation 10 was durably requested by Execution Worker.",
+      "Wake Broker precommitted armed_generation=10 at 2026-09-23T17:46:08Z before retargeting the recurring Worker.",
+      "Scheduler retained RRULE:FREQ=HOURLY and retargeted Worker DTSTART to 2026-09-23T17:49:08Z."
+    ]
   },
   "remaining": [
-    "convert Worker automation to recurring hourly anchor and retry same generation 9",
-    "reserved+queued -> claimed -> active receipt -> Phase-B durable wake -> Broker retarget -> later Phase B target execution",
+    "later recurring Worker Phase B reinstates ecosystem-supervisor and completes TASK-EVENT-WAKE-RELAY-E2E-001",
     "verified completion and gateway release",
     "controlled stale/lost delivery retry on recurring Worker",
     "restore production stale-delivery timeout to 20 minutes",
     "pin final snapshot",
     "independent Auditor review"
   ],
-  "scaling_boundary": "Agent Catalog, Agent Factory and item 20 remain inactive"
+  "scaling_boundary": "Agent Catalog, Agent Factory and item 20 remain inactive",
+  "updated_at": "2026-09-23T17:46:50Z"
 }
