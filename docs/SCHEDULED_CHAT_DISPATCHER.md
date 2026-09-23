@@ -9,7 +9,7 @@ A wake changes only *when* work is reconsidered. It never grants authority.
 At every Execution Worker invocation use a **lease-first fast path**:
 
 1. read `runtime/dispatcher-config.json`, `runtime/dispatcher-pool.json`, `runtime/dispatcher-health.json`, Registry, and the authoritative gateway lease;
-2. validate the current wake state and capture `desired_generation`;
+2. validate the current wake state and capture the exact `armed_generation` that caused this invocation as `invocation_generation`; never treat a newer unarmed desired generation as already served;
 3. if the gateway is `reserved` or `active`, fetch only the exact referenced task request/state/runtime/gates plus the contract files needed to reconcile that execution; do not scan unrelated tasks;
 4. reconcile that exact partial/current execution before considering any new claim;
 5. only when the gateway is idle may the worker scan queued task states and compute READY deterministically;
@@ -32,7 +32,7 @@ This ordering reduces runtime/tool cost without changing authority or ownership.
 7. Record the same activation receipt in the private claim and re-read.
 8. Persist a new durable wake request keyed by this exact activated execution, because Phase B must occur in a later invocation.
 9. Re-arm the same Execution Worker for a future one-shot run using the configured minimum delay and set `is_enabled=true`; verify both the future schedule and enabled state before recording the corresponding armed generation.
-10. Mark the current wake generation served.
+10. Mark only the captured armed invocation generation served.
 11. **STOP. Do not reinstate the target agent and do not perform target writes.**
 
 If re-arm fails, leave the durable wake pending. The hourly Watchdog must recover it.
@@ -65,7 +65,7 @@ While the exact active fence remains valid:
 3. only after durable completion request exact gateway release and verify canonical gateway idle at a newer generation;
 4. recompute READY/recovery state;
 5. if another durable reason for progress exists, persist a new wake request and re-arm the Execution Worker;
-6. mark the current wake generation served;
+6. mark only the captured armed invocation generation served;
 7. stop.
 
 A worker invocation never re-arms itself merely because it ran.
