@@ -158,8 +158,8 @@ class TaskCarrierTests(unittest.TestCase):
    "schema_version":1,"task_id":r["task_id"],"request_digest":cp.request_digest(r),
    "request_blob_sha":s["request_blob_sha"],"execution_mode":"live","carrier_id":carrier_id,
    "outcome":"success","summary":"done",
-   "evidence":[{"kind":"audit","reference":"report","verified":True,"verified_by":"agent-a","verified_at":"2026-09-23T00:10:00Z"}],
-   "completed_at":"2026-09-23T00:10:00Z"
+   "evidence":[{"kind":"audit","reference":"report","verified":True,"verified_by":"agent-a","verified_at":"2026-09-23T00:04:00Z"}],
+   "completed_at":"2026-09-23T00:04:00Z"
   }
 
  def test_live_carrier_blocks_only_its_task(self):
@@ -168,10 +168,56 @@ class TaskCarrierTests(unittest.TestCase):
   ready=wr.scheduler_ready_tasks(registry(),[(a,sa,[],wr.task_runtime("A")),(b,sb,[],wr.task_runtime("B"))],NOW)
   self.assertEqual([x["task_id"] for x in ready],["B"])
 
- def test_expired_live_carrier_allows_autonomous_fallback(self):
-  a,sa=self.live_state("A","2026-09-22T23:59:00Z")
-  ready=wr.scheduler_ready_tasks(registry(),[(a,sa,[],wr.task_runtime("A"))],NOW)
+ def test_expired_live_carrier_requires_result_aware_preflight(self):
+  a,sa=self.live_state("A","2026-09-23T00:05:00Z")
+  later=datetime(2026,9,23,0,10,tzinfo=timezone.utc)
+  with self.assertRaises(cp.ControlPlaneError):
+   wr.scheduler_ready_tasks(registry(),[(a,sa,[],wr.task_runtime("A"))],later)
+
+ def test_expired_live_carrier_without_result_allows_autonomous_fallback(self):
+  a,sa=self.live_state("A","2026-09-23T00:05:00Z")
+  later=datetime(2026,9,23,0,10,tzinfo=timezone.utc)
+  ready,repairs=wr.scheduler_preflight(
+   registry(),[(a,sa,[],wr.task_runtime("A"))],{"A":None},later
+  )
   self.assertEqual([x["task_id"] for x in ready],["A"])
+  self.assertEqual(repairs,[])
+
+ def test_durable_live_result_repairs_partial_completion_before_fallback(self):
+  a,sa=self.live_state("A","2026-09-23T00:05:00Z")
+  later=datetime(2026,9,23,0,10,tzinfo=timezone.utc)
+  record={"result":self.live_result(a,sa),"committed_at":datetime(2026,9,23,0,4,tzinfo=timezone.utc)}
+  ready,repairs=wr.scheduler_preflight(
+   registry(),[(a,sa,[],wr.task_runtime("A"))],{"A":record},later
+  )
+  self.assertEqual(ready,[])
+  self.assertEqual(len(repairs),1)
+  task_id,repaired=repairs[0]
+  self.assertEqual(task_id,"A")
+  self.assertEqual(repaired["status"],"completed")
+  self.assertIsNone(repaired["claim"])
+  self.assertIsNone(repaired["carrier"])
+
+ def test_mismatched_live_result_does_not_suppress_legitimate_fallback(self):
+  a,sa=self.live_state("A","2026-09-23T00:05:00Z")
+  later=datetime(2026,9,23,0,10,tzinfo=timezone.utc)
+  bad=self.live_result(a,sa,carrier_id="other-live-runtime")
+  ready,repairs=wr.scheduler_preflight(
+   registry(),[(a,sa,[],wr.task_runtime("A"))],
+   {"A":{"result":bad,"committed_at":datetime(2026,9,23,0,4,tzinfo=timezone.utc)}},later
+  )
+  self.assertEqual([x["task_id"] for x in ready],["A"])
+  self.assertEqual(repairs,[])
+
+ def test_late_live_result_does_not_suppress_legitimate_fallback(self):
+  a,sa=self.live_state("A","2026-09-23T00:05:00Z")
+  later=datetime(2026,9,23,0,10,tzinfo=timezone.utc)
+  ready,repairs=wr.scheduler_preflight(
+   registry(),[(a,sa,[],wr.task_runtime("A"))],
+   {"A":{"result":self.live_result(a,sa),"committed_at":datetime(2026,9,23,0,6,tzinfo=timezone.utc)}},later
+  )
+  self.assertEqual([x["task_id"] for x in ready],["A"])
+  self.assertEqual(repairs,[])
 
  def test_hold_blocks_only_its_task_without_expiry(self):
   a=request("A"); sa=state(a)
@@ -228,13 +274,11 @@ class TaskCarrierTests(unittest.TestCase):
   ready=wr.scheduler_ready_tasks(registry(),[(r,completed,[],wr.task_runtime("A"))],datetime(2026,9,23,1,0,tzinfo=timezone.utc))
   self.assertEqual(ready,[])
 
- def test_expired_live_carrier_cannot_complete_and_falls_back(self):
+ def test_expired_live_carrier_cannot_complete(self):
   r,s=self.live_state("A","2026-09-23T00:05:00Z")
   later=datetime(2026,9,23,0,10,tzinfo=timezone.utc)
   with self.assertRaises(cp.ControlPlaneError):
    wr.complete_live_task(s,r,[],self.live_result(r,s),self.idle_gateway(),carrier_id="owner-live-runtime-test",now=later)
-  ready=wr.scheduler_ready_tasks(registry(),[(r,s,[],wr.task_runtime("A"))],later)
-  self.assertEqual([x["task_id"] for x in ready],["A"])
 
 
 class EventWakeTests(unittest.TestCase):
