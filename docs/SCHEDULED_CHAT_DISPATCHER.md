@@ -42,6 +42,22 @@ At every Execution Worker invocation use a **lease-first fast path**:
 6. only if no exact wake-addressed READY task is available may the worker scan unrelated queued task states and compute READY deterministically;
 7. execute at most one bounded control-plane cycle.
 
+## Authoritative gateway requests
+
+The deployed lease authority is `lvlaksim1/agent-control-plane-gateway@main`. Before a claim/activate/renew/release/recover request, read its current `runtime/lease.json` and gateway `README.md`.
+
+Submit a gateway transition by creating one Issue in that repository with exact title `[ACP_LEASE]` and a complete JSON body. The workflow serializes accepted transitions and commits canonical lease state before reporting success.
+
+Required bodies:
+
+- claim: `{"operation":"claim","task_id":"...","agent_id":"...","execution_id":"...","slot_id":"execution-worker","request_blob_sha":"<40-char blob>","lease_minutes":45}`
+- activate: `{"operation":"activate","task_id":"...","agent_id":"...","execution_id":"...","generation":N,"request_blob_sha":"<40-char blob>","activation_projection_blob_sha":"<40-char claimed-state blob>"}`
+- renew: exact owner fields plus `{"operation":"renew","lease_minutes":45}`
+- release: exact owner fields plus `{"operation":"release"}`
+- recover_expired: `{"operation":"recover_expired","generation":N}`
+
+After each request, re-read canonical `runtime/lease.json`; do not infer acceptance from Issue creation alone. A `claim` must yield `reserved`; `activate` must yield `active` with the exact receipt.
+
 ## Two-phase target execution
 
 **A gateway reservation/activation never authorizes target execution in the same Execution Worker invocation.**
