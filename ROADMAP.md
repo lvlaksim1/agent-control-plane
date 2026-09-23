@@ -22,7 +22,7 @@
 - [x] 15. Sandbox E2E (completion-projection drift found, protocol corrected, gateway-backed E2E passed)
 - [x] 16. Real PM/Auditor integration (strict PM attestation → PM-issued Auditor verification; runtime-loss recovery proven)
 - [x] 17. Multi-entry human routing: direct Owner↔agent conversations remain first-class; PM→Auditor routing proven without Supervisor proxy
-- [ ] 18. Five-slot shared dispatcher pool
+- [x] 18. Five-slot shared dispatcher pool (five hourly offsets active; gateway CAS race admission passed)
 - [ ] 19. Fold proven protocol into Context Capsule / Service Agent Base
 - [ ] 20. Resume Agent Catalog / Agent Factory scaling
 

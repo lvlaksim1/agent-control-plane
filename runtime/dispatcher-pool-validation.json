@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "validation": "five-slot-shared-dispatcher-pool",
+  "result": "PASS",
+  "scheduler_slots": [
+    {
+      "slot_id": "dispatcher-00",
+      "automation_id": "6aac8b1d8888819180cc4af0c009669e",
+      "enabled": true
+    },
+    {
+      "slot_id": "dispatcher-12",
+      "automation_id": "6aac8b23fff4819180fb12916df071a8",
+      "enabled": true
+    },
+    {
+      "slot_id": "dispatcher-24",
+      "automation_id": "6aac85d181108191bb95bfe823f18edc",
+      "enabled": true
+    },
+    {
+      "slot_id": "dispatcher-36",
+      "automation_id": "6aac8b3402048191b4fc6d735aa8f38c",
+      "enabled": true
+    },
+    {
+      "slot_id": "dispatcher-48",
+      "automation_id": "6aac8b15fd088191a4a2b169de4dd3be",
+      "enabled": true
+    }
+  ],
+  "one_shot_probe": {
+    "automation_id": "6ab3440523b08191a49824af19417413",
+    "enabled": false
+  },
+  "concurrency_finding": {
+    "initial_probe": {
+      "issues": [
+        11,
+        12
+      ],
+      "finding": "second stale event-time checkout computed accepted=true but git push failed; report step still published stale accepted=true",
+      "affected_run": 35861945804
+    },
+    "remediation": {
+      "workflow_commit": "4bdaba1b09eaf618fbfa8879a86ab9203bdb5457",
+      "regression_commit": "b34c6dc45a3d8d09373c10192c1610464ffae31a",
+      "mechanism": "live GitHub Contents API CAS on runtime/lease.json blob SHA + post-commit canonical re-read; queue:max retained",
+      "contract_runs": [
+        35862085127,
+        35862136246
+      ]
+    },
+    "corrected_probe": {
+      "issues": {
+        "accepted": 14,
+        "rejected": 15,
+        "release": 16
+      },
+      "accepted_execution": "pool-race-c-20260923",
+      "accepted_generation": 15,
+      "rejected_reason": "lease-active",
+      "final_release_generation": 16
+    }
+  },
+  "invariant": "maximum one autonomous target-agent execution globally"
+}
