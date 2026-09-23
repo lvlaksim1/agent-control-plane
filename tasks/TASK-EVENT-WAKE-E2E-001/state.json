@@ -1,18 +1,11 @@
 {
   "schema_version": 1,
   "task_id": "TASK-EVENT-WAKE-E2E-001",
-  "status": "active",
+  "status": "completed",
   "request_digest": "sha256:3f96c919a8ca160012af93f38cc02b6926ac0b4f6a11ec82f49e061eec027171",
   "attempt": 0,
   "runtime_loss_count": 0,
-  "claim": {
-    "execution_id": "TASK-EVENT-WAKE-E2E-001-g41",
-    "generation": 41,
-    "slot_id": "execution-worker",
-    "claimed_at": "2026-09-23T16:15:39Z",
-    "request_blob_sha": "0870cb67adabc725b5b240a8abc2fae7796da62a",
-    "activation_projection_blob_sha": "66550aa4fb4657359c48f10b9c4ed6edb9db2e6e"
-  },
+  "claim": null,
   "latest_checkpoint": null,
   "request_blob_sha": "0870cb67adabc725b5b240a8abc2fae7796da62a"
 }
