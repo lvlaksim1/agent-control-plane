@@ -1,16 +1,11 @@
 {
   "schema_version": 1,
   "task_id": "TASK-SUP-RETEST-002",
-  "status": "active",
+  "status": "completed",
   "request_digest": "sha256:33883812cdc7f02bac3afe152c3d37274c203dd8fe278b720262c3d08ec1d080",
   "attempt": 1,
   "runtime_loss_count": 0,
-  "claim": {
-    "execution_id": "EXEC-SUP-RETEST-002-DIRECT",
-    "generation": 37,
-    "slot_id": "direct-owner-runtime",
-    "claimed_at": "2026-09-23T14:48:36Z"
-  },
+  "claim": null,
   "latest_checkpoint": null,
   "request_blob_sha": "189893ea3f9a44d4f92db9b639b3c499d46255d1"
 }

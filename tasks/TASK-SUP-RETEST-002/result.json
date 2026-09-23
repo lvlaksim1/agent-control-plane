@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-SUP-RETEST-002",
+  "request_digest": "sha256:33883812cdc7f02bac3afe152c3d37274c203dd8fe278b720262c3d08ec1d080",
+  "request_blob_sha": "189893ea3f9a44d4f92db9b639b3c499d46255d1",
+  "execution_id": "EXEC-SUP-RETEST-002-DIRECT",
+  "generation": 37,
+  "outcome": "success",
+  "summary": "Focused independent read-only SUP-002 retest completed. SUP-002 is CLOSED / High confidence; SUP-001 remains CLOSED / High confidence; no new findings. The active ACP engagement now reflects the later Owner pause, item 20 is not active work, engagement status is blocked pending Owner discussion, and mandatory portfolio reconciliation explicitly includes service-agent engagements and later Owner revisions.",
+  "evidence": [
+    {
+      "kind": "audit",
+      "reference": "lvlaksim1/project-manager-auditor@d2f92dae8cd8e1b16148de70fcf653e1bbb51d6d:audits/AUD-2026-09-23-SUPERVISOR-001-RETEST-002.md",
+      "verified": true,
+      "verified_by": "project-manager-auditor",
+      "verified_at": "2026-09-23T14:51:00Z"
+    }
+  ],
+  "completed_at": "2026-09-23T14:51:00Z"
+}
