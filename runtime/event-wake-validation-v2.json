@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "validation_id": "VAL-2026-09-23-ACP-EVENT-WAKE-RELAY-002",
+  "status": "running",
+  "architecture": "event-wake-broker-relay-v2",
+  "branch": "event-wake-redesign",
+  "owner_directive": "OWNER-2026-09-23-EVENT-WAKE-REDESIGN",
+  "supersedes": "VAL-2026-09-23-ACP-EVENT-WAKE-001",
+  "started_at": "2026-09-23T16:57:00Z",
+  "design_change": {
+    "observed_problem": "Live Scheduled Task execution showed that self-rearming the currently active one-shot Worker can be overwritten by its own completion, and expired one-shot re-enable may be delivered as catch-up rather than exact future DTSTART.",
+    "remediation": "Execution Worker is forbidden to schedule itself. A separate recurring Wake Broker / Hourly Watchdog is the sole role that arms the Worker. Worker continuations persist durable wake, nudge the Broker, then stop.",
+    "slots": 2
+  },
+  "completed_checks": [
+    {
+      "id": "STALE-AUDIT-SAFE-SUPERSEDE",
+      "status": "passed",
+      "evidence": [
+        "TASK-AUDIT-EVENT-WAKE-001 superseded before Auditor target execution",
+        "gateway execution TASK-AUDIT-EVENT-WAKE-001-g43 safely released; gateway idle generation 44"
+      ]
+    },
+    {
+      "id": "DETERMINISTIC-BROKER-LOGIC",
+      "status": "implemented",
+      "evidence": [
+        "tools/workflow_runtime.py broker_generation_to_arm",
+        "tests/test_workflow_runtime.py BrokerRelayTests"
+      ]
+    }
+  ],
+  "active_check": {
+    "id": "EVENT-PRODUCER-BROKER-WORKER-NOOP",
+    "wake_generation": 8,
+    "status": "pending",
+    "expected": "event producer nudges recurring Broker; Broker alone arms Worker; Worker reconciles generation 8 with no target work and disables after one-shot completion"
+  },
+  "remaining": [
+    "live broker relay no-op",
+    "live Phase A to Broker to Phase B target execution",
+    "lost worker delivery recovery through hourly Broker",
+    "new pinned snapshot",
+    "independent Auditor review"
+  ],
+  "scaling_boundary": "Agent Catalog, Agent Factory and item 20 remain inactive"
+}
