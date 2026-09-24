@@ -1,5 +1,5 @@
 {
-  "schema_version": 8,
+  "schema_version": 9,
   "lease_minutes": 45,
   "runtime_loss_quarantine_after": 3,
   "one_target_agent_per_dispatch": true,
@@ -8,7 +8,7 @@
   "scheduler_topology": "runtime/dispatcher-pool.json",
   "wake_state": "runtime/dispatcher-health.json#wake",
   "automatic_execution_activation": "registry-per-agent-explicit",
-  "scheduler_model": "event-wake-broker-relay-v10-partial-live-recovery",
+  "scheduler_model": "event-wake-broker-relay-v11-durable-live-return",
   "execution_worker": {
     "slot_id": "execution-worker",
     "automation_id": "6aac8b1d8888819180cc4af0c009669e",
@@ -70,5 +70,15 @@
       "action": "CAS-repair state=completed with claim=null and carrier=null; do not execute target",
       "absent_or_invalid_result": "normal expiry fallback remains eligible"
     }
+  },
+  "live_return_policy": {
+    "state_location": "tasks/<task_id>/state.json#continuation",
+    "creation": "bounded live completion atomically projects state=completed and continuation.status=pending in the same state CAS",
+    "live_delivery": "while continuation live_lease_until is fresh, current live runtime reinstantiates exact return_to_agent_id",
+    "acknowledgement": "caller verifies exact child result then CAS-marks continuation consumed before consequential caller work",
+    "recovery": "after live_lease_until, Broker/Worker treats completed+pending continuation as durable work and reinstantiates caller without re-executing child",
+    "idempotence": "consumed continuation is never redelivered; repeated same-caller acknowledgement is idempotent",
+    "nested": "each completed child carries only its immediate caller; nested delegation unwinds one level at a time",
+    "explicit_handoff": "produces no caller continuation"
   }
 }
