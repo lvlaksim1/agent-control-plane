@@ -1,14 +1,14 @@
 {
   "schema_version": 2,
-  "last_dispatch_at": "2026-09-23T17:56:15Z",
+  "last_dispatch_at": "2026-09-24T00:42:08Z",
   "last_slot_id": "execution-worker",
-  "last_outcome": "phase-b-release-confirmed-no-work",
+  "last_outcome": "wake-addressed-task-superseded-no-work",
   "last_observed_head": "2f1e49e24b130f34461ad18d1720e2f5f7b25a6f",
-  "last_reason": "Canonical gateway release for TASK-EVENT-WAKE-RELAY-E2E-001-g45 is confirmed by idle gateway generation 46; the durable task is completed and no further work is required for invocation generation 10.",
+  "last_reason": "Captured wake generation 11 addressed TASK-AUDIT-EVENT-WAKE-002, which is superseded by TASK-AUDIT-EVENT-WAKE-003; the replacement task is already completed. Gateway is idle generation 46. No queued task or expired pending continuation was discovered in this bounded cycle.",
   "wake": {
     "desired_generation": 11,
     "armed_generation": 11,
-    "served_generation": 10,
+    "served_generation": 11,
     "recent_request_keys": [
       "validation-wake-001",
       "validation-wake-002",
@@ -30,7 +30,7 @@
       "requested_at": "2026-09-23T20:40:46Z"
     },
     "last_armed_at": "2026-09-23T23:41:36Z",
-    "last_served_at": "2026-09-23T17:56:15Z",
-    "last_worker_run_id": "execution-worker-generation-10-release-confirmed"
+    "last_served_at": "2026-09-24T00:42:08Z",
+    "last_worker_run_id": "execution-worker-generation-11-superseded-no-work"
   }
 }
