@@ -65,12 +65,20 @@ docs/ — normative protocol
 
 ## Validation
 
-tools/control_plane.py is a deterministic repository validator/planner, not the production runtime. Validation can be run from an external GitHub-hosted validation job when this private repository has no assignable hosted runner.
+`tools/control_plane.py` is a deterministic repository validator/planner, not the production runtime.
 
-python3 tools/control_plane.py validate --root .
-python3 -m unittest discover -s tests -v
+This repository is private and must not spend the account's private GitHub-hosted Actions minutes. Its exact-commit verification is therefore executed by the public `lvlaksim1/repo-factory` workflow `Verify Private Repository`.
 
-There is intentionally no OS/Python matrix and no always-on CI requirement: the control plane itself is GitHub state plus the ordinary-Chat protocol.
+The verification profile for this repository runs:
+
+```
+python -m compileall -q tools
+python -m unittest discover -s tests
+```
+
+The verifier accepts only an exact 40-character commit SHA and the allowlisted `agent-control-plane` profile. No Actions artifacts or cache are uploaded.
+
+There is intentionally no private-repository GitHub-hosted CI workflow here.
 \n## Workflow runtime\n\n`tools/workflow_runtime.py` extends the foundation state machine without changing the authority of `runtime/lease.json`. It adds retry/backoff, gates, reinstantiation packages, completion evidence, and DAG continuation. The scheduled dispatcher must follow `docs/SCHEDULED_CHAT_DISPATCHER.md`.\n
 ## Transactional gateway
 
