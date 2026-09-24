@@ -244,6 +244,27 @@ class LiveReturnTests(unittest.TestCase):
   self.assertEqual(packages[0]["delivery_mode"],"autonomous_recovery")
   self.assertEqual(packages[0]["agent_id"],"supervisor")
 
+ def test_partial_live_completion_repair_preserves_pending_caller_return(self):
+  reg=registry(True,("supervisor","auditor"))
+  r=self.delegated("AUD-PARTIAL","supervisor","auditor")
+  s=self.live_state(r)
+  later=datetime(2026,9,23,1,1,tzinfo=timezone.utc)
+  repaired=wr.repair_expired_live_completion(
+   s,r,[],self.live_result(r),
+   result_committed_at=datetime(2026,9,23,0,30,tzinfo=timezone.utc),now=later
+  )
+  self.assertIsNotNone(repaired)
+  self.assertEqual(repaired["status"],"completed")
+  self.assertIsNone(repaired["carrier"])
+  self.assertEqual(repaired["continuation"]["status"],"pending")
+  self.assertEqual(repaired["continuation"]["return_to_agent_id"],"supervisor")
+  packages=wr.recoverable_return_continuations(
+   reg,[(r,repaired,[],wr.task_runtime(r["task_id"]))],{r["task_id"]:self.live_result(r)},later
+  )
+  self.assertEqual(len(packages),1)
+  self.assertEqual(packages[0]["agent_id"],"supervisor")
+  self.assertEqual(packages[0]["delivery_mode"],"autonomous_recovery")
+
  def test_pending_return_is_not_recovered_before_live_lease_expiry(self):
   reg=registry(True,("supervisor","auditor"))
   r=self.delegated("AUD-LIVE","supervisor","auditor")
