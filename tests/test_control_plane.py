@@ -1,4 +1,5 @@
 import sys
+import copy
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
@@ -112,6 +113,89 @@ class Tests(unittest.TestCase):
         }
         with self.assertRaises(cp.ControlPlaneError):
             cp.validate_request(r)
+
+    def _v2(self, r, issuer, target, mode="bounded_delegation", parent=None, depth=1, allowed=None, forbidden=None, subdelegation="bounded"):
+        r["issuer_agent_id"]=issuer
+        r["target_agent_id"]=target
+        r["parent_task_id"]=parent
+        r["authority_basis"]={"kind":"owner-directive","reference":"OWNER-ROOT"}
+        r["constraints"]=["no-release"]
+        r["responsibility"]={
+            "semantics_version":2,
+            "mode":mode,
+            "caller_agent_id":issuer,
+            "commitment_owner_agent_id":issuer,
+            "proposed_commitment_owner_agent_id":target if mode=="explicit_handoff" else None,
+            "return_to_agent_id":issuer if mode=="bounded_delegation" else None,
+            "transfer_requires_target_acceptance":mode=="explicit_handoff",
+            "authority_chain":{
+                "root":{"kind":"owner-directive","reference":"OWNER-ROOT"},
+                "immediate_grantor_agent_id":issuer,
+                "grant_reference":f"GRANT-{r['task_id']}",
+                "delegation_depth":depth,
+                "parent_task_id":parent,
+                "allowed_effects":allowed or ["read","write"],
+                "forbidden_effects":forbidden or ["release"],
+                "subdelegation":subdelegation
+            }
+        }
+        return r
+
+    def test_v2_bounded_delegation_separates_responsibility_and_authority(self):
+        r=self._v2(request("V2-D"),"agent-a","agent-b")
+        cp.validate_request(r)
+        self.assertEqual(r["responsibility"]["commitment_owner_agent_id"],"agent-a")
+        self.assertIsNone(r["responsibility"]["proposed_commitment_owner_agent_id"])
+        self.assertFalse(r["responsibility"]["transfer_requires_target_acceptance"])
+
+    def test_v2_explicit_handoff_is_proposed_until_target_acceptance(self):
+        r=self._v2(request("V2-H"),"agent-a","agent-b",mode="explicit_handoff")
+        cp.validate_request(r)
+        self.assertEqual(r["responsibility"]["commitment_owner_agent_id"],"agent-a")
+        self.assertEqual(r["responsibility"]["proposed_commitment_owner_agent_id"],"agent-b")
+        self.assertTrue(r["responsibility"]["transfer_requires_target_acceptance"])
+        broken=copy.deepcopy(r)
+        broken["responsibility"]["commitment_owner_agent_id"]="agent-b"
+        with self.assertRaises(cp.ControlPlaneError):
+            cp.validate_request(broken)
+
+    def test_v2_root_authority_must_match_task_authority_basis(self):
+        r=self._v2(request("V2-ROOT"),"agent-a","agent-b")
+        r["responsibility"]["authority_chain"]["root"]["reference"]="OTHER"
+        with self.assertRaises(cp.ControlPlaneError):
+            cp.validate_request(r)
+
+    def test_nested_v2_delegation_can_only_attenuate_authority(self):
+        parent=request("ROOT")
+        parent["authority_basis"]={"kind":"owner-directive","reference":"OWNER-ROOT"}
+        parent["constraints"]=["no-release"]
+
+        child=self._v2(request("CHILD"),"agent-a","agent-b",parent="ROOT",depth=1,allowed=["read","write"],forbidden=["release"],subdelegation="bounded")
+        grand=self._v2(request("GRAND"),"agent-b","agent-c",parent="CHILD",depth=2,allowed=["read"],forbidden=["release","delete"])
+        grand["constraints"]=["no-release","read-only"]
+
+        cp.validate_request(child); cp.validate_request(grand)
+        cp.validate_authority_relations([parent,child,grand])
+
+        widened=copy.deepcopy(grand)
+        widened["responsibility"]["authority_chain"]["allowed_effects"].append("admin")
+        with self.assertRaises(cp.ControlPlaneError):
+            cp.validate_authority_relations([parent,child,widened])
+
+        dropped_forbidden=copy.deepcopy(grand)
+        dropped_forbidden["responsibility"]["authority_chain"]["forbidden_effects"]=[]
+        with self.assertRaises(cp.ControlPlaneError):
+            cp.validate_authority_relations([parent,child,dropped_forbidden])
+
+        dropped_constraint=copy.deepcopy(grand)
+        dropped_constraint["constraints"]=[]
+        with self.assertRaises(cp.ControlPlaneError):
+            cp.validate_authority_relations([parent,child,dropped_constraint])
+
+        no_sub=copy.deepcopy(child)
+        no_sub["responsibility"]["authority_chain"]["subdelegation"]="forbidden"
+        with self.assertRaises(cp.ControlPlaneError):
+            cp.validate_authority_relations([parent,no_sub,grand])
 
 if __name__=="__main__":
     unittest.main()

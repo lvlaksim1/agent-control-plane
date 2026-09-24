@@ -7,6 +7,33 @@ import control_plane as cp
 import workflow_runtime as wr
 NOW=datetime(2026,9,23,0,0,tzinfo=timezone.utc)
 
+def harden_agent_task(r,issuer,target,mode="bounded_delegation",parent=None,depth=1,allowed=None,forbidden=None,subdelegation="bounded"):
+ r["issuer_agent_id"]=issuer
+ r["target_agent_id"]=target
+ r["authority_basis"]={"kind":"owner-directive","reference":"OWNER-ROOT"}
+ r["parent_task_id"]=parent
+ r["constraints"]=list(dict.fromkeys((r.get("constraints") or [])+["no-release"]))
+ r["responsibility"]={
+  "semantics_version":2,
+  "mode":mode,
+  "caller_agent_id":issuer,
+  "commitment_owner_agent_id":issuer,
+  "proposed_commitment_owner_agent_id":target if mode=="explicit_handoff" else None,
+  "return_to_agent_id":issuer if mode=="bounded_delegation" else None,
+  "transfer_requires_target_acceptance":mode=="explicit_handoff",
+  "authority_chain":{
+   "root":{"kind":"owner-directive","reference":"OWNER-ROOT"},
+   "immediate_grantor_agent_id":issuer,
+   "grant_reference":"GRANT-"+r["task_id"],
+   "delegation_depth":depth,
+   "parent_task_id":parent,
+   "allowed_effects":allowed or ["read","write"],
+   "forbidden_effects":forbidden or ["release"],
+   "subdelegation":subdelegation
+  }
+ }
+ return r
+
 def registry(auto=True,ids=("agent-a",)):
  return {"schema_version":1,"agents":[{"agent_id":x,"agent_type":"service-agent","role":"Tester","home_repository":f"o/{x}","authority_ref":"main","entrypoint":".context/ENTRYPOINT.md","status":"ready","automatic_execution_allowed":auto} for x in ids]}
 
@@ -51,7 +78,9 @@ class WorkflowRuntimeTests(unittest.TestCase):
   r=request("A"); l,s=cp.claim_plan(idle(),r,state(r),slot_id="s",execution_id="e1",now=NOW)
   inv=wr.build_invocation(registry(),r,s,l)
   self.assertEqual((inv["agent_id"],inv["home_repository"],inv["authority_ref"]),("agent-a","o/agent-a","main"))
-  self.assertIn("cannot expand",inv["authority_rule"])
+  self.assertIn("can only narrow",inv["authority_rule"])
+  self.assertIn("authority_basis",inv)
+  self.assertIn("responsibility",inv)
 
  def test_completion_requires_verified_contract_evidence(self):
   r=request("A"); l,s=cp.claim_plan(idle(),r,state(r),slot_id="s",execution_id="e1",now=NOW); s=cp.activate_state(s,r,l)
@@ -107,7 +136,7 @@ class WorkflowRuntimeTests(unittest.TestCase):
   reg={"schema_version":1,"agents":[
    {"agent_id":"pm","agent_type":"project-manager","role":"PM","home_repository":"o/p","authority_ref":"main","entrypoint":".context/ENTRYPOINT.md","status":"ready","automatic_execution_allowed":True},
    {"agent_id":"auditor","agent_type":"service-agent","role":"Auditor","home_repository":"o/a","authority_ref":"main","entrypoint":".context/ENTRYPOINT.md","status":"ready","automatic_execution_allowed":True}]}
-  r=request("AUD","auditor"); r["issuer_agent_id"]="pm"; r["authority_basis"]={"kind":"engagement","reference":"ENG-PM-AUD-001"}
+  r=harden_agent_task(request("AUD","auditor"),"pm","auditor")
   self.assertEqual([x["task_id"] for x in wr.ready_tasks(reg,[(r,state(r),[],wr.task_runtime("AUD"))],NOW)],["AUD"])
 
  def test_unknown_agent_issuer_is_rejected(self):
@@ -140,6 +169,34 @@ class WorkflowRuntimeTests(unittest.TestCase):
   self.assertFalse(wr.gateway_execution_admitted(s,r,lease))
 
 
+ def test_new_agent_task_requires_hardened_responsibility_but_completed_legacy_is_readable(self):
+  reg=registry(True,("pm","auditor"))
+  legacy=request("LEGACY-ROUTE","auditor")
+  legacy["issuer_agent_id"]="pm"
+  legacy["authority_basis"]={"kind":"engagement","reference":"OLD"}
+  legacy["responsibility"]={
+   "mode":"bounded_delegation",
+   "commitment_owner_agent_id":"pm",
+   "return_to_agent_id":"pm"
+  }
+  with self.assertRaises(cp.ControlPlaneError):
+   wr.ready_tasks(reg,[(legacy,state(legacy),[],wr.task_runtime("LEGACY-ROUTE"))],NOW)
+  self.assertEqual(
+   wr.ready_tasks(reg,[(legacy,state(legacy,"completed"),[],wr.task_runtime("LEGACY-ROUTE"))],NOW),
+   []
+  )
+
+ def test_invocation_carries_hardened_authority_and_responsibility(self):
+  reg=registry(True,("pm","auditor"))
+  r=harden_agent_task(request("INV-V2","auditor"),"pm","auditor")
+  s=state(r)
+  l,s=cp.claim_plan(idle(),r,s,slot_id="s",execution_id="e1",now=NOW)
+  inv=wr.build_invocation(reg,r,s,l)
+  self.assertEqual(inv["responsibility"]["semantics_version"],2)
+  self.assertEqual(inv["authority_basis"],r["authority_basis"])
+  self.assertEqual(inv["constraints"],r["constraints"])
+  self.assertIn("acceptance", " ".join(inv["required_sequence"]))
+
 class LiveReturnTests(unittest.TestCase):
  def live_result(self,r,carrier_id="live-caller"):
   return {
@@ -151,16 +208,8 @@ class LiveReturnTests(unittest.TestCase):
   }
 
  def delegated(self,task_id,issuer,target,parent=None,workflow="WF-LIVE"):
-  r=request(task_id,target)
-  r["issuer_agent_id"]=issuer
-  r["authority_basis"]={"kind":"engagement","reference":"ENG-LIVE"}
-  r["parent_task_id"]=parent
+  r=harden_agent_task(request(task_id,target),issuer,target,parent=parent,depth=2 if parent else 1)
   r["workflow_id"]=workflow
-  r["responsibility"]={
-   "mode":"bounded_delegation",
-   "commitment_owner_agent_id":issuer,
-   "return_to_agent_id":issuer
-  }
   return r
 
  def live_state(self,r,carrier_id="live-caller"):
@@ -302,12 +351,7 @@ class LiveReturnTests(unittest.TestCase):
 
  def test_explicit_handoff_has_no_return_continuation(self):
   reg=registry(True,("manager","specialist"))
-  r=request("H","specialist"); r["issuer_agent_id"]="manager"; r["authority_basis"]={"kind":"handoff","reference":"H1"}
-  r["responsibility"]={
-   "mode":"explicit_handoff",
-   "commitment_owner_agent_id":"specialist",
-   "return_to_agent_id":None
-  }
+  r=harden_agent_task(request("H","specialist"),"manager","specialist",mode="explicit_handoff")
   s=state(r,"completed"); s["continuation"]=None
   self.assertIsNone(wr.build_live_return_package(
    reg,r,s,self.live_result(r),now=datetime(2026,9,23,0,30,tzinfo=timezone.utc)
