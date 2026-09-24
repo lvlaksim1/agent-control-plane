@@ -263,7 +263,7 @@ An event producer must never schedule the Execution Worker directly. This keeps 
 - reserved + claimed: Worker activates from the exact current claimed projection, records receipt, requests Phase-B wake, nudges Broker, then stops;
 - active + claimed without locally recorded receipt: Worker verifies canonical receipt against the exact historical claimed-state blob, records it, requests Phase-B wake if necessary, nudges Broker, then stops;
 - expired reserved/active lease: fence before requeue/quarantine, then request recovery wake if progress is possible;
-- expired live + queued/unclaimed + exact valid pre-expiry live result: CAS-repair to completed before scheduler claim; never execute twice;
+- expired live + queued/unclaimed + exact valid pre-expiry live result: CAS-repair to completed before scheduler claim; for bounded delegation the same repair MUST also durably project the pending caller continuation from the original live carrier, then recover that caller without re-executing the child;
 - expired live + queued/unclaimed + absent/invalid/mismatched/post-expiry result: ordinary fallback eligibility may proceed;
 - completed bounded-delegation task + pending continuation + fresh continuation lease: leave it to the live runtime;
 - completed bounded-delegation task + pending continuation + expired continuation lease: persist/request a deterministic `return:<task_id>:<continuation_id>` wake, reinstate the exact caller, acknowledge continuation before caller effects, and never re-execute the child;
