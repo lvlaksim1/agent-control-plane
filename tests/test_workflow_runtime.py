@@ -181,6 +181,9 @@ class WorkflowRuntimeTests(unittest.TestCase):
   }
   with self.assertRaises(cp.ControlPlaneError):
    wr.ready_tasks(reg,[(legacy,state(legacy),[],wr.task_runtime("LEGACY-ROUTE"))],NOW)
+  claimed=state(legacy,"claimed"); claimed["claim"]={"execution_id":"e1","generation":1,"slot_id":"s","claimed_at":"2026-09-23T00:00:00Z"}
+  with self.assertRaises(cp.ControlPlaneError):
+   wr.validate_task_routing(reg,legacy,claimed)
   self.assertEqual(
    wr.ready_tasks(reg,[(legacy,state(legacy,"completed"),[],wr.task_runtime("LEGACY-ROUTE"))],NOW),
    []

@@ -234,10 +234,10 @@ def validate_task_routing(registry:dict[str,Any],request:dict[str,Any],state:dic
     authority=request.get("authority_basis")
     if not isinstance(authority,dict) or not authority.get("kind") or not authority.get("reference"):
         raise base.ControlPlaneError("agent-issued task requires explicit authority basis")
-    if state is not None and state.get("status")=="queued":
+    if state is not None and state.get("status") not in {"completed","cancelled","superseded"}:
         responsibility=request.get("responsibility")
         if not isinstance(responsibility,dict) or responsibility.get("semantics_version")!=2:
-            raise base.ControlPlaneError("new queued agent-to-agent task requires responsibility semantics_version 2")
+            raise base.ControlPlaneError("nonterminal agent-to-agent task requires responsibility semantics_version 2")
     # A Project Manager, Service Agent, or Supervisor may route work directly when authorized.
     # The hardened immutable task carries responsibility/authority provenance, but the
     # reinstantiated target Agent still independently validates mandate and target rules.
