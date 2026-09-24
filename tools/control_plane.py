@@ -77,6 +77,56 @@ def _validate_effect_list(value: Any, label: str, *, require_nonempty: bool = Fa
         raise ControlPlaneError(f"{label} entries must be unique")
     return value
 
+def _validate_normalized_root_grant(request: dict[str, Any], *, require_grant: bool) -> dict[str, Any] | None:
+    authority=request.get("authority_basis")
+    if not isinstance(authority,dict):
+        if require_grant:
+            raise ControlPlaneError("authority basis must be an object with normalized root grant")
+        return None
+    grant=authority.get("grant")
+    if grant is None:
+        if require_grant:
+            raise ControlPlaneError("normalized root authority grant is required")
+        return None
+    if not isinstance(grant,dict):
+        raise ControlPlaneError("authority basis grant must be an object")
+    require_fields(
+        grant,
+        ["allowed_effects","forbidden_effects","scope","inherited_constraints","subdelegation"],
+        "authority root grant",
+    )
+    allowed=_validate_effect_list(grant["allowed_effects"],"authority root grant allowed_effects",require_nonempty=True)
+    forbidden=_validate_effect_list(grant["forbidden_effects"],"authority root grant forbidden_effects")
+    scope=_validate_effect_list(grant["scope"],"authority root grant scope",require_nonempty=True)
+    inherited=_validate_effect_list(grant["inherited_constraints"],"authority root grant inherited_constraints")
+    if set(allowed)&set(forbidden):
+        raise ControlPlaneError("authority root grant effect cannot be both allowed and forbidden")
+    if grant["subdelegation"] not in {"forbidden","bounded"}:
+        raise ControlPlaneError("authority root grant subdelegation must be forbidden or bounded")
+    req_scope=request.get("scope")
+    req_constraints=request.get("constraints")
+    if not isinstance(req_scope,list) or any(not isinstance(x,str) or not x for x in req_scope):
+        raise ControlPlaneError("task scope must be a list of non-empty strings")
+    if not isinstance(req_constraints,list) or any(not isinstance(x,str) or not x for x in req_constraints):
+        raise ControlPlaneError("task constraints must be a list of non-empty strings")
+    if not set(req_scope).issubset(scope):
+        raise ControlPlaneError("task scope exceeds normalized root authority grant")
+    if not set(inherited).issubset(req_constraints):
+        raise ControlPlaneError("task constraints must preserve normalized root grant constraints")
+    return grant
+
+def _validate_chain_against_root_grant(request: dict[str, Any], chain: dict[str, Any], grant: dict[str, Any]) -> None:
+    if grant["subdelegation"]!="bounded":
+        raise ControlPlaneError("root authority forbids agent subdelegation")
+    if not set(chain["allowed_effects"]).issubset(grant["allowed_effects"]):
+        raise ControlPlaneError("delegation cannot widen root allowed effects")
+    if not set(grant["forbidden_effects"]).issubset(chain["forbidden_effects"]):
+        raise ControlPlaneError("delegation cannot drop root forbidden effects")
+    if not set(request.get("scope",[])).issubset(grant["scope"]):
+        raise ControlPlaneError("delegation scope exceeds root authority grant")
+    if not set(grant["inherited_constraints"]).issubset(request.get("constraints",[])):
+        raise ControlPlaneError("delegation cannot drop root inherited constraints")
+
 def responsibility_semantics_version(request: dict[str, Any]) -> int | None:
     responsibility=request.get("responsibility")
     if not isinstance(responsibility,dict):
@@ -191,6 +241,10 @@ def validate_responsibility_contract(request: dict[str, Any]) -> None:
         if acceptance is not True:
             raise ControlPlaneError("explicit handoff transfer requires target acceptance")
 
+    if chain["parent_task_id"] is None:
+        root_grant=_validate_normalized_root_grant(request,require_grant=True)
+        _validate_chain_against_root_grant(request,chain,root_grant)
+
 def validate_authority_relations(requests: list[dict[str, Any]]) -> None:
     by_id={r["task_id"]:r for r in requests}
     for request in requests:
@@ -202,6 +256,8 @@ def validate_authority_relations(requests: list[dict[str, Any]]) -> None:
         if parent_id is None:
             if chain["delegation_depth"]!=1:
                 raise ControlPlaneError("root agent delegation without parent task must have delegation_depth 1")
+            root_grant=_validate_normalized_root_grant(request,require_grant=True)
+            _validate_chain_against_root_grant(request,chain,root_grant)
             continue
         parent=by_id.get(parent_id)
         if parent is None:
@@ -221,6 +277,8 @@ def validate_authority_relations(requests: list[dict[str, Any]]) -> None:
                 raise ControlPlaneError("nested delegation cannot drop forbidden effects")
             if not set(parent.get("constraints",[])).issubset(request.get("constraints",[])):
                 raise ControlPlaneError("nested delegation cannot drop inherited constraints")
+            if not set(request.get("scope",[])).issubset(parent.get("scope",[])):
+                raise ControlPlaneError("nested delegation cannot widen task scope")
         else:
             if parent.get("issuer_agent_id")!="owner":
                 raise ControlPlaneError("hardened delegation cannot inherit authority from legacy agent-issued parent")
@@ -230,6 +288,12 @@ def validate_authority_relations(requests: list[dict[str, Any]]) -> None:
                 raise ControlPlaneError("first agent delegation must preserve parent root authority")
             if chain["delegation_depth"]!=1:
                 raise ControlPlaneError("first agent delegation from owner task must have delegation_depth 1")
+            root_grant=_validate_normalized_root_grant(parent,require_grant=True)
+            _validate_chain_against_root_grant(request,chain,root_grant)
+            if not set(request.get("scope",[])).issubset(parent.get("scope",[])):
+                raise ControlPlaneError("first agent delegation cannot widen owner task scope")
+            if not set(parent.get("constraints",[])).issubset(request.get("constraints",[])):
+                raise ControlPlaneError("first agent delegation cannot drop owner task constraints")
 
 def validate_request(request: dict[str, Any]) -> None:
     require_fields(request, ["schema_version","task_id","issuer_agent_id","target_agent_id","objective","authority_basis","scope","constraints","target","priority","dependencies","completion_contract","created_at"], "task request")
@@ -240,6 +304,8 @@ def validate_request(request: dict[str, Any]) -> None:
     if not isinstance(request["dependencies"], list):
         raise ControlPlaneError("dependencies must be a list")
     validate_responsibility_contract(request)
+    if request.get("issuer_agent_id")=="owner" and isinstance(request.get("authority_basis"),dict) and "grant" in request["authority_basis"]:
+        _validate_normalized_root_grant(request,require_grant=True)
     parse_time(request["created_at"])
     ids = set()
     for dep in request["dependencies"]:
@@ -284,16 +350,48 @@ def validate_state(state: dict[str, Any], request: dict[str, Any]) -> None:
             raise ControlPlaneError("responsibility acceptance receipt must be an object or null")
         require_fields(
             acceptance,
-            ["request_digest","accepted_by_agent_id","accepted_at","durable_state_ref"],
+            ["request_digest","accepted_by_agent_id","accepted_at","projected_at","source","execution_fence"],
             "responsibility acceptance receipt",
         )
         if acceptance["request_digest"]!=request_digest(request):
             raise ControlPlaneError("responsibility acceptance receipt/request digest mismatch")
         if acceptance["accepted_by_agent_id"]!=request["target_agent_id"]:
             raise ControlPlaneError("responsibility acceptance must be recorded by target agent")
-        if not isinstance(acceptance["durable_state_ref"],str) or not acceptance["durable_state_ref"]:
-            raise ControlPlaneError("responsibility acceptance durable_state_ref must be non-empty")
         parse_time(acceptance["accepted_at"])
+        parse_time(acceptance["projected_at"])
+        source=acceptance["source"]
+        if not isinstance(source,dict):
+            raise ControlPlaneError("responsibility acceptance source must be an object")
+        require_fields(source,["repository","authority_ref","commit_sha","path","blob_sha","record_id"],"responsibility acceptance source")
+        if not all(isinstance(source[k],str) and source[k] for k in ("repository","authority_ref","path","record_id")):
+            raise ControlPlaneError("responsibility acceptance source identity fields must be non-empty")
+        if not isinstance(source["commit_sha"],str) or len(source["commit_sha"])!=40 or any(c not in "0123456789abcdef" for c in source["commit_sha"]):
+            raise ControlPlaneError("responsibility acceptance source commit_sha must be 40 lowercase hex")
+        if not isinstance(source["blob_sha"],str) or len(source["blob_sha"])!=40 or any(c not in "0123456789abcdef" for c in source["blob_sha"]):
+            raise ControlPlaneError("responsibility acceptance source blob_sha must be 40 lowercase hex")
+        path=source["path"]
+        if not path.startswith(".context/responsibility/acceptances/") or not path.endswith(".json") or ".." in path.split("/"):
+            raise ControlPlaneError("responsibility acceptance source path is outside canonical acceptance state")
+        fence=acceptance["execution_fence"]
+        if not isinstance(fence,dict):
+            raise ControlPlaneError("responsibility acceptance execution_fence must be an object")
+        mode=fence.get("mode")
+        if mode=="autonomous":
+            require_fields(fence,["mode","execution_id","generation","activation_projection_blob_sha"],"autonomous acceptance fence")
+            if not isinstance(fence["execution_id"],str) or not fence["execution_id"]:
+                raise ControlPlaneError("autonomous acceptance fence execution_id must be non-empty")
+            if not isinstance(fence["generation"],int) or fence["generation"]<1:
+                raise ControlPlaneError("autonomous acceptance fence generation must be >= 1")
+            receipt=fence["activation_projection_blob_sha"]
+            if not isinstance(receipt,str) or len(receipt)!=40:
+                raise ControlPlaneError("autonomous acceptance fence requires activation projection blob")
+        elif mode=="live":
+            require_fields(fence,["mode","carrier_id","lease_until"],"live acceptance fence")
+            if not isinstance(fence["carrier_id"],str) or not fence["carrier_id"]:
+                raise ControlPlaneError("live acceptance fence carrier_id must be non-empty")
+            parse_time(fence["lease_until"])
+        else:
+            raise ControlPlaneError("responsibility acceptance execution_fence mode must be autonomous or live")
 
 def validate_lease(lease: dict[str, Any]) -> None:
     require_fields(lease, ["schema_version","state","generation","execution_id","task_id","agent_id","slot_id","claimed_at","lease_until"], "lease")
@@ -399,7 +497,7 @@ def fence_valid(lease: dict[str, Any], *, task_id: str, agent_id: str, execution
     validate_lease(lease)
     return lease["state"]=="active" and lease["task_id"]==task_id and lease["agent_id"]==agent_id and lease["execution_id"]==execution_id and lease["generation"]==generation
 
-def activate_state(state: dict[str, Any], request: dict[str, Any], lease: dict[str, Any]) -> dict[str, Any]:
+def activate_state(state: dict[str, Any], request: dict[str, Any], lease: dict[str, Any], *, registry: dict[str, Any] | None = None) -> dict[str, Any]:
     validate_state(state, request)
     if state["status"] != "claimed":
         raise ControlPlaneError("task is not claimed")
@@ -407,13 +505,26 @@ def activate_state(state: dict[str, Any], request: dict[str, Any], lease: dict[s
     if not fence_valid(lease,task_id=request["task_id"],agent_id=request["target_agent_id"],execution_id=c["execution_id"],generation=c["generation"]):
         raise ControlPlaneError("claim does not own current fence")
     responsibility=request.get("responsibility")
-    if (
-        isinstance(responsibility,dict)
-        and responsibility.get("semantics_version")==2
-        and responsibility.get("mode")=="explicit_handoff"
-        and state.get("responsibility_acceptance") is None
-    ):
-        raise ControlPlaneError("explicit handoff cannot become active before durable target acceptance")
+    if isinstance(responsibility,dict) and responsibility.get("semantics_version")==2 and responsibility.get("mode")=="explicit_handoff":
+        acceptance=state.get("responsibility_acceptance")
+        if not isinstance(acceptance,dict):
+            raise ControlPlaneError("explicit handoff cannot become active before durable target acceptance")
+        if registry is None:
+            raise ControlPlaneError("explicit handoff activation requires target Registry verification")
+        target=registry_index(registry).get(request["target_agent_id"])
+        if target is None:
+            raise ControlPlaneError("explicit handoff target is absent from Registry")
+        source=acceptance.get("source") if isinstance(acceptance.get("source"),dict) else {}
+        if source.get("repository")!=target.get("home_repository") or source.get("authority_ref")!=target.get("authority_ref"):
+            raise ControlPlaneError("explicit handoff acceptance source does not match target Agent authority")
+        af=acceptance.get("execution_fence") if isinstance(acceptance.get("execution_fence"),dict) else {}
+        if af.get("mode")!="autonomous":
+            raise ControlPlaneError("autonomous handoff activation requires autonomous acceptance fence")
+        if af.get("execution_id")!=c["execution_id"] or af.get("generation")!=c["generation"]:
+            raise ControlPlaneError("handoff acceptance does not belong to current autonomous execution")
+        receipt=c.get("activation_projection_blob_sha")
+        if not isinstance(receipt,str) or af.get("activation_projection_blob_sha")!=receipt:
+            raise ControlPlaneError("handoff acceptance activation receipt mismatch")
     n=copy.deepcopy(state); n["status"]="active"; return n
 
 def renew_lease(lease: dict[str, Any], *, execution_id: str, generation: int, now: datetime, lease_minutes: int = 45) -> dict[str, Any]:

@@ -218,7 +218,9 @@
             "request_digest",
             "accepted_by_agent_id",
             "accepted_at",
-            "durable_state_ref"
+            "projected_at",
+            "source",
+            "execution_fence"
           ],
           "properties": {
             "request_digest": {
@@ -233,9 +235,100 @@
               "type": "string",
               "format": "date-time"
             },
-            "durable_state_ref": {
+            "projected_at": {
               "type": "string",
-              "minLength": 1
+              "format": "date-time"
+            },
+            "source": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "repository",
+                "authority_ref",
+                "commit_sha",
+                "path",
+                "blob_sha",
+                "record_id"
+              ],
+              "properties": {
+                "repository": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "authority_ref": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "commit_sha": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{40}$"
+                },
+                "path": {
+                  "type": "string",
+                  "pattern": "^\\.context/responsibility/acceptances/.+\\.json$"
+                },
+                "blob_sha": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{40}$"
+                },
+                "record_id": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "execution_fence": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "mode",
+                    "execution_id",
+                    "generation",
+                    "activation_projection_blob_sha"
+                  ],
+                  "properties": {
+                    "mode": {
+                      "const": "autonomous"
+                    },
+                    "execution_id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "generation": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "activation_projection_blob_sha": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{40}$"
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "mode",
+                    "carrier_id",
+                    "lease_until"
+                  ],
+                  "properties": {
+                    "mode": {
+                      "const": "live"
+                    },
+                    "carrier_id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "lease_until": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              ]
             }
           }
         }

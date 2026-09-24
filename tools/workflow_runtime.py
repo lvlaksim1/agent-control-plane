@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import copy
+import hashlib
+import json
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -158,22 +160,11 @@ def clear_task_carrier(state:dict[str,Any],request:dict[str,Any])->dict[str,Any]
     out["carrier"]=None
     return out
 
-def live_carrier_fence_valid(state:dict[str,Any],request:dict[str,Any],gateway_lease:dict[str,Any],*,carrier_id:str,now:datetime)->bool:
+def live_carrier_fence_valid(state:dict[str,Any],request:dict[str,Any],gateway_lease:dict[str,Any],*,carrier_id:str,now:datetime,registry:dict[str,Any]|None=None)->bool:
     """Direct-live execution fence. Re-read state and gateway before consequential writes."""
-    try:
-        validate_state_carrier(state,request)
-    except Exception:
+    if not _preacceptance_live_carrier_fence_valid(state,request,gateway_lease,carrier_id=carrier_id,now=now):
         return False
-    if state.get("status")!="queued" or state.get("claim") is not None:
-        return False
-    if not handoff_acceptance_satisfied(state,request):
-        return False
-    carrier=state.get("carrier")
-    if not isinstance(carrier,dict) or carrier.get("mode")!="live" or carrier.get("carrier_id")!=carrier_id:
-        return False
-    if now>=base.parse_time(carrier["lease_until"]):
-        return False
-    if gateway_lease.get("task_id")==request["task_id"] and gateway_lease.get("state") in {"reserved","active"}:
+    if handoff_acceptance_required(request) and not handoff_acceptance_satisfied(state,request,registry):
         return False
     return True
 
@@ -253,7 +244,82 @@ def handoff_acceptance_required(request:dict[str,Any])->bool:
         and responsibility.get("mode")=="explicit_handoff"
     )
 
-def handoff_acceptance_satisfied(state:dict[str,Any],request:dict[str,Any])->bool:
+def _git_blob_sha(content:str)->str:
+    raw=content.encode("utf-8")
+    return hashlib.sha1(f"blob {len(raw)}\0".encode("utf-8")+raw).hexdigest()
+
+def _preacceptance_live_carrier_fence_valid(state:dict[str,Any],request:dict[str,Any],gateway_lease:dict[str,Any],*,carrier_id:str,now:datetime)->bool:
+    try:
+        validate_state_carrier(state,request)
+    except Exception:
+        return False
+    if state.get("status")!="queued" or state.get("claim") is not None:
+        return False
+    carrier=state.get("carrier")
+    if not isinstance(carrier,dict) or carrier.get("mode")!="live" or carrier.get("carrier_id")!=carrier_id:
+        return False
+    if now>=base.parse_time(carrier["lease_until"]):
+        return False
+    if gateway_lease.get("task_id")==request["task_id"] and gateway_lease.get("state") in {"reserved","active"}:
+        return False
+    return True
+
+def _verify_durable_handoff_acceptance(
+    registry:dict[str,Any],
+    request:dict[str,Any],
+    source:dict[str,Any],
+    authoritative_reader,
+)->dict[str,Any]:
+    agents=base.registry_index(registry)
+    target=agents.get(request["target_agent_id"])
+    if target is None:
+        raise base.ControlPlaneError("handoff target is absent from Registry")
+    if not isinstance(source,dict):
+        raise base.ControlPlaneError("handoff acceptance source pointer must be an object")
+    base.require_fields(source,["repository","authority_ref","commit_sha","path","blob_sha","record_id"],"handoff acceptance source pointer")
+    if source["repository"]!=target["home_repository"] or source["authority_ref"]!=target["authority_ref"]:
+        raise base.ControlPlaneError("handoff acceptance source must be target Agent home authority")
+    if not isinstance(source["commit_sha"],str) or len(source["commit_sha"])!=40:
+        raise base.ControlPlaneError("handoff acceptance source requires immutable commit SHA")
+    if not isinstance(source["blob_sha"],str) or len(source["blob_sha"])!=40:
+        raise base.ControlPlaneError("handoff acceptance source requires immutable blob SHA")
+    path=source["path"]
+    if not isinstance(path,str) or not path.startswith(".context/responsibility/acceptances/") or not path.endswith(".json") or ".." in path.split("/"):
+        raise base.ControlPlaneError("handoff acceptance source path is outside canonical target state")
+    if not callable(authoritative_reader):
+        raise base.ControlPlaneError("handoff acceptance requires authoritative target-state reader")
+    observed=authoritative_reader(source["repository"],source["authority_ref"],source["commit_sha"],source["path"])
+    if not isinstance(observed,dict):
+        raise base.ControlPlaneError("authoritative target-state reader returned invalid evidence")
+    base.require_fields(observed,["commit_sha","blob_sha","content"],"authoritative target-state observation")
+    if observed["commit_sha"]!=source["commit_sha"] or observed["blob_sha"]!=source["blob_sha"]:
+        raise base.ControlPlaneError("authoritative target-state observation does not match immutable source pointer")
+    content=observed["content"]
+    if not isinstance(content,str) or _git_blob_sha(content)!=source["blob_sha"]:
+        raise base.ControlPlaneError("handoff acceptance source blob does not match observed content")
+    try:
+        record=json.loads(content)
+    except Exception as exc:
+        raise base.ControlPlaneError("handoff acceptance durable record is not valid JSON") from exc
+    if not isinstance(record,dict):
+        raise base.ControlPlaneError("handoff acceptance durable record must be an object")
+    base.require_fields(
+        record,
+        ["schema","schema_version","record_id","task_id","request_digest","accepted_by_agent_id","commitment_owner_agent_id","accepted_at"],
+        "handoff acceptance durable record",
+    )
+    if record["schema"]!="context-capsule-responsibility-acceptance" or record["schema_version"]!=1:
+        raise base.ControlPlaneError("unsupported handoff acceptance durable record schema")
+    if record["record_id"]!=source["record_id"]:
+        raise base.ControlPlaneError("handoff acceptance record_id/source mismatch")
+    if record["task_id"]!=request["task_id"] or record["request_digest"]!=base.request_digest(request):
+        raise base.ControlPlaneError("handoff acceptance durable record/request mismatch")
+    if record["accepted_by_agent_id"]!=request["target_agent_id"] or record["commitment_owner_agent_id"]!=request["target_agent_id"]:
+        raise base.ControlPlaneError("handoff acceptance durable record does not transfer responsibility to target")
+    base.parse_time(record["accepted_at"])
+    return record
+
+def handoff_acceptance_satisfied(state:dict[str,Any],request:dict[str,Any],registry:dict[str,Any]|None=None)->bool:
     if not handoff_acceptance_required(request):
         return True
     try:
@@ -261,37 +327,92 @@ def handoff_acceptance_satisfied(state:dict[str,Any],request:dict[str,Any])->boo
     except Exception:
         return False
     receipt=state.get("responsibility_acceptance")
-    return (
-        isinstance(receipt,dict)
-        and receipt.get("request_digest")==base.request_digest(request)
-        and receipt.get("accepted_by_agent_id")==request.get("target_agent_id")
-        and isinstance(receipt.get("durable_state_ref"),str)
-        and bool(receipt.get("durable_state_ref"))
-    )
+    if not isinstance(receipt,dict) or receipt.get("request_digest")!=base.request_digest(request) or receipt.get("accepted_by_agent_id")!=request.get("target_agent_id"):
+        return False
+    if registry is None:
+        return False
+    try:
+        target=base.registry_index(registry).get(request["target_agent_id"])
+    except Exception:
+        return False
+    source=receipt.get("source")
+    if target is None or not isinstance(source,dict) or source.get("repository")!=target.get("home_repository") or source.get("authority_ref")!=target.get("authority_ref"):
+        return False
+    fence=receipt.get("execution_fence")
+    if not isinstance(fence,dict):
+        return False
+    if fence.get("mode")=="autonomous":
+        claim=state.get("claim")
+        return (
+            isinstance(claim,dict)
+            and fence.get("execution_id")==claim.get("execution_id")
+            and fence.get("generation")==claim.get("generation")
+            and fence.get("activation_projection_blob_sha")==claim.get("activation_projection_blob_sha")
+        )
+    if fence.get("mode")=="live":
+        carrier=state.get("carrier")
+        return (
+            isinstance(carrier,dict)
+            and carrier.get("mode")=="live"
+            and fence.get("carrier_id")==carrier.get("carrier_id")
+            and fence.get("lease_until")==carrier.get("lease_until")
+        )
+    return False
 
-def record_handoff_acceptance(state:dict[str,Any],request:dict[str,Any],*,agent_id:str,durable_state_ref:str,now:datetime)->dict[str,Any]:
-    """Project evidence that target Agent durably accepted the proposed handoff in its own authoritative state."""
+def record_handoff_acceptance(
+    registry:dict[str,Any],
+    state:dict[str,Any],
+    request:dict[str,Any],
+    gateway_lease:dict[str,Any],
+    *,
+    agent_id:str,
+    source:dict[str,Any],
+    authoritative_reader,
+    now:datetime,
+    carrier_id:str|None=None,
+)->dict[str,Any]:
+    """Project verified immutable target-home acceptance under the exact current execution fence."""
     base.validate_state(state,request)
     if not handoff_acceptance_required(request):
         raise base.ControlPlaneError("responsibility acceptance applies only to v2 explicit handoff")
     if agent_id!=request["target_agent_id"]:
         raise base.ControlPlaneError("only target agent may accept explicit handoff")
-    if state.get("status") not in {"queued","claimed"}:
+    record=_verify_durable_handoff_acceptance(registry,request,source,authoritative_reader)
+
+    if state.get("status")=="claimed":
+        if carrier_id is not None:
+            raise base.ControlPlaneError("autonomous handoff acceptance cannot use live carrier_id")
+        if not gateway_execution_admitted(state,request,gateway_lease,require_active_state=False,registry=registry):
+            raise base.ControlPlaneError("handoff acceptance requires exact current autonomous gateway fence")
+        claim=state["claim"]
+        fence={
+          "mode":"autonomous",
+          "execution_id":claim["execution_id"],
+          "generation":claim["generation"],
+          "activation_projection_blob_sha":claim["activation_projection_blob_sha"],
+        }
+    elif state.get("status")=="queued":
+        if not isinstance(carrier_id,str) or not carrier_id:
+            raise base.ControlPlaneError("live handoff acceptance requires exact carrier_id")
+        if not _preacceptance_live_carrier_fence_valid(state,request,gateway_lease,carrier_id=carrier_id,now=now):
+            raise base.ControlPlaneError("handoff acceptance requires exact fresh live carrier fence")
+        carrier=state["carrier"]
+        fence={"mode":"live","carrier_id":carrier_id,"lease_until":carrier["lease_until"]}
+    else:
         raise base.ControlPlaneError("handoff acceptance must precede active execution")
-    if state.get("status")=="queued":
-        carrier=state.get("carrier")
-        if not isinstance(carrier,dict) or carrier.get("mode")!="live":
-            raise base.ControlPlaneError("queued handoff acceptance requires live carrier")
-    if not isinstance(durable_state_ref,str) or not durable_state_ref:
-        raise base.ControlPlaneError("durable_state_ref is required for handoff acceptance")
+
     out=copy.deepcopy(state)
     out["responsibility_acceptance"]={
       "request_digest":base.request_digest(request),
       "accepted_by_agent_id":agent_id,
-      "accepted_at":base.format_time(now),
-      "durable_state_ref":durable_state_ref
+      "accepted_at":record["accepted_at"],
+      "projected_at":base.format_time(now),
+      "source":copy.deepcopy(source),
+      "execution_fence":fence,
     }
     base.validate_state(out,request)
+    if not handoff_acceptance_satisfied(out,request,registry):
+        raise base.ControlPlaneError("projected handoff acceptance failed target/fence validation")
     return out
 
 def ready_tasks(registry:dict[str,Any],bundles:list[tuple],now:datetime)->list[dict[str,Any]]:
@@ -364,7 +485,7 @@ def build_invocation(registry:dict[str,Any],request:dict[str,Any],state:dict[str
         "reinstate the existing persistent agent from home_repository@authority_ref",
         "execute ENTRYPOINT recovery/reinstantiation protocol",
         "validate immutable responsibility and root/immediate authority provenance against the agent mandate",
-        "for explicit handoff, persist target acceptance before treating responsibility as transferred",
+        "for explicit handoff, persist structured acceptance in target home state, independently re-read it at immutable commit, and project it only under the exact current execution fence",
         "reconcile live target evidence",
         "fence-check immediately before every consequential write",
         "persist checkpoint at meaningful durable boundaries",
@@ -673,13 +794,13 @@ def newly_ready_after_completion(registry:dict[str,Any],bundles:list[tuple],comp
     return sorted(after_ids-before_ids)
 
 
-def gateway_execution_admitted(state:dict[str,Any],request:dict[str,Any],gateway_lease:dict[str,Any],*,require_active_state:bool=True)->bool:
+def gateway_execution_admitted(state:dict[str,Any],request:dict[str,Any],gateway_lease:dict[str,Any],*,require_active_state:bool=True,registry:dict[str,Any]|None=None)->bool:
     """Deterministic target-write admission against the public two-phase gateway receipt."""
     base.validate_state(state,request)
     claim=state.get("claim")
     if claim is None:
         return False
-    if require_active_state and not handoff_acceptance_satisfied(state,request):
+    if require_active_state and handoff_acceptance_required(request) and not handoff_acceptance_satisfied(state,request,registry):
         return False
     if require_active_state and state.get("status")!="active":
         return False
@@ -704,9 +825,9 @@ def gateway_execution_admitted(state:dict[str,Any],request:dict[str,Any],gateway
     }
     return all(gateway_lease.get(k)==v for k,v in expected.items())
 
-def claimed_execution_ready(state:dict[str,Any],request:dict[str,Any],gateway_lease:dict[str,Any])->bool:
+def claimed_execution_ready(state:dict[str,Any],request:dict[str,Any],gateway_lease:dict[str,Any],registry:dict[str,Any]|None=None)->bool:
     """Allows a later dispatcher to begin target reinstantiation only after a durable activation receipt."""
-    return state.get("status")=="claimed" and gateway_execution_admitted(state,request,gateway_lease,require_active_state=False)
+    return state.get("status")=="claimed" and gateway_execution_admitted(state,request,gateway_lease,require_active_state=False,registry=registry)
 
 def expired_live_carrier_requires_result_reconciliation(state:dict[str,Any],request:dict[str,Any],*,now:datetime)->bool:
     validate_state_carrier(state,request)
@@ -812,11 +933,11 @@ def scheduler_ready_tasks(registry:dict[str,Any],bundles:list[tuple],now:datetim
         eligible.append((req,state,gates,meta))
     return ready_tasks(registry,eligible,now)
 
-def scheduler_claimed_execution_ready(state:dict[str,Any],request:dict[str,Any],gateway_lease:dict[str,Any],*,now:datetime)->bool:
+def scheduler_claimed_execution_ready(state:dict[str,Any],request:dict[str,Any],gateway_lease:dict[str,Any],*,now:datetime,registry:dict[str,Any]|None=None)->bool:
     """Scheduler Phase-B admission. A fresh carrier on this exact task blocks reinstantiation."""
     if task_carrier_blocks_scheduler(state,request,now=now):
         return False
-    return claimed_execution_ready(state,request,gateway_lease)
+    return claimed_execution_ready(state,request,gateway_lease,registry)
 
 WAKE_RECENT_KEY_LIMIT=32
 

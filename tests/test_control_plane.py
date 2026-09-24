@@ -118,7 +118,17 @@ class Tests(unittest.TestCase):
         r["issuer_agent_id"]=issuer
         r["target_agent_id"]=target
         r["parent_task_id"]=parent
-        r["authority_basis"]={"kind":"owner-directive","reference":"OWNER-ROOT"}
+        r["authority_basis"]={
+            "kind":"owner-directive","reference":"OWNER-ROOT",
+            "grant":{
+                "allowed_effects":["read","write"],
+                "forbidden_effects":["release"],
+                "scope":["test"],
+                "inherited_constraints":["no-release"],
+                "subdelegation":"bounded"
+            }
+        }
+        r["scope"]=["test"]
         r["constraints"]=["no-release"]
         r["responsibility"]={
             "semantics_version":2,
@@ -167,7 +177,17 @@ class Tests(unittest.TestCase):
 
     def test_nested_v2_delegation_can_only_attenuate_authority(self):
         parent=request("ROOT")
-        parent["authority_basis"]={"kind":"owner-directive","reference":"OWNER-ROOT"}
+        parent["authority_basis"]={
+            "kind":"owner-directive","reference":"OWNER-ROOT",
+            "grant":{
+                "allowed_effects":["read","write"],
+                "forbidden_effects":["release"],
+                "scope":["test"],
+                "inherited_constraints":["no-release"],
+                "subdelegation":"bounded"
+            }
+        }
+        parent["scope"]=["test"]
         parent["constraints"]=["no-release"]
 
         child=self._v2(request("CHILD"),"agent-a","agent-b",parent="ROOT",depth=1,allowed=["read","write"],forbidden=["release"],subdelegation="bounded")
@@ -192,25 +212,76 @@ class Tests(unittest.TestCase):
         with self.assertRaises(cp.ControlPlaneError):
             cp.validate_authority_relations([parent,child,dropped_constraint])
 
+        widened_scope=copy.deepcopy(grand)
+        widened_scope["scope"]=["test","other"]
+        with self.assertRaises(cp.ControlPlaneError):
+            cp.validate_authority_relations([parent,child,widened_scope])
+
         no_sub=copy.deepcopy(child)
         no_sub["responsibility"]["authority_chain"]["subdelegation"]="forbidden"
         with self.assertRaises(cp.ControlPlaneError):
             cp.validate_authority_relations([parent,no_sub,grand])
 
-    def test_acceptance_receipt_is_evidence_only_and_target_bound(self):
+    def test_acceptance_receipt_is_structured_request_target_and_fence_bound(self):
         r=self._v2(request("V2-ACCEPT",target="agent-b"),"agent-a","agent-b",mode="explicit_handoff")
         s=state(r,"claimed")
-        s["claim"]={"execution_id":"e1","generation":1,"slot_id":"s","claimed_at":"2026-09-23T00:00:00Z"}
+        s["claim"]={"execution_id":"e1","generation":1,"slot_id":"s","claimed_at":"2026-09-23T00:00:00Z","activation_projection_blob_sha":"b"*40}
         s["responsibility_acceptance"]={
             "request_digest":cp.request_digest(r),
             "accepted_by_agent_id":"agent-b",
             "accepted_at":"2026-09-23T00:01:00Z",
-            "durable_state_ref":"o/agent-b@accept"
+            "projected_at":"2026-09-23T00:02:00Z",
+            "source":{
+                "repository":"o/agent-b","authority_ref":"main","commit_sha":"c"*40,
+                "path":".context/responsibility/acceptances/V2-ACCEPT.json",
+                "blob_sha":"d"*40,"record_id":"ACC-V2-ACCEPT"
+            },
+            "execution_fence":{
+                "mode":"autonomous","execution_id":"e1","generation":1,
+                "activation_projection_blob_sha":"b"*40
+            }
         }
         cp.validate_state(s,r)
         bad=copy.deepcopy(s); bad["responsibility_acceptance"]["accepted_by_agent_id"]="agent-a"
         with self.assertRaises(cp.ControlPlaneError):
             cp.validate_state(bad,r)
+
+    def test_root_agent_delegation_requires_normalized_grant_and_attenuation(self):
+        r=self._v2(request("ROOT-GRANT"),"agent-a","agent-b",allowed=["read"],forbidden=["release"])
+        cp.validate_request(r)
+        widened=copy.deepcopy(r)
+        widened["responsibility"]["authority_chain"]["allowed_effects"]=["read","admin"]
+        with self.assertRaises(cp.ControlPlaneError):
+            cp.validate_request(widened)
+        missing=copy.deepcopy(r)
+        missing["authority_basis"].pop("grant")
+        with self.assertRaises(cp.ControlPlaneError):
+            cp.validate_request(missing)
+
+    def test_first_owner_derived_hop_preserves_complete_root_grant(self):
+        parent=request("OWNER-PARENT")
+        parent["authority_basis"]={
+            "kind":"owner-directive","reference":"OWNER-ROOT",
+            "grant":{
+                "allowed_effects":["read","write"],
+                "forbidden_effects":["release"],
+                "scope":["test"],
+                "inherited_constraints":["no-release"],
+                "subdelegation":"bounded"
+            }
+        }
+        parent["scope"]=["test"]; parent["constraints"]=["no-release"]
+        child=self._v2(request("OWNER-CHILD"),"agent-a","agent-b",parent="OWNER-PARENT",depth=1,allowed=["read"],forbidden=["release"])
+        cp.validate_authority_relations([parent,child])
+
+        widened=copy.deepcopy(child); widened["responsibility"]["authority_chain"]["allowed_effects"]=["read","admin"]
+        with self.assertRaises(cp.ControlPlaneError): cp.validate_authority_relations([parent,widened])
+        dropped=copy.deepcopy(child); dropped["constraints"]=[]
+        with self.assertRaises(cp.ControlPlaneError): cp.validate_authority_relations([parent,dropped])
+        scope_widen=copy.deepcopy(child); scope_widen["scope"]=["test","other"]
+        with self.assertRaises(cp.ControlPlaneError): cp.validate_authority_relations([parent,scope_widen])
+        forbidden_parent=copy.deepcopy(parent); forbidden_parent["authority_basis"]["grant"]["subdelegation"]="forbidden"
+        with self.assertRaises(cp.ControlPlaneError): cp.validate_authority_relations([forbidden_parent,child])
 
 if __name__=="__main__":
     unittest.main()

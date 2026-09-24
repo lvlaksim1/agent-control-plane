@@ -10,7 +10,17 @@ NOW=datetime(2026,9,23,0,0,tzinfo=timezone.utc)
 def harden_agent_task(r,issuer,target,mode="bounded_delegation",parent=None,depth=1,allowed=None,forbidden=None,subdelegation="bounded"):
  r["issuer_agent_id"]=issuer
  r["target_agent_id"]=target
- r["authority_basis"]={"kind":"owner-directive","reference":"OWNER-ROOT"}
+ r["authority_basis"]={
+  "kind":"owner-directive","reference":"OWNER-ROOT",
+  "grant":{
+   "allowed_effects":["read","write"],
+   "forbidden_effects":["release"],
+   "scope":["test"],
+   "inherited_constraints":["no-release"],
+   "subdelegation":"bounded"
+  }
+ }
+ r["scope"]=["test"]
  r["parent_task_id"]=parent
  r["constraints"]=list(dict.fromkeys((r.get("constraints") or [])+["no-release"]))
  r["responsibility"]={
@@ -200,44 +210,101 @@ class WorkflowRuntimeTests(unittest.TestCase):
   self.assertEqual(inv["constraints"],r["constraints"])
   self.assertIn("acceptance", " ".join(inv["required_sequence"]))
 
- def test_explicit_handoff_requires_durable_target_acceptance_before_activation(self):
+ def _acceptance_source(self,reg,r,*,repo=None,ref=None,commit=None,path=None,record_mutator=None):
+  target=cp.registry_index(reg)[r["target_agent_id"]]
+  record={
+   "schema":"context-capsule-responsibility-acceptance","schema_version":1,
+   "record_id":"ACC-"+r["task_id"],"task_id":r["task_id"],"request_digest":cp.request_digest(r),
+   "accepted_by_agent_id":r["target_agent_id"],"commitment_owner_agent_id":r["target_agent_id"],
+   "accepted_at":"2026-09-23T00:01:00Z"
+  }
+  if record_mutator: record_mutator(record)
+  content=__import__("json").dumps(record,sort_keys=True,separators=(",",":"))+"\n"
+  source={
+   "repository":repo or target["home_repository"],"authority_ref":ref or target["authority_ref"],
+   "commit_sha":commit or "c"*40,
+   "path":path or f".context/responsibility/acceptances/{r['task_id']}.json",
+   "blob_sha":wr._git_blob_sha(content),"record_id":record["record_id"]
+  }
+  def reader(repository,authority_ref,commit_sha,record_path):
+   return {"commit_sha":source["commit_sha"],"blob_sha":source["blob_sha"],"content":content}
+  return source,reader
+
+ def _autonomous_handoff_fence(self,r,s):
+  s["claim"]["activation_projection_blob_sha"]="b"*40
+  gateway={
+   "state":"active","generation":s["claim"]["generation"],"execution_id":s["claim"]["execution_id"],
+   "task_id":r["task_id"],"agent_id":r["target_agent_id"],"slot_id":s["claim"]["slot_id"],
+   "request_blob_sha":s["request_blob_sha"],"activation_projection_blob_sha":"b"*40
+  }
+  return gateway
+
+ def test_explicit_handoff_requires_verified_target_home_acceptance_before_activation(self):
   reg=registry(True,("manager","specialist"))
   r=harden_agent_task(request("HANDOFF-A","specialist"),"manager","specialist",mode="explicit_handoff")
   s=state(r)
   l,s=cp.claim_plan(idle(),r,s,slot_id="s",execution_id="e1",now=NOW)
   with self.assertRaises(cp.ControlPlaneError):
-   cp.activate_state(s,r,l)
+   cp.activate_state(s,r,l,registry=reg)
+  gateway=self._autonomous_handoff_fence(r,s)
+  source,reader=self._acceptance_source(reg,r)
   accepted=wr.record_handoff_acceptance(
-   s,r,agent_id="specialist",durable_state_ref="o/specialist@accept-commit",now=NOW
+   reg,s,r,gateway,agent_id="specialist",source=source,authoritative_reader=reader,now=NOW
   )
-  active=cp.activate_state(accepted,r,l)
+  active=cp.activate_state(accepted,r,l,registry=reg)
   self.assertEqual(active["status"],"active")
-  self.assertTrue(wr.handoff_acceptance_satisfied(active,r))
+  self.assertTrue(wr.handoff_acceptance_satisfied(active,r,reg))
+  self.assertEqual(active["responsibility_acceptance"]["source"]["commit_sha"],"c"*40)
 
- def test_wrong_agent_cannot_accept_handoff(self):
+ def test_handoff_acceptance_rejects_wrong_agent_home_or_fabricated_source(self):
+  reg=registry(True,("manager","specialist"))
   r=harden_agent_task(request("HANDOFF-B","specialist"),"manager","specialist",mode="explicit_handoff")
-  s=state(r)
-  l,s=cp.claim_plan(idle(),r,s,slot_id="s",execution_id="e1",now=NOW)
+  s=state(r); l,s=cp.claim_plan(idle(),r,s,slot_id="s",execution_id="e1",now=NOW)
+  gateway=self._autonomous_handoff_fence(r,s)
+  source,reader=self._acceptance_source(reg,r)
   with self.assertRaises(cp.ControlPlaneError):
-   wr.record_handoff_acceptance(s,r,agent_id="manager",durable_state_ref="bad",now=NOW)
+   wr.record_handoff_acceptance(reg,s,r,gateway,agent_id="manager",source=source,authoritative_reader=reader,now=NOW)
+  wrong_repo,bad_reader=self._acceptance_source(reg,r,repo="o/not-specialist")
+  with self.assertRaises(cp.ControlPlaneError):
+   wr.record_handoff_acceptance(reg,s,r,gateway,agent_id="specialist",source=wrong_repo,authoritative_reader=bad_reader,now=NOW)
+  bad_source,reader2=self._acceptance_source(reg,r,path=".context/other/fake.json")
+  with self.assertRaises(cp.ControlPlaneError):
+   wr.record_handoff_acceptance(reg,s,r,gateway,agent_id="specialist",source=bad_source,authoritative_reader=reader2,now=NOW)
+  mismatch,reader3=self._acceptance_source(reg,r)
+  mismatch["blob_sha"]="d"*40
+  with self.assertRaises(cp.ControlPlaneError):
+   wr.record_handoff_acceptance(reg,s,r,gateway,agent_id="specialist",source=mismatch,authoritative_reader=reader3,now=NOW)
 
- def test_live_handoff_fence_requires_acceptance_receipt(self):
+ def test_handoff_acceptance_rejects_stale_autonomous_fence(self):
+  reg=registry(True,("manager","specialist"))
+  r=harden_agent_task(request("HANDOFF-STALE","specialist"),"manager","specialist",mode="explicit_handoff")
+  s=state(r); l,s=cp.claim_plan(idle(),r,s,slot_id="s",execution_id="e1",now=NOW)
+  gateway=self._autonomous_handoff_fence(r,s); gateway["generation"]+=1
+  source,reader=self._acceptance_source(reg,r)
+  with self.assertRaises(cp.ControlPlaneError):
+   wr.record_handoff_acceptance(reg,s,r,gateway,agent_id="specialist",source=source,authoritative_reader=reader,now=NOW)
+
+ def test_live_handoff_acceptance_requires_exact_fresh_carrier_and_verified_source(self):
+  reg=registry(True,("manager","specialist"))
   r=harden_agent_task(request("HANDOFF-LIVE","specialist"),"manager","specialist",mode="explicit_handoff")
   s=state(r)
-  s=wr.set_live_task_carrier(
-   s,r,carrier_id="live-handoff",set_by="manager",reason="handoff",now=NOW,lease_minutes=45
-  )
+  s=wr.set_live_task_carrier(s,r,carrier_id="live-handoff",set_by="manager",reason="handoff",now=NOW,lease_minutes=45)
   gateway={"state":"idle","generation":10,"execution_id":None,"task_id":None,"agent_id":None,"slot_id":None}
-  self.assertFalse(wr.live_carrier_fence_valid(s,r,gateway,carrier_id="live-handoff",now=NOW))
+  self.assertFalse(wr.live_carrier_fence_valid(s,r,gateway,carrier_id="live-handoff",now=NOW,registry=reg))
+  source,reader=self._acceptance_source(reg,r)
   s=wr.record_handoff_acceptance(
-   s,r,agent_id="specialist",durable_state_ref="o/specialist@accept-live",now=NOW
+   reg,s,r,gateway,agent_id="specialist",source=source,authoritative_reader=reader,now=NOW,carrier_id="live-handoff"
   )
-  self.assertTrue(wr.live_carrier_fence_valid(s,r,gateway,carrier_id="live-handoff",now=NOW))
+  self.assertTrue(wr.live_carrier_fence_valid(s,r,gateway,carrier_id="live-handoff",now=NOW,registry=reg))
+  stale=copy.deepcopy(s); stale["carrier"]["lease_until"]="2026-09-22T23:00:00Z"
+  self.assertFalse(wr.live_carrier_fence_valid(stale,r,gateway,carrier_id="live-handoff",now=NOW,registry=reg))
 
  def test_bounded_delegation_does_not_use_handoff_acceptance_receipt(self):
+  reg=registry(True,("manager","auditor"))
   r=harden_agent_task(request("DELEG-NO-ACCEPT","auditor"),"manager","auditor")
+  source,reader=self._acceptance_source(reg,r)
   with self.assertRaises(cp.ControlPlaneError):
-   wr.record_handoff_acceptance(state(r),r,agent_id="auditor",durable_state_ref="x",now=NOW)
+   wr.record_handoff_acceptance(reg,state(r),r,{"state":"idle"},agent_id="auditor",source=source,authoritative_reader=reader,now=NOW)
 
 class LiveReturnTests(unittest.TestCase):
  def live_result(self,r,carrier_id="live-caller"):

@@ -38,7 +38,71 @@
       "minLength": 1
     },
     "authority_basis": {
-      "type": "object"
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reference": {
+          "type": "string",
+          "minLength": 1
+        },
+        "grant": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "allowed_effects",
+            "forbidden_effects",
+            "scope",
+            "inherited_constraints",
+            "subdelegation"
+          ],
+          "properties": {
+            "allowed_effects": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "forbidden_effects": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "scope": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "inherited_constraints": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "subdelegation": {
+              "enum": [
+                "forbidden",
+                "bounded"
+              ]
+            }
+          }
+        }
+      },
+      "additionalProperties": true
     },
     "scope": {
       "type": "array",

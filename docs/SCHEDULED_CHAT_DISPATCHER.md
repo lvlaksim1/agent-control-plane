@@ -99,7 +99,9 @@ New executable handoffs use responsibility semantics version 2 and are a **propo
 - `return_to_agent_id` MUST be null;
 - the target independently validates mandate, root/immediate authority provenance, scope, constraints and allowed/forbidden effects;
 - the target MUST persist acceptance in its own authoritative Agent state before responsibility is treated as transferred;
-- ACP stores only an evidence projection `state.json#responsibility_acceptance` containing the exact request digest, target agent, acceptance time and durable Agent-state reference;
+- target acceptance is persisted as a structured `context-capsule-responsibility-acceptance` record under `.context/responsibility/acceptances/` in the target Agent home repository;
+- before ACP projects acceptance, the runtime MUST independently re-read that record from the target Registry `home_repository@authority_ref` at an immutable commit and verify the exact blob/content against the immutable task request;
+- ACP stores only a source-bound evidence projection `state.json#responsibility_acceptance` containing the exact request digest, target agent, immutable target-home commit/path/blob, and the exact live/autonomous execution fence that performed the projection;
 - that ACP receipt is evidence of acceptance, not a new source of authority;
 - autonomous task activation and direct-live consequential writes fail closed until the receipt exists and validates;
 - responsibility transfer never expands effective authority;
@@ -199,7 +201,7 @@ Then:
 
 1. reinstate the existing target agent from Registry home_repository@authority_ref and execute its ENTRYPOINT protocol;
 2. target agent validates issuer, root/immediate authority provenance, target identity, objective, scope, inherited constraints, allowed/forbidden effects and completion contract against its own mandate;
-3. for `explicit_handoff`, target persists acceptance in its own authoritative Agent state, then CAS-projects `responsibility_acceptance` with the exact request digest and durable Agent-state reference; responsibility remains with the caller until this succeeds;
+3. for `explicit_handoff`, target persists a structured acceptance record in its own authoritative Agent state, re-reads that record from the immutable target-home commit, verifies repository/ref/path/blob/content and the exact request digest, then CAS-projects `responsibility_acceptance` under the exact current gateway or live-carrier fence; responsibility remains with the caller until this succeeds;
 4. CAS-update private task state to `active`; activation fails closed for an explicit handoff without a valid acceptance receipt;
 5. before every consequential target/control-plane write require the exact active fence/receipt match and, for explicit handoff, a valid acceptance receipt;
 6. persist immutable checkpoints after meaningful durable progress;
@@ -283,3 +285,7 @@ An event producer must never schedule the Execution Worker directly. This keeps 
 ## Authority and routing
 
 Supervisor is not a mandatory gateway. Owner or a registered active agent may issue a task only with the required authority basis. Target-side mandate validation is always required. Wake delivery, scheduler identity, Registry membership, lease reservation or tool access never expand authority.
+
+## Owner-derived root authority grant
+
+For new Owner-derived work that may be delegated, `authority_basis.grant` is the normalized immutable root grant. It carries allowed effects, forbidden effects, scope, inherited constraints, and subdelegation policy. Direct Owner execution remains first-class and needs no agent responsibility envelope. If an Agent creates the first agent-to-agent child, ACP requires the child to preserve the same root provenance and prove that allowed effects/scope only narrow, forbidden effects/constraints are preserved or strengthened, and root subdelegation is permitted. A root agent delegation without a represented parent task must carry the same normalized grant in its own immutable authority basis. Nested v2 delegations additionally cannot widen parent task scope.
