@@ -221,8 +221,8 @@ def normalize(bundle:tuple):
         return bundle
     raise base.ControlPlaneError("bundle must be request,state[,gates[,runtime]]")
 
-def validate_task_routing(registry:dict[str,Any],request:dict[str,Any])->None:
-    """Validate routing identity only; target-agent mandate validation remains runtime responsibility."""
+def validate_task_routing(registry:dict[str,Any],request:dict[str,Any],state:dict[str,Any]|None=None)->None:
+    """Validate routing identity and new-execution responsibility semantics; target mandate validation remains runtime responsibility."""
     agents=base.registry_index(registry)
     issuer=request.get("issuer_agent_id")
     if issuer=="owner":
@@ -234,11 +234,13 @@ def validate_task_routing(registry:dict[str,Any],request:dict[str,Any])->None:
     authority=request.get("authority_basis")
     if not isinstance(authority,dict) or not authority.get("kind") or not authority.get("reference"):
         raise base.ControlPlaneError("agent-issued task requires explicit authority basis")
-    if issuer=="ecosystem-supervisor":
-        return
-    # A Project Manager or Service Agent may route work directly. Supervisor is never required.
-    # This structural acceptance does not prove the requested action is within issuer/target mandate;
-    # the reinstantiated target agent must validate that before acting.
+    if state is not None and state.get("status")=="queued":
+        responsibility=request.get("responsibility")
+        if not isinstance(responsibility,dict) or responsibility.get("semantics_version")!=2:
+            raise base.ControlPlaneError("new queued agent-to-agent task requires responsibility semantics_version 2")
+    # A Project Manager, Service Agent, or Supervisor may route work directly when authorized.
+    # The hardened immutable task carries responsibility/authority provenance, but the
+    # reinstantiated target Agent still independently validates mandate and target rules.
     return
 
 def ready_tasks(registry:dict[str,Any],bundles:list[tuple],now:datetime)->list[dict[str,Any]]:
@@ -246,7 +248,7 @@ def ready_tasks(registry:dict[str,Any],bundles:list[tuple],now:datetime)->list[d
     base_ready={x["task_id"]:x for x in base.ready_tasks(registry,[(r,s) for r,s,_,_ in normalized],now)}
     out=[]
     for req,state,gates,meta in normalized:
-        base.validate_request(req); validate_task_routing(registry,req); base.validate_state(state,req); validate_task_runtime(meta,req)
+        base.validate_request(req); validate_task_routing(registry,req,state); base.validate_state(state,req); validate_task_runtime(meta,req)
         if req["task_id"] not in base_ready:
             continue
         if meta["retry_not_before"] is not None and now<base.parse_time(meta["retry_not_before"]):
@@ -288,7 +290,7 @@ def record_failure(lease:dict[str,Any],state:dict[str,Any],request:dict[str,Any]
     return new_lease,new_state,new_meta
 
 def build_invocation(registry:dict[str,Any],request:dict[str,Any],state:dict[str,Any],lease:dict[str,Any])->dict[str,Any]:
-    agents=base.registry_index(registry); base.validate_state(state,request); base.validate_lease(lease)
+    agents=base.registry_index(registry); base.validate_state(state,request); base.validate_lease(lease); validate_task_routing(registry,request,state)
     if state["status"] not in {"claimed","active"} or state["claim"] is None:
         raise base.ControlPlaneError("task must be claimed")
     agent=agents.get(request["target_agent_id"])
@@ -302,11 +304,16 @@ def build_invocation(registry:dict[str,Any],request:dict[str,Any],state:dict[str
       "home_repository":agent["home_repository"],"authority_ref":agent["authority_ref"],"entrypoint":agent["entrypoint"],
       "task_id":request["task_id"],"request_digest":base.request_digest(request),"request_blob_sha":state.get("request_blob_sha"),
       "execution_id":c["execution_id"],"generation":c["generation"],
-      "authority_rule":"Task delivery and tool access cannot expand the target agent mandate.",
+      "authority_basis":copy.deepcopy(request.get("authority_basis")),
+      "scope":copy.deepcopy(request.get("scope",[])),
+      "constraints":copy.deepcopy(request.get("constraints",[])),
+      "responsibility":copy.deepcopy(request.get("responsibility")),
+      "authority_rule":"Responsibility, authority, and execution ownership are separate; effective authority can only narrow across delegation.",
       "required_sequence":[
         "reinstate the existing persistent agent from home_repository@authority_ref",
         "execute ENTRYPOINT recovery/reinstantiation protocol",
-        "validate immutable task authority against the agent mandate",
+        "validate immutable responsibility and root/immediate authority provenance against the agent mandate",
+        "for explicit handoff, persist target acceptance before treating responsibility as transferred",
         "reconcile live target evidence",
         "fence-check immediately before every consequential write",
         "persist checkpoint at meaningful durable boundaries",

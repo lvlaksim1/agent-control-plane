@@ -67,18 +67,33 @@ def registry_index(registry: dict[str, Any]) -> dict[str, dict[str, Any]]:
     validate_registry(registry)
     return {a["agent_id"]: a for a in registry["agents"]}
 
-def validate_request(request: dict[str, Any]) -> None:
-    require_fields(request, ["schema_version","task_id","issuer_agent_id","target_agent_id","objective","authority_basis","scope","constraints","target","priority","dependencies","completion_contract","created_at"], "task request")
-    if request["schema_version"] != 1:
-        raise ControlPlaneError("unsupported task request schema_version")
-    if request["priority"] not in PRIORITY_BASE:
-        raise ControlPlaneError("invalid priority")
-    if not isinstance(request["dependencies"], list):
-        raise ControlPlaneError("dependencies must be a list")
+def _validate_effect_list(value: Any, label: str, *, require_nonempty: bool = False) -> list[str]:
+    expected = "a non-empty list" if require_nonempty else "a list"
+    if not isinstance(value,list) or (require_nonempty and not value):
+        raise ControlPlaneError(f"{label} must be {expected}")
+    if any(not isinstance(item,str) or not item for item in value):
+        raise ControlPlaneError(f"{label} entries must be non-empty strings")
+    if len(set(value))!=len(value):
+        raise ControlPlaneError(f"{label} entries must be unique")
+    return value
+
+def responsibility_semantics_version(request: dict[str, Any]) -> int | None:
     responsibility=request.get("responsibility")
-    if responsibility is not None:
-        if not isinstance(responsibility,dict):
-            raise ControlPlaneError("responsibility must be an object or null")
+    if not isinstance(responsibility,dict):
+        return None
+    version=responsibility.get("semantics_version")
+    return version if isinstance(version,int) else None
+
+def validate_responsibility_contract(request: dict[str, Any]) -> None:
+    responsibility=request.get("responsibility")
+    if responsibility is None:
+        return
+    if not isinstance(responsibility,dict):
+        raise ControlPlaneError("responsibility must be an object or null")
+
+    semantics_version=responsibility.get("semantics_version")
+    if semantics_version is None:
+        # Historical v1 shape remains readable for durable audit/provenance.
         require_fields(responsibility,["mode","commitment_owner_agent_id","return_to_agent_id"],"responsibility")
         mode=responsibility["mode"]
         if mode not in {"bounded_delegation","explicit_handoff"}:
@@ -96,9 +111,135 @@ def validate_request(request: dict[str, Any]) -> None:
                 raise ControlPlaneError("bounded delegation must return to caller")
         else:
             if owner!=request["target_agent_id"]:
-                raise ControlPlaneError("explicit handoff transfers commitment to target")
+                raise ControlPlaneError("legacy explicit handoff records target as commitment owner")
             if return_to is not None:
                 raise ControlPlaneError("explicit handoff cannot imply automatic return")
+        return
+
+    if semantics_version!=2:
+        raise ControlPlaneError("unsupported responsibility semantics_version")
+    require_fields(
+        responsibility,
+        [
+            "mode","caller_agent_id","commitment_owner_agent_id",
+            "proposed_commitment_owner_agent_id","return_to_agent_id",
+            "transfer_requires_target_acceptance","authority_chain",
+        ],
+        "responsibility v2",
+    )
+    mode=responsibility["mode"]
+    if mode not in {"bounded_delegation","explicit_handoff"}:
+        raise ControlPlaneError("invalid responsibility mode")
+    issuer=request["issuer_agent_id"]
+    if issuer=="owner":
+        raise ControlPlaneError("direct owner task does not use agent responsibility semantics")
+    if responsibility["caller_agent_id"]!=issuer:
+        raise ControlPlaneError("responsibility caller must equal task issuer")
+    if responsibility["commitment_owner_agent_id"]!=issuer:
+        raise ControlPlaneError("agent-to-agent request starts with issuer as current commitment owner")
+
+    chain=responsibility["authority_chain"]
+    if not isinstance(chain,dict):
+        raise ControlPlaneError("responsibility authority_chain must be an object")
+    require_fields(
+        chain,
+        [
+            "root","immediate_grantor_agent_id","grant_reference","delegation_depth",
+            "parent_task_id","allowed_effects","forbidden_effects","subdelegation",
+        ],
+        "authority chain",
+    )
+    root=chain["root"]
+    if not isinstance(root,dict):
+        raise ControlPlaneError("authority chain root must be an object")
+    require_fields(root,["kind","reference"],"authority chain root")
+    authority=request.get("authority_basis")
+    if not isinstance(authority,dict) or not authority.get("kind") or not authority.get("reference"):
+        raise ControlPlaneError("hardened agent task requires explicit authority basis")
+    if root.get("kind")!=authority.get("kind") or root.get("reference")!=authority.get("reference"):
+        raise ControlPlaneError("authority chain root must match immutable task authority basis")
+    if chain["immediate_grantor_agent_id"]!=issuer:
+        raise ControlPlaneError("authority chain immediate grantor must equal task issuer")
+    if not isinstance(chain["grant_reference"],str) or not chain["grant_reference"]:
+        raise ControlPlaneError("authority chain grant_reference must be non-empty")
+    if not isinstance(chain["delegation_depth"],int) or chain["delegation_depth"]<1:
+        raise ControlPlaneError("authority chain delegation_depth must be >= 1")
+    if chain["parent_task_id"]!=request.get("parent_task_id"):
+        raise ControlPlaneError("authority chain parent_task_id must match task parent_task_id")
+    allowed=_validate_effect_list(chain["allowed_effects"],"authority chain allowed_effects",require_nonempty=True)
+    forbidden=_validate_effect_list(chain["forbidden_effects"],"authority chain forbidden_effects")
+    if set(allowed)&set(forbidden):
+        raise ControlPlaneError("authority chain effect cannot be both allowed and forbidden")
+    if chain["subdelegation"] not in {"forbidden","bounded"}:
+        raise ControlPlaneError("authority chain subdelegation must be forbidden or bounded")
+
+    proposed=responsibility["proposed_commitment_owner_agent_id"]
+    return_to=responsibility["return_to_agent_id"]
+    acceptance=responsibility["transfer_requires_target_acceptance"]
+    if mode=="bounded_delegation":
+        if proposed is not None:
+            raise ControlPlaneError("bounded delegation cannot propose commitment ownership transfer")
+        if return_to!=issuer:
+            raise ControlPlaneError("bounded delegation must return to caller")
+        if acceptance is not False:
+            raise ControlPlaneError("bounded delegation has no responsibility transfer to accept")
+    else:
+        if proposed!=request["target_agent_id"]:
+            raise ControlPlaneError("explicit handoff must propose the target as next commitment owner")
+        if return_to is not None:
+            raise ControlPlaneError("explicit handoff cannot imply automatic return")
+        if acceptance is not True:
+            raise ControlPlaneError("explicit handoff transfer requires target acceptance")
+
+def validate_authority_relations(requests: list[dict[str, Any]]) -> None:
+    by_id={r["task_id"]:r for r in requests}
+    for request in requests:
+        responsibility=request.get("responsibility")
+        if not isinstance(responsibility,dict) or responsibility.get("semantics_version")!=2:
+            continue
+        chain=responsibility["authority_chain"]
+        parent_id=chain["parent_task_id"]
+        if parent_id is None:
+            if chain["delegation_depth"]!=1:
+                raise ControlPlaneError("root agent delegation without parent task must have delegation_depth 1")
+            continue
+        parent=by_id.get(parent_id)
+        if parent is None:
+            raise ControlPlaneError(f"hardened delegation parent task is unavailable: {parent_id}")
+        parent_resp=parent.get("responsibility")
+        if isinstance(parent_resp,dict) and parent_resp.get("semantics_version")==2:
+            parent_chain=parent_resp["authority_chain"]
+            if parent_chain["subdelegation"]!="bounded":
+                raise ControlPlaneError("parent authority forbids subdelegation")
+            if chain["root"]!=parent_chain["root"]:
+                raise ControlPlaneError("nested delegation must preserve root authority provenance")
+            if chain["delegation_depth"]!=parent_chain["delegation_depth"]+1:
+                raise ControlPlaneError("nested delegation depth must increase by one")
+            if not set(chain["allowed_effects"]).issubset(parent_chain["allowed_effects"]):
+                raise ControlPlaneError("nested delegation cannot widen allowed effects")
+            if not set(parent_chain["forbidden_effects"]).issubset(chain["forbidden_effects"]):
+                raise ControlPlaneError("nested delegation cannot drop forbidden effects")
+            if not set(parent.get("constraints",[])).issubset(request.get("constraints",[])):
+                raise ControlPlaneError("nested delegation cannot drop inherited constraints")
+        else:
+            if parent.get("issuer_agent_id")!="owner":
+                raise ControlPlaneError("hardened delegation cannot inherit authority from legacy agent-issued parent")
+            parent_authority=parent.get("authority_basis")
+            expected_root={"kind":parent_authority.get("kind"),"reference":parent_authority.get("reference")} if isinstance(parent_authority,dict) else None
+            if expected_root is None or chain["root"]!=expected_root:
+                raise ControlPlaneError("first agent delegation must preserve parent root authority")
+            if chain["delegation_depth"]!=1:
+                raise ControlPlaneError("first agent delegation from owner task must have delegation_depth 1")
+
+def validate_request(request: dict[str, Any]) -> None:
+    require_fields(request, ["schema_version","task_id","issuer_agent_id","target_agent_id","objective","authority_basis","scope","constraints","target","priority","dependencies","completion_contract","created_at"], "task request")
+    if request["schema_version"] != 1:
+        raise ControlPlaneError("unsupported task request schema_version")
+    if request["priority"] not in PRIORITY_BASE:
+        raise ControlPlaneError("invalid priority")
+    if not isinstance(request["dependencies"], list):
+        raise ControlPlaneError("dependencies must be a list")
+    validate_responsibility_contract(request)
     parse_time(request["created_at"])
     ids = set()
     for dep in request["dependencies"]:
@@ -197,6 +338,7 @@ def ready_tasks(registry: dict[str, Any], bundles: list[tuple[dict[str, Any], di
         requests.append(request)
         states[request["task_id"]] = state
     detect_dependency_cycle(requests)
+    validate_authority_relations(requests)
     ids = {r["task_id"] for r in requests}
     ready = []
     for request in requests:
@@ -313,6 +455,7 @@ def validate_repository(root: Path):
             if request["task_id"] in seen: raise ControlPlaneError(f"duplicate task_id: {request['task_id']}")
             seen.add(request["task_id"]); requests.append(request)
         detect_dependency_cycle(requests)
+        validate_authority_relations(requests)
     except Exception as exc: errors.append(f"tasks: {exc}")
     return errors
 

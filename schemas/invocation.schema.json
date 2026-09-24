@@ -15,6 +15,33 @@
     "execution_id",
     "generation",
     "authority_rule",
-    "required_sequence"
-  ]
-}\n
+    "required_sequence",
+    "authority_basis",
+    "scope",
+    "constraints",
+    "responsibility"
+  ],
+  "properties": {
+    "authority_basis": {
+      "type": "object"
+    },
+    "scope": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "constraints": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "responsibility": {
+      "type": [
+        "object",
+        "null"
+      ]
+    }
+  }
+}
