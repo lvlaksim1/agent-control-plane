@@ -1,5 +1,5 @@
 {
-  "schema_version": 4,
+  "schema_version": 5,
   "claim": {
     "required_fields": [
       "execution_id",
@@ -106,6 +106,31 @@
       "if result is a valid live success bound to the exact immutable request/blob and exact carrier_id, all completion evidence/gates are satisfied, and the result commit is not later than carrier lease expiry, CAS-repair state=completed with claim=null and carrier=null",
       "re-read repaired terminal state and do not execute the target",
       "if result is absent, invalid, mismatched, or committed after lease expiry, ordinary expiry fallback remains eligible"
+    ]
+  },
+  "live_return": {
+    "terminal_projection": [
+      "bounded live completion writes a valid live result while the child carrier is fresh",
+      "the same terminal task-state CAS sets status=completed, claim=null, carrier=null and continuation.status=pending",
+      "continuation binds exact request digest/blob, result carrier, immediate caller, parent/workflow provenance and inherited live lease expiry",
+      "re-read terminal state before caller delivery"
+    ],
+    "live_delivery": [
+      "while live_lease_until is fresh, build the exact return_to_caller package from durable terminal state",
+      "reinstate the declared caller and execute its ENTRYPOINT",
+      "caller re-reads exact child state/result",
+      "CAS-acknowledge the exact continuation as consumed before consequential caller work"
+    ],
+    "autonomous_recovery": [
+      "Broker/Worker treats completed task + pending continuation as durable recovery work after live_lease_until",
+      "verify exact durable live result and continuation binding",
+      "reinstantiate caller without re-executing completed child target",
+      "ack continuation consumed before caller consequential work"
+    ],
+    "idempotence": [
+      "consumed continuation is excluded from recovery",
+      "same-caller repeated acknowledgement is idempotent",
+      "a fresh live return lease prevents scheduler recovery before expiry"
     ]
   }
 }
