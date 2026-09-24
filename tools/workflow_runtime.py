@@ -544,21 +544,17 @@ def complete_live_task(state:dict[str,Any],request:dict[str,Any],gates:list[dict
         raise base.ControlPlaneError("bounded live delegation must use complete_live_delegation")
     return _complete_live_task_base(state,request,gates,result,gateway_lease,carrier_id=carrier_id,now=now)
 
-def complete_live_delegation(registry:dict[str,Any],state:dict[str,Any],request:dict[str,Any],gates:list[dict[str,Any]],result:dict[str,Any],gateway_lease:dict[str,Any],*,carrier_id:str,now:datetime)->tuple[dict[str,Any],dict[str,Any]]:
-    """Terminalize bounded live child and durably project pending caller continuation."""
+def _pending_return_continuation(request:dict[str,Any],state:dict[str,Any],carrier:dict[str,Any])->dict[str,Any]:
     responsibility=request.get("responsibility")
     if not isinstance(responsibility,dict) or responsibility.get("mode")!="bounded_delegation":
-        raise base.ControlPlaneError("complete_live_delegation requires bounded_delegation")
-    validate_state_carrier(state,request)
-    carrier=copy.deepcopy(state.get("carrier"))
-    if not isinstance(carrier,dict) or carrier.get("mode")!="live" or carrier.get("carrier_id")!=carrier_id:
-        raise base.ControlPlaneError("bounded delegation requires exact live carrier")
-    completed=_complete_live_task_base(state,request,gates,result,gateway_lease,carrier_id=carrier_id,now=now)
-    continuation_id=f"return:{request['task_id']}:{carrier_id}"
-    completed["continuation"]={
+        raise base.ControlPlaneError("pending return continuation requires bounded_delegation")
+    carrier_id=carrier.get("carrier_id")
+    if carrier.get("mode")!="live" or not isinstance(carrier_id,str) or not carrier_id:
+        raise base.ControlPlaneError("pending return continuation requires exact live carrier")
+    return {
       "kind":"return_to_caller",
       "status":"pending",
-      "continuation_id":continuation_id,
+      "continuation_id":f"return:{request['task_id']}:{carrier_id}",
       "return_to_agent_id":responsibility["return_to_agent_id"],
       "commitment_owner_agent_id":responsibility["commitment_owner_agent_id"],
       "parent_task_id":request.get("parent_task_id"),
@@ -570,6 +566,18 @@ def complete_live_delegation(registry:dict[str,Any],state:dict[str,Any],request:
       "consumed_by_agent_id":None,
       "consumed_at":None
     }
+
+def complete_live_delegation(registry:dict[str,Any],state:dict[str,Any],request:dict[str,Any],gates:list[dict[str,Any]],result:dict[str,Any],gateway_lease:dict[str,Any],*,carrier_id:str,now:datetime)->tuple[dict[str,Any],dict[str,Any]]:
+    """Terminalize bounded live child and durably project pending caller continuation."""
+    responsibility=request.get("responsibility")
+    if not isinstance(responsibility,dict) or responsibility.get("mode")!="bounded_delegation":
+        raise base.ControlPlaneError("complete_live_delegation requires bounded_delegation")
+    validate_state_carrier(state,request)
+    carrier=copy.deepcopy(state.get("carrier"))
+    if not isinstance(carrier,dict) or carrier.get("mode")!="live" or carrier.get("carrier_id")!=carrier_id:
+        raise base.ControlPlaneError("bounded delegation requires exact live carrier")
+    completed=_complete_live_task_base(state,request,gates,result,gateway_lease,carrier_id=carrier_id,now=now)
+    completed["continuation"]=_pending_return_continuation(request,state,carrier)
     validate_state_carrier(completed,request)
     package=build_live_return_package(registry,request,completed,result,now=now)
     if package is None:
@@ -686,9 +694,13 @@ def repair_expired_live_completion(state:dict[str,Any],request:dict[str,Any],gat
     if not ok:
         return None
     out=copy.deepcopy(state)
+    responsibility=request.get("responsibility")
+    if isinstance(responsibility,dict) and responsibility.get("mode")=="bounded_delegation":
+        out["continuation"]=_pending_return_continuation(request,state,carrier)
     out["status"]="completed"
     out["claim"]=None
     out["carrier"]=None
+    validate_state_carrier(out,request)
     return out
 
 def scheduler_preflight(registry:dict[str,Any],bundles:list[tuple],result_records:dict[str,Any],now:datetime)->tuple[list[dict[str,Any]],list[tuple[str,dict[str,Any]]]]:
