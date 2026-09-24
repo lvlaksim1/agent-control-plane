@@ -103,7 +103,7 @@
       "before scheduler claim of an expired live-carried queued task, explicitly inspect whether result.json exists",
       "when present, use authoritative Git commit chronology for the current result blob; do not trust result.completed_at for ownership timing",
       "if result.json exists but authoritative commit chronology for its current blob cannot be established, fail closed and do not execute the target",
-      "if result is a valid live success bound to the exact immutable request/blob and exact carrier_id, all completion evidence/gates are satisfied, and the result commit is not later than carrier lease expiry, CAS-repair state=completed with claim=null and carrier=null",
+      "if result is a valid live success bound to the exact immutable request/blob and exact carrier_id, all completion evidence/gates are satisfied, and the result commit is not later than carrier lease expiry, CAS-repair state=completed with claim=null and carrier=null; when the request is bounded_delegation, the same repaired state must include continuation.status=pending bound to the original live carrier so caller return remains recoverable",
       "re-read repaired terminal state and do not execute the target",
       "if result is absent, invalid, mismatched, or committed after lease expiry, ordinary expiry fallback remains eligible"
     ]
