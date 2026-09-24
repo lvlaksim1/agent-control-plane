@@ -200,6 +200,45 @@ class WorkflowRuntimeTests(unittest.TestCase):
   self.assertEqual(inv["constraints"],r["constraints"])
   self.assertIn("acceptance", " ".join(inv["required_sequence"]))
 
+ def test_explicit_handoff_requires_durable_target_acceptance_before_activation(self):
+  reg=registry(True,("manager","specialist"))
+  r=harden_agent_task(request("HANDOFF-A","specialist"),"manager","specialist",mode="explicit_handoff")
+  s=state(r)
+  l,s=cp.claim_plan(idle(),r,s,slot_id="s",execution_id="e1",now=NOW)
+  with self.assertRaises(cp.ControlPlaneError):
+   cp.activate_state(s,r,l)
+  accepted=wr.record_handoff_acceptance(
+   s,r,agent_id="specialist",durable_state_ref="o/specialist@accept-commit",now=NOW
+  )
+  active=cp.activate_state(accepted,r,l)
+  self.assertEqual(active["status"],"active")
+  self.assertTrue(wr.handoff_acceptance_satisfied(active,r))
+
+ def test_wrong_agent_cannot_accept_handoff(self):
+  r=harden_agent_task(request("HANDOFF-B","specialist"),"manager","specialist",mode="explicit_handoff")
+  s=state(r)
+  l,s=cp.claim_plan(idle(),r,s,slot_id="s",execution_id="e1",now=NOW)
+  with self.assertRaises(cp.ControlPlaneError):
+   wr.record_handoff_acceptance(s,r,agent_id="manager",durable_state_ref="bad",now=NOW)
+
+ def test_live_handoff_fence_requires_acceptance_receipt(self):
+  r=harden_agent_task(request("HANDOFF-LIVE","specialist"),"manager","specialist",mode="explicit_handoff")
+  s=state(r)
+  s=wr.set_live_task_carrier(
+   s,r,carrier_id="live-handoff",set_by="manager",reason="handoff",now=NOW,lease_minutes=45
+  )
+  gateway={"state":"idle","generation":10,"execution_id":None,"task_id":None,"agent_id":None,"slot_id":None}
+  self.assertFalse(wr.live_carrier_fence_valid(s,r,gateway,carrier_id="live-handoff",now=NOW))
+  s=wr.record_handoff_acceptance(
+   s,r,agent_id="specialist",durable_state_ref="o/specialist@accept-live",now=NOW
+  )
+  self.assertTrue(wr.live_carrier_fence_valid(s,r,gateway,carrier_id="live-handoff",now=NOW))
+
+ def test_bounded_delegation_does_not_use_handoff_acceptance_receipt(self):
+  r=harden_agent_task(request("DELEG-NO-ACCEPT","auditor"),"manager","auditor")
+  with self.assertRaises(cp.ControlPlaneError):
+   wr.record_handoff_acceptance(state(r),r,agent_id="auditor",durable_state_ref="x",now=NOW)
+
 class LiveReturnTests(unittest.TestCase):
  def live_result(self,r,carrier_id="live-caller"):
   return {

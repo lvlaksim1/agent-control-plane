@@ -91,14 +91,23 @@ Nested bounded delegations unwind one caller at a time through each immutable ch
 
 ### Explicit handoff
 
-`mode=explicit_handoff` is a different operation:
+New executable handoffs use responsibility semantics version 2 and are a **proposed responsibility transfer**, not an already-completed transfer:
 
-- responsibility transfers explicitly to the target agent within the authorized scope;
-- `commitment_owner_agent_id` MUST equal `target_agent_id`;
+- `caller_agent_id` and current `commitment_owner_agent_id` MUST equal the issuer;
+- `proposed_commitment_owner_agent_id` MUST equal the target;
+- `transfer_requires_target_acceptance=true`;
 - `return_to_agent_id` MUST be null;
+- the target independently validates mandate, root/immediate authority provenance, scope, constraints and allowed/forbidden effects;
+- the target MUST persist acceptance in its own authoritative Agent state before responsibility is treated as transferred;
+- ACP stores only an evidence projection `state.json#responsibility_acceptance` containing the exact request digest, target agent, acceptance time and durable Agent-state reference;
+- that ACP receipt is evidence of acceptance, not a new source of authority;
+- autonomous task activation and direct-live consequential writes fail closed until the receipt exists and validates;
+- responsibility transfer never expands effective authority;
 - terminal completion creates no caller continuation and does not imply automatic return to the issuer.
 
-A live agent-to-agent task without an explicit responsibility contract is invalid for live continuation. Direct Owner invocation without an inter-agent task remains first-class and does not require synthetic return metadata.
+Historical completed v1 handoff artifacts remain readable for provenance but are not admissible as new nonterminal agent-to-agent execution.
+
+A live agent-to-agent task without hardened responsibility semantics is invalid for new execution. Direct Owner invocation without an inter-agent task remains first-class and does not require synthetic return metadata.
 
 ## Why the relay exists
 
@@ -189,12 +198,13 @@ A later Execution Worker may begin target-agent reinstantiation only when:
 Then:
 
 1. reinstate the existing target agent from Registry home_repository@authority_ref and execute its ENTRYPOINT protocol;
-2. target agent validates issuer, authority provenance, target identity, objective, scope, constraints, requested effects and completion contract against its own mandate;
-3. CAS-update private task state to `active`;
-4. before every consequential target/control-plane write require the exact active fence/receipt match;
-5. persist immutable checkpoints after meaningful durable progress;
-6. if execution exceeds the lease window, renew only while the exact fence remains valid;
-7. on execution failure, fence/release first, then apply retry/backoff/quarantine policy.
+2. target agent validates issuer, root/immediate authority provenance, target identity, objective, scope, inherited constraints, allowed/forbidden effects and completion contract against its own mandate;
+3. for `explicit_handoff`, target persists acceptance in its own authoritative Agent state, then CAS-projects `responsibility_acceptance` with the exact request digest and durable Agent-state reference; responsibility remains with the caller until this succeeds;
+4. CAS-update private task state to `active`; activation fails closed for an explicit handoff without a valid acceptance receipt;
+5. before every consequential target/control-plane write require the exact active fence/receipt match and, for explicit handoff, a valid acceptance receipt;
+6. persist immutable checkpoints after meaningful durable progress;
+7. if execution exceeds the lease window, renew only while the exact fence remains valid;
+8. on execution failure, fence/release first, then apply retry/backoff/quarantine policy.
 
 ## Completion
 

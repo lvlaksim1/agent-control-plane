@@ -101,3 +101,17 @@ Time pulse never grants ownership; lease CAS does.
 - dependency cycle: validation failure;
 - GitHub CAS conflict: re-read; never force overwrite;
 - stale execution: no consequential write after fence mismatch.
+
+## Delegation, responsibility, and authority hardening
+
+New executable agent-to-agent tasks use responsibility semantics version 2.
+
+Responsibility, authority, and execution ownership are independent. An execution lease never transfers commitment ownership or authority.
+
+For bounded delegation, the issuer remains commitment owner and return target.
+
+For explicit handoff, the issuer remains the current commitment owner until the target Agent durably accepts the proposed transfer in its own authoritative state. ACP may store `state.json#responsibility_acceptance` only as a request-bound evidence projection of that Agent-state transition. The projection itself grants no authority.
+
+Nested delegation preserves root authority provenance and may only attenuate authority: child allowed effects are a subset, inherited forbidden effects and constraints are retained, and a parent may forbid subdelegation entirely.
+
+Historical terminal responsibility-v1 artifacts remain readable. Nonterminal agent-to-agent execution requires responsibility semantics version 2.

@@ -197,5 +197,20 @@ class Tests(unittest.TestCase):
         with self.assertRaises(cp.ControlPlaneError):
             cp.validate_authority_relations([parent,no_sub,grand])
 
+    def test_acceptance_receipt_is_evidence_only_and_target_bound(self):
+        r=self._v2(request("V2-ACCEPT",target="agent-b"),"agent-a","agent-b",mode="explicit_handoff")
+        s=state(r,"claimed")
+        s["claim"]={"execution_id":"e1","generation":1,"slot_id":"s","claimed_at":"2026-09-23T00:00:00Z"}
+        s["responsibility_acceptance"]={
+            "request_digest":cp.request_digest(r),
+            "accepted_by_agent_id":"agent-b",
+            "accepted_at":"2026-09-23T00:01:00Z",
+            "durable_state_ref":"o/agent-b@accept"
+        }
+        cp.validate_state(s,r)
+        bad=copy.deepcopy(s); bad["responsibility_acceptance"]["accepted_by_agent_id"]="agent-a"
+        with self.assertRaises(cp.ControlPlaneError):
+            cp.validate_state(bad,r)
+
 if __name__=="__main__":
     unittest.main()
