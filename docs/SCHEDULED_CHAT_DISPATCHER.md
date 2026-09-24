@@ -265,7 +265,10 @@ An event producer must never schedule the Execution Worker directly. This keeps 
 - expired reserved/active lease: fence before requeue/quarantine, then request recovery wake if progress is possible;
 - expired live + queued/unclaimed + exact valid pre-expiry live result: CAS-repair to completed before scheduler claim; never execute twice;
 - expired live + queued/unclaimed + absent/invalid/mismatched/post-expiry result: ordinary fallback eligibility may proceed;
-- completed bounded-delegation task + pending continuation + fresh continuation lease: leave it to the live runtime;\n- completed bounded-delegation task + pending continuation + expired continuation lease: persist/request a deterministic `return:<task_id>:<continuation_id>` wake, reinstate the exact caller, acknowledge continuation before caller effects, and never re-execute the child;\n- completed task with consumed continuation: do not redeliver caller;\n- completed task with valid result and idle gateway: repair completion projection only; never execute twice.
+- completed bounded-delegation task + pending continuation + fresh continuation lease: leave it to the live runtime;
+- completed bounded-delegation task + pending continuation + expired continuation lease: persist/request a deterministic `return:<task_id>:<continuation_id>` wake, reinstate the exact caller, acknowledge continuation before caller effects, and never re-execute the child;
+- completed task with consumed continuation: do not redeliver caller;
+- completed task with valid result and idle gateway: repair completion projection only; never execute twice.
 
 ## Authority and routing
 
