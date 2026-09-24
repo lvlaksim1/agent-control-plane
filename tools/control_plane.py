@@ -270,6 +270,31 @@ def validate_state(state: dict[str, Any], request: dict[str, Any]) -> None:
         require_fields(state["claim"], ["execution_id","generation","slot_id","claimed_at"], "task claim")
         parse_time(state["claim"]["claimed_at"])
 
+    acceptance=state.get("responsibility_acceptance")
+    responsibility=request.get("responsibility")
+    is_handoff=(
+        isinstance(responsibility,dict)
+        and responsibility.get("semantics_version")==2
+        and responsibility.get("mode")=="explicit_handoff"
+    )
+    if acceptance is not None:
+        if not is_handoff:
+            raise ControlPlaneError("responsibility acceptance receipt is only valid for v2 explicit handoff")
+        if not isinstance(acceptance,dict):
+            raise ControlPlaneError("responsibility acceptance receipt must be an object or null")
+        require_fields(
+            acceptance,
+            ["request_digest","accepted_by_agent_id","accepted_at","durable_state_ref"],
+            "responsibility acceptance receipt",
+        )
+        if acceptance["request_digest"]!=request_digest(request):
+            raise ControlPlaneError("responsibility acceptance receipt/request digest mismatch")
+        if acceptance["accepted_by_agent_id"]!=request["target_agent_id"]:
+            raise ControlPlaneError("responsibility acceptance must be recorded by target agent")
+        if not isinstance(acceptance["durable_state_ref"],str) or not acceptance["durable_state_ref"]:
+            raise ControlPlaneError("responsibility acceptance durable_state_ref must be non-empty")
+        parse_time(acceptance["accepted_at"])
+
 def validate_lease(lease: dict[str, Any]) -> None:
     require_fields(lease, ["schema_version","state","generation","execution_id","task_id","agent_id","slot_id","claimed_at","lease_until"], "lease")
     if lease["schema_version"] != 1:
@@ -381,6 +406,14 @@ def activate_state(state: dict[str, Any], request: dict[str, Any], lease: dict[s
     c=state["claim"]
     if not fence_valid(lease,task_id=request["task_id"],agent_id=request["target_agent_id"],execution_id=c["execution_id"],generation=c["generation"]):
         raise ControlPlaneError("claim does not own current fence")
+    responsibility=request.get("responsibility")
+    if (
+        isinstance(responsibility,dict)
+        and responsibility.get("semantics_version")==2
+        and responsibility.get("mode")=="explicit_handoff"
+        and state.get("responsibility_acceptance") is None
+    ):
+        raise ControlPlaneError("explicit handoff cannot become active before durable target acceptance")
     n=copy.deepcopy(state); n["status"]="active"; return n
 
 def renew_lease(lease: dict[str, Any], *, execution_id: str, generation: int, now: datetime, lease_minutes: int = 45) -> dict[str, Any]:

@@ -166,6 +166,8 @@ def live_carrier_fence_valid(state:dict[str,Any],request:dict[str,Any],gateway_l
         return False
     if state.get("status")!="queued" or state.get("claim") is not None:
         return False
+    if not handoff_acceptance_satisfied(state,request):
+        return False
     carrier=state.get("carrier")
     if not isinstance(carrier,dict) or carrier.get("mode")!="live" or carrier.get("carrier_id")!=carrier_id:
         return False
@@ -242,6 +244,55 @@ def validate_task_routing(registry:dict[str,Any],request:dict[str,Any],state:dic
     # The hardened immutable task carries responsibility/authority provenance, but the
     # reinstantiated target Agent still independently validates mandate and target rules.
     return
+
+def handoff_acceptance_required(request:dict[str,Any])->bool:
+    responsibility=request.get("responsibility")
+    return (
+        isinstance(responsibility,dict)
+        and responsibility.get("semantics_version")==2
+        and responsibility.get("mode")=="explicit_handoff"
+    )
+
+def handoff_acceptance_satisfied(state:dict[str,Any],request:dict[str,Any])->bool:
+    if not handoff_acceptance_required(request):
+        return True
+    try:
+        base.validate_state(state,request)
+    except Exception:
+        return False
+    receipt=state.get("responsibility_acceptance")
+    return (
+        isinstance(receipt,dict)
+        and receipt.get("request_digest")==base.request_digest(request)
+        and receipt.get("accepted_by_agent_id")==request.get("target_agent_id")
+        and isinstance(receipt.get("durable_state_ref"),str)
+        and bool(receipt.get("durable_state_ref"))
+    )
+
+def record_handoff_acceptance(state:dict[str,Any],request:dict[str,Any],*,agent_id:str,durable_state_ref:str,now:datetime)->dict[str,Any]:
+    """Project evidence that target Agent durably accepted the proposed handoff in its own authoritative state."""
+    base.validate_state(state,request)
+    if not handoff_acceptance_required(request):
+        raise base.ControlPlaneError("responsibility acceptance applies only to v2 explicit handoff")
+    if agent_id!=request["target_agent_id"]:
+        raise base.ControlPlaneError("only target agent may accept explicit handoff")
+    if state.get("status") not in {"queued","claimed"}:
+        raise base.ControlPlaneError("handoff acceptance must precede active execution")
+    if state.get("status")=="queued":
+        carrier=state.get("carrier")
+        if not isinstance(carrier,dict) or carrier.get("mode")!="live":
+            raise base.ControlPlaneError("queued handoff acceptance requires live carrier")
+    if not isinstance(durable_state_ref,str) or not durable_state_ref:
+        raise base.ControlPlaneError("durable_state_ref is required for handoff acceptance")
+    out=copy.deepcopy(state)
+    out["responsibility_acceptance"]={
+      "request_digest":base.request_digest(request),
+      "accepted_by_agent_id":agent_id,
+      "accepted_at":base.format_time(now),
+      "durable_state_ref":durable_state_ref
+    }
+    base.validate_state(out,request)
+    return out
 
 def ready_tasks(registry:dict[str,Any],bundles:list[tuple],now:datetime)->list[dict[str,Any]]:
     normalized=[normalize(b) for b in bundles]
@@ -627,6 +678,8 @@ def gateway_execution_admitted(state:dict[str,Any],request:dict[str,Any],gateway
     base.validate_state(state,request)
     claim=state.get("claim")
     if claim is None:
+        return False
+    if require_active_state and not handoff_acceptance_satisfied(state,request):
         return False
     if require_active_state and state.get("status")!="active":
         return False

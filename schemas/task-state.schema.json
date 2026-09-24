@@ -205,6 +205,41 @@
           }
         }
       ]
+    },
+    "responsibility_acceptance": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "request_digest",
+            "accepted_by_agent_id",
+            "accepted_at",
+            "durable_state_ref"
+          ],
+          "properties": {
+            "request_digest": {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            },
+            "accepted_by_agent_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "accepted_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "durable_state_ref": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ]
     }
   }
 }
