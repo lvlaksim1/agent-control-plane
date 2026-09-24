@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-AUDIT-LIVE-RETURN-LRC001-RETEST-001",
+  "status": "queued",
+  "request_digest": "sha256:511333544a043f062f7686981988893b6dde7b1f80f75b9c6eac07019137eec4",
+  "attempt": 0,
+  "runtime_loss_count": 0,
+  "claim": null,
+  "latest_checkpoint": null,
+  "request_blob_sha": "8cd9a0957fc021bbd6fd295b835e2553a0aebcf4",
+  "carrier": {
+    "mode": "live",
+    "carrier_id": "owner-live-runtime-lrc001-retest-001",
+    "set_by": "ecosystem-supervisor",
+    "reason": "Owner is online; execute focused LRC-001 retest immediately from GitHub handoff.",
+    "heartbeat_at": "2026-09-24T00:10:00Z",
+    "lease_until": "2026-09-24T01:10:00Z",
+    "fallback_after_expiry": true
+  },
+  "continuation": null
+}
