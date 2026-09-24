@@ -30,6 +30,16 @@
       "entrypoint": ".context/ENTRYPOINT.md",
       "status": "ready",
       "automatic_execution_allowed": true
+    },
+    {
+      "agent_id": "ios-research-runtime-project-manager",
+      "agent_type": "project-manager",
+      "role": "Project Manager",
+      "home_repository": "lvlaksim1/iOS-Research-Runtime",
+      "authority_ref": "manager-state",
+      "entrypoint": ".context/ENTRYPOINT.md",
+      "status": "ready",
+      "automatic_execution_allowed": true
     }
   ]
 }
