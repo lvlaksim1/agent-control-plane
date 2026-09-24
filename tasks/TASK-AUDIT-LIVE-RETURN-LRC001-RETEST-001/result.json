@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-AUDIT-LIVE-RETURN-LRC001-RETEST-001",
+  "request_digest": "sha256:511333544a043f062f7686981988893b6dde7b1f80f75b9c6eac07019137eec4",
+  "request_blob_sha": "8cd9a0957fc021bbd6fd295b835e2553a0aebcf4",
+  "execution_mode": "live",
+  "carrier_id": "owner-live-runtime-lrc001-retest-001",
+  "outcome": "success",
+  "summary": "Focused LRC-001 retest completed: LRC-001 CLOSED / High confidence; no new findings; prior EW/PTC findings remain closed.",
+  "evidence": [
+    {
+      "kind": "audit",
+      "reference": "lvlaksim1/project-manager-auditor/audits/AUD-2026-09-24-LRC-001-RETEST-001.md@b2edd94fd553227e5573524109d25ca61fe58ef5",
+      "verified": true,
+      "verified_by": "project-manager-auditor",
+      "verified_at": "2026-09-24T00:23:07Z"
+    }
+  ],
+  "completed_at": "2026-09-24T00:23:07Z"
+}
