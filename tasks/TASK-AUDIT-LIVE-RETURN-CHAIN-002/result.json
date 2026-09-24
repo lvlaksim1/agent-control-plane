@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-AUDIT-LIVE-RETURN-CHAIN-002",
+  "request_digest": "sha256:c81272e2ee087072528c76417a377ab797a24f41a0eb404884518f78ab48e783",
+  "request_blob_sha": "ca2328e27b6c4e66fde0de45fbd8df137327481f",
+  "execution_mode": "live",
+  "carrier_id": "owner-live-runtime-live-return-audit-002",
+  "outcome": "success",
+  "summary": "Independent live return audit completed. Responsibility model passed; LRC-001 remains OPEN because caller continuation is not durably recoverable after child terminalization.",
+  "evidence": [
+    {
+      "kind": "audit",
+      "reference": "lvlaksim1/project-manager-auditor/audits/AUD-2026-09-24-LIVE-RETURN-CHAIN-002.md@ef59b60390881978aecf9e3741bf23926c246cdf",
+      "verified": true,
+      "verified_by": "project-manager-auditor",
+      "verified_at": "2026-09-24T00:10:00Z"
+    }
+  ],
+  "completed_at": "2026-09-24T00:10:00Z"
+}

@@ -75,6 +75,30 @@ def validate_request(request: dict[str, Any]) -> None:
         raise ControlPlaneError("invalid priority")
     if not isinstance(request["dependencies"], list):
         raise ControlPlaneError("dependencies must be a list")
+    responsibility=request.get("responsibility")
+    if responsibility is not None:
+        if not isinstance(responsibility,dict):
+            raise ControlPlaneError("responsibility must be an object or null")
+        require_fields(responsibility,["mode","commitment_owner_agent_id","return_to_agent_id"],"responsibility")
+        mode=responsibility["mode"]
+        if mode not in {"bounded_delegation","explicit_handoff"}:
+            raise ControlPlaneError("invalid responsibility mode")
+        owner=responsibility["commitment_owner_agent_id"]
+        return_to=responsibility["return_to_agent_id"]
+        if not isinstance(owner,str) or not owner:
+            raise ControlPlaneError("responsibility commitment owner must be non-empty")
+        if mode=="bounded_delegation":
+            if request["issuer_agent_id"]=="owner":
+                raise ControlPlaneError("owner direct task does not use agent bounded_delegation")
+            if owner!=request["issuer_agent_id"]:
+                raise ControlPlaneError("bounded delegation keeps commitment with issuer")
+            if return_to!=request["issuer_agent_id"]:
+                raise ControlPlaneError("bounded delegation must return to caller")
+        else:
+            if owner!=request["target_agent_id"]:
+                raise ControlPlaneError("explicit handoff transfers commitment to target")
+            if return_to is not None:
+                raise ControlPlaneError("explicit handoff cannot imply automatic return")
     parse_time(request["created_at"])
     ids = set()
     for dep in request["dependencies"]:

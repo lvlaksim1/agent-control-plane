@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-AUDIT-LIVE-RETURN-CHAIN-001",
+  "status": "superseded",
+  "request_digest": "sha256:cc162d25e3885db849a439d391e338bb0970aa4df569aaa5dd1b1a4d3bf7983b",
+  "attempt": 0,
+  "runtime_loss_count": 0,
+  "claim": null,
+  "latest_checkpoint": null,
+  "request_blob_sha": "dd8380f68ae3c9c6f73be0f36719e837f841945d",
+  "carrier": null,
+  "superseded_by": "TASK-AUDIT-LIVE-RETURN-CHAIN-002",
+  "superseded_reason": "ACP implementation advanced after audit acceptance: live completion was bound deterministically to caller continuation and protocol was hardened. Retest must pin the final snapshot."
+}

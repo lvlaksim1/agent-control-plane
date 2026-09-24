@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-AUDIT-LIVE-RETURN-CHAIN-002",
+  "status": "completed",
+  "request_digest": "sha256:c81272e2ee087072528c76417a377ab797a24f41a0eb404884518f78ab48e783",
+  "attempt": 0,
+  "runtime_loss_count": 0,
+  "claim": null,
+  "latest_checkpoint": null,
+  "request_blob_sha": "ca2328e27b6c4e66fde0de45fbd8df137327481f",
+  "carrier": null
+}

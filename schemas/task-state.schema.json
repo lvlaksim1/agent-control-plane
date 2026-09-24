@@ -115,6 +115,96 @@
           }
         }
       ]
+    },
+    "continuation": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "status",
+            "continuation_id",
+            "return_to_agent_id",
+            "commitment_owner_agent_id",
+            "parent_task_id",
+            "workflow_id",
+            "request_digest",
+            "request_blob_sha",
+            "result_carrier_id",
+            "live_lease_until",
+            "consumed_by_agent_id",
+            "consumed_at"
+          ],
+          "properties": {
+            "kind": {
+              "const": "return_to_caller"
+            },
+            "status": {
+              "enum": [
+                "pending",
+                "consumed"
+              ]
+            },
+            "continuation_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "return_to_agent_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "commitment_owner_agent_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "parent_task_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "workflow_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "request_digest": {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            },
+            "request_blob_sha": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{40}$"
+            },
+            "result_carrier_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "live_lease_until": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "consumed_by_agent_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "consumed_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            }
+          }
+        }
+      ]
     }
   }
 }

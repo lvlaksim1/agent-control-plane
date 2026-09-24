@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-AUDIT-LIVE-RETURN-LRC001-RETEST-001",
+  "failure_count": 0,
+  "retry_not_before": null,
+  "last_failure": null
+}

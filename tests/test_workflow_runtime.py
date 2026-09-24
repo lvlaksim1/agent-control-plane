@@ -140,6 +140,195 @@ class WorkflowRuntimeTests(unittest.TestCase):
   self.assertFalse(wr.gateway_execution_admitted(s,r,lease))
 
 
+class LiveReturnTests(unittest.TestCase):
+ def live_result(self,r,carrier_id="live-caller"):
+  return {
+   "schema_version":1,"task_id":r["task_id"],"request_digest":cp.request_digest(r),
+   "request_blob_sha":"a"*40,"execution_mode":"live","carrier_id":carrier_id,
+   "outcome":"success","summary":"done",
+   "evidence":[{"kind":"commit","reference":"o/r@abc","verified":True,"verified_by":"agent-a","verified_at":"2026-09-23T00:30:00Z"}],
+   "completed_at":"2026-09-23T00:30:00Z"
+  }
+
+ def delegated(self,task_id,issuer,target,parent=None,workflow="WF-LIVE"):
+  r=request(task_id,target)
+  r["issuer_agent_id"]=issuer
+  r["authority_basis"]={"kind":"engagement","reference":"ENG-LIVE"}
+  r["parent_task_id"]=parent
+  r["workflow_id"]=workflow
+  r["responsibility"]={
+   "mode":"bounded_delegation",
+   "commitment_owner_agent_id":issuer,
+   "return_to_agent_id":issuer
+  }
+  return r
+
+ def live_state(self,r,carrier_id="live-caller"):
+  s=state(r)
+  s["carrier"]={
+   "mode":"live","carrier_id":carrier_id,"set_by":r["issuer_agent_id"],"reason":"delegation",
+   "heartbeat_at":"2026-09-23T00:00:00Z","lease_until":"2026-09-23T01:00:00Z","fallback_after_expiry":True
+  }
+  return s
+
+ def idle_gateway(self):
+  return {"state":"idle","generation":46,"execution_id":None,"task_id":None,"agent_id":None,"slot_id":None}
+
+ def complete(self,reg,r):
+  return wr.complete_live_delegation(
+   reg,self.live_state(r),r,[],self.live_result(r),self.idle_gateway(),carrier_id="live-caller",
+   now=datetime(2026,9,23,0,30,tzinfo=timezone.utc)
+  )
+
+ def test_live_delegation_completion_persists_pending_return_and_package(self):
+  reg=registry(True,("supervisor","auditor"))
+  r=self.delegated("AUD-COMPLETE","supervisor","auditor")
+  completed,pkg=self.complete(reg,r)
+  self.assertEqual(completed["status"],"completed")
+  self.assertIsNone(completed["carrier"])
+  self.assertEqual(completed["continuation"]["status"],"pending")
+  self.assertEqual(completed["continuation"]["return_to_agent_id"],"supervisor")
+  self.assertEqual(pkg["delivery_mode"],"live")
+  self.assertEqual(pkg["agent_id"],"supervisor")
+  self.assertEqual(pkg["continuation_id"],completed["continuation"]["continuation_id"])
+
+ def test_bounded_delegation_cannot_bypass_durable_continuation(self):
+  r=self.delegated("AUD-BYPASS","supervisor","auditor")
+  with self.assertRaises(cp.ControlPlaneError):
+   wr.complete_live_task(
+    self.live_state(r),r,[],self.live_result(r),self.idle_gateway(),carrier_id="live-caller",
+    now=datetime(2026,9,23,0,30,tzinfo=timezone.utc)
+   )
+
+ def test_live_return_requires_terminal_pending_continuation(self):
+  reg=registry(True,("supervisor","auditor"))
+  r=self.delegated("AUD-NONTERM","supervisor","auditor")
+  with self.assertRaises(cp.ControlPlaneError):
+   wr.build_live_return_package(
+    reg,r,self.live_state(r),self.live_result(r),
+    now=datetime(2026,9,23,0,30,tzinfo=timezone.utc)
+   )
+
+ def test_live_agent_call_without_responsibility_contract_is_rejected(self):
+  reg=registry(True,("manager","auditor"))
+  r=request("LEGACY","auditor"); r["issuer_agent_id"]="manager"; r["authority_basis"]={"kind":"engagement","reference":"E1"}
+  s=state(r,"completed"); s["continuation"]=None
+  with self.assertRaises(cp.ControlPlaneError):
+   wr.build_live_return_package(reg,r,s,self.live_result(r),now=datetime(2026,9,23,0,30,tzinfo=timezone.utc))
+
+ def test_caller_ack_is_durable_and_idempotent(self):
+  reg=registry(True,("supervisor","auditor"))
+  r=self.delegated("AUD-ACK","supervisor","auditor")
+  completed,pkg=self.complete(reg,r)
+  ack=wr.acknowledge_return_continuation(
+   completed,r,self.live_result(r),continuation_id=pkg["continuation_id"],caller_agent_id="supervisor",
+   now=datetime(2026,9,23,0,31,tzinfo=timezone.utc)
+  )
+  self.assertEqual(ack["continuation"]["status"],"consumed")
+  self.assertEqual(ack["continuation"]["consumed_by_agent_id"],"supervisor")
+  again=wr.acknowledge_return_continuation(
+   ack,r,self.live_result(r),continuation_id=pkg["continuation_id"],caller_agent_id="supervisor",
+   now=datetime(2026,9,23,0,32,tzinfo=timezone.utc)
+  )
+  self.assertEqual(again["continuation"]["consumed_at"],ack["continuation"]["consumed_at"])
+
+ def test_runtime_loss_after_child_completion_recovers_caller_after_lease(self):
+  reg=registry(True,("supervisor","auditor"))
+  r=self.delegated("AUD-RECOVER","supervisor","auditor")
+  completed,_=self.complete(reg,r)
+  later=datetime(2026,9,23,1,1,tzinfo=timezone.utc)
+  packages=wr.recoverable_return_continuations(
+   reg,[(r,completed,[],wr.task_runtime(r["task_id"]))],{r["task_id"]:self.live_result(r)},later
+  )
+  self.assertEqual(len(packages),1)
+  self.assertEqual(packages[0]["delivery_mode"],"autonomous_recovery")
+  self.assertEqual(packages[0]["agent_id"],"supervisor")
+
+ def test_partial_live_completion_repair_preserves_pending_caller_return(self):
+  reg=registry(True,("supervisor","auditor"))
+  r=self.delegated("AUD-PARTIAL","supervisor","auditor")
+  s=self.live_state(r)
+  later=datetime(2026,9,23,1,1,tzinfo=timezone.utc)
+  repaired=wr.repair_expired_live_completion(
+   s,r,[],self.live_result(r),
+   result_committed_at=datetime(2026,9,23,0,30,tzinfo=timezone.utc),now=later
+  )
+  self.assertIsNotNone(repaired)
+  self.assertEqual(repaired["status"],"completed")
+  self.assertIsNone(repaired["carrier"])
+  self.assertEqual(repaired["continuation"]["status"],"pending")
+  self.assertEqual(repaired["continuation"]["return_to_agent_id"],"supervisor")
+  packages=wr.recoverable_return_continuations(
+   reg,[(r,repaired,[],wr.task_runtime(r["task_id"]))],{r["task_id"]:self.live_result(r)},later
+  )
+  self.assertEqual(len(packages),1)
+  self.assertEqual(packages[0]["agent_id"],"supervisor")
+  self.assertEqual(packages[0]["delivery_mode"],"autonomous_recovery")
+
+ def test_pending_return_is_not_recovered_before_live_lease_expiry(self):
+  reg=registry(True,("supervisor","auditor"))
+  r=self.delegated("AUD-LIVE","supervisor","auditor")
+  completed,_=self.complete(reg,r)
+  packages=wr.recoverable_return_continuations(
+   reg,[(r,completed,[],wr.task_runtime(r["task_id"]))],{r["task_id"]:self.live_result(r)},
+   datetime(2026,9,23,0,45,tzinfo=timezone.utc)
+  )
+  self.assertEqual(packages,[])
+
+ def test_consumed_return_is_not_redelivered(self):
+  reg=registry(True,("supervisor","auditor"))
+  r=self.delegated("AUD-DONE","supervisor","auditor")
+  completed,pkg=self.complete(reg,r)
+  consumed=wr.acknowledge_return_continuation(
+   completed,r,self.live_result(r),continuation_id=pkg["continuation_id"],caller_agent_id="supervisor",
+   now=datetime(2026,9,23,0,31,tzinfo=timezone.utc)
+  )
+  packages=wr.recoverable_return_continuations(
+   reg,[(r,consumed,[],wr.task_runtime(r["task_id"]))],{r["task_id"]:self.live_result(r)},
+   datetime(2026,9,23,1,1,tzinfo=timezone.utc)
+  )
+  self.assertEqual(packages,[])
+
+ def test_recovery_with_mismatched_result_fails_closed(self):
+  reg=registry(True,("supervisor","auditor"))
+  r=self.delegated("AUD-BAD","supervisor","auditor")
+  completed,_=self.complete(reg,r)
+  bad=self.live_result(r,carrier_id="other-carrier")
+  with self.assertRaises(cp.ControlPlaneError):
+   wr.recoverable_return_continuations(
+    reg,[(r,completed,[],wr.task_runtime(r["task_id"]))],{r["task_id"]:bad},
+    datetime(2026,9,23,1,1,tzinfo=timezone.utc)
+   )
+
+ def test_explicit_handoff_has_no_return_continuation(self):
+  reg=registry(True,("manager","specialist"))
+  r=request("H","specialist"); r["issuer_agent_id"]="manager"; r["authority_basis"]={"kind":"handoff","reference":"H1"}
+  r["responsibility"]={
+   "mode":"explicit_handoff",
+   "commitment_owner_agent_id":"specialist",
+   "return_to_agent_id":None
+  }
+  s=state(r,"completed"); s["continuation"]=None
+  self.assertIsNone(wr.build_live_return_package(
+   reg,r,s,self.live_result(r),now=datetime(2026,9,23,0,30,tzinfo=timezone.utc)
+  ))
+
+ def test_nested_delegations_unwind_one_caller_at_a_time(self):
+  reg=registry(True,("supervisor","manager","auditor"))
+  manager_task=self.delegated("M","supervisor","manager",workflow="WF-NEST")
+  audit_task=self.delegated("A","manager","auditor",parent="M",workflow="WF-NEST")
+  audit_completed,audit_pkg=self.complete(reg,audit_task)
+  self.assertEqual(audit_pkg["agent_id"],"manager")
+  self.assertEqual(audit_pkg["parent_task_id"],"M")
+  audit_consumed=wr.acknowledge_return_continuation(
+   audit_completed,audit_task,self.live_result(audit_task),continuation_id=audit_pkg["continuation_id"],
+   caller_agent_id="manager",now=datetime(2026,9,23,0,31,tzinfo=timezone.utc)
+  )
+  self.assertEqual(audit_consumed["continuation"]["status"],"consumed")
+  manager_completed,manager_pkg=self.complete(reg,manager_task)
+  self.assertEqual(manager_pkg["agent_id"],"supervisor")
+
+
 class TaskCarrierTests(unittest.TestCase):
  def live_state(self,task_id="A",lease_until="2026-09-23T00:30:00Z"):
   r=request(task_id); s=state(r)

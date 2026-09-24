@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-AUDIT-LIVE-RETURN-LRC001-RETEST-001",
+  "issuer_agent_id": "ecosystem-supervisor",
+  "target_agent_id": "project-manager-auditor",
+  "objective": "Perform a focused independent read-only retest of LRC-001 only. Verify durable pending caller continuation, crash recovery after terminal child persistence without child re-execution, durable/idempotent continuation acknowledgement, no redelivery after consumption, nested one-level unwind, no continuation for explicit handoff, and preservation of caller continuation when PTC-002 partial live completion repair terminalizes a bounded delegation. Preserve prior EW/PTC closures unless directly contradicted. Publish a canonical focused retest report.",
+  "authority_basis": {
+    "kind": "owner-directive",
+    "reference": "Owner approved automatic return-to-caller remediation and required independent verification before production merge."
+  },
+  "scope": [
+    "read-only retest of lvlaksim1/agent-control-plane@c9a101d38cabe00163ffa23a016466e94ed3b622",
+    "read-only Core evidence from lvlaksim1/context-capsule core snapshot 3a0573751dc309148b5d2fd48b8df48f05eaa779 with binding e88cbb52e1ea1dd239442dfa31daf3376206021c",
+    "verify Context Capsule hosted CI run 35937735593 SUCCESS",
+    "read-only reconciliation with AUD-2026-09-24-LIVE-RETURN-CHAIN-002",
+    "Auditor own-home writes for engagement state and canonical report",
+    "execute immediately in the current live Owner-facing runtime"
+  ],
+  "constraints": [
+    "Do not modify audited ACP, Context Capsule, Supervisor, or gateway evidence.",
+    "Do not remediate findings inside the retest.",
+    "Do not reopen EW-001..EW-003 or PTC-001..PTC-003 absent direct contradictory evidence.",
+    "Do not activate Agent Catalog, Agent Factory, or item 20."
+  ],
+  "target": {
+    "repository": "lvlaksim1/agent-control-plane",
+    "ref": "c9a101d38cabe00163ffa23a016466e94ed3b622"
+  },
+  "priority": "high",
+  "dependencies": [],
+  "workflow_id": "WF-LIVE-RETURN-LRC001-RETEST-001",
+  "parent_task_id": "TASK-AUDIT-LIVE-RETURN-CHAIN-002",
+  "relation": "focused-retest",
+  "responsibility": {
+    "mode": "bounded_delegation",
+    "commitment_owner_agent_id": "ecosystem-supervisor",
+    "return_to_agent_id": "ecosystem-supervisor"
+  },
+  "retry_policy": {
+    "max_attempts": 2,
+    "backoff_minutes": [
+      0,
+      15
+    ],
+    "quarantine_on_exhaustion": true
+  },
+  "completion_contract": {
+    "required_evidence": [
+      {
+        "kind": "audit",
+        "minimum": 1
+      }
+    ]
+  },
+  "created_at": "2026-09-24T00:10:00Z"
+}
