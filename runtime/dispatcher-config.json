@@ -1,5 +1,5 @@
 {
-  "schema_version": 9,
+  "schema_version": 10,
   "lease_minutes": 45,
   "runtime_loss_quarantine_after": 3,
   "one_target_agent_per_dispatch": true,
@@ -8,7 +8,7 @@
   "scheduler_topology": "runtime/dispatcher-pool.json",
   "wake_state": "runtime/dispatcher-health.json#wake",
   "automatic_execution_activation": "registry-per-agent-explicit",
-  "scheduler_model": "event-wake-broker-relay-v11-durable-live-return",
+  "scheduler_model": "event-wake-broker-relay-v12-durable-return-through-partial-completion",
   "execution_worker": {
     "slot_id": "execution-worker",
     "automation_id": "6aac8b1d8888819180cc4af0c009669e",
@@ -67,7 +67,7 @@
       "trigger": "expired live carrier + queued/unclaimed state before scheduler claim",
       "result_check": "inspect result.json and authoritative Git commit time",
       "valid_result": "execution_mode=live, exact carrier_id/request digest/request blob/evidence, result commit not later than carrier lease expiry",
-      "action": "CAS-repair state=completed with claim=null and carrier=null; do not execute target",
+      "action": "CAS-repair state=completed with claim=null and carrier=null; for bounded_delegation also project pending caller continuation from the original live carrier; do not execute target",
       "absent_or_invalid_result": "normal expiry fallback remains eligible"
     }
   },
