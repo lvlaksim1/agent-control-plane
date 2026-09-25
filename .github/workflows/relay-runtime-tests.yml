@@ -1,0 +1,33 @@
+name: Relay Runtime Tests
+
+on:
+  push:
+    paths:
+      - "tools/result_relay.py"
+      - "tests/test_result_relay.py"
+      - "runtime/result-relay-contract.json"
+      - "runtime/scheduled-runtime-slots.json"
+      - "runtime/dispatcher-config.json"
+      - "docs/BOUNDED_RUNTIME_RESULT_RELAY.md"
+      - ".github/workflows/relay-runtime-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  relay-v3:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Unit tests
+        run: python -m unittest tests.test_result_relay -v
+      - name: Validate JSON contracts
+        run: |
+          python -m json.tool runtime/result-relay-contract.json >/dev/null
+          python -m json.tool runtime/scheduled-runtime-slots.json >/dev/null
+          python -m json.tool runtime/dispatcher-config.json >/dev/null
