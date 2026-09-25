@@ -151,6 +151,15 @@ def validate_ticket(ticket: dict[str, Any]) -> None:
         raise RelayError("invalid transport ticket status")
 
 
+def validate_publication_time(ticket: dict[str, Any], transport_updated_at: str) -> None:
+    """Require the platform metadata mutation to have occurred within the ticket deadline."""
+    validate_ticket(ticket)
+    updated = _validate_timestamp(transport_updated_at, "transport_updated_at")
+    deadline = _validate_timestamp(ticket["relay_deadline_at"], "relay_deadline_at")
+    if updated > deadline:
+        raise RelayError("relay publication occurred after relay_deadline_at")
+
+
 def validate_envelope_against_ticket(
     envelope: dict[str, Any],
     ticket: dict[str, Any],
@@ -236,8 +245,14 @@ def validate_raw_relay(raw: str, *, ticket: dict[str, Any]) -> dict[str, Any]:
     return envelope
 
 
-def acceptance_candidate(raw: str, *, ticket: dict[str, Any]) -> dict[str, Any]:
+def acceptance_candidate(
+    raw: str,
+    *,
+    ticket: dict[str, Any],
+    transport_updated_at: str,
+) -> dict[str, Any]:
     envelope = validate_raw_relay(raw, ticket=ticket)
+    validate_publication_time(ticket, transport_updated_at)
     return {
         "schema_version": 2,
         "task_id": envelope["task_id"],
@@ -256,6 +271,7 @@ def acceptance_candidate(raw: str, *, ticket: dict[str, Any]) -> dict[str, Any]:
         "payload_kind": envelope["payload_kind"],
         "raw_relay_sha256": sha256_utf8(raw),
         "payload_sha256": envelope["payload_sha256"],
+        "transport_updated_at": transport_updated_at,
     }
 
 
@@ -263,9 +279,14 @@ def plan_acceptance(
     raw: str,
     *,
     ticket: dict[str, Any],
+    transport_updated_at: str,
     existing_receipt: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    candidate = acceptance_candidate(raw, ticket=ticket)
+    candidate = acceptance_candidate(
+        raw,
+        ticket=ticket,
+        transport_updated_at=transport_updated_at,
+    )
     if existing_receipt is None:
         return {"decision": "accept-new", "receipt": candidate}
     if not isinstance(existing_receipt, dict):
