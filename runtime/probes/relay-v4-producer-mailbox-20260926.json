@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "probe_id": "RELAY-V4-PRODUCER-MAILBOX-20260926",
-  "observed_at_msk": "2026-09-26T01:23:00+03:00",
+  "observed_at_msk": "2026-09-26T01:27:00+03:00",
   "purpose": "Transport-only evidence that a Scheduled Runtime producer can publish a bounded result into a distinct disabled Scheduled Task used as a passive mailbox.",
   "production_ready": false,
   "producer_task_id": "6ab6eab5564c81919fee6286a3225e22",
@@ -31,20 +31,31 @@
       "mailbox_title": "ACP_MAILBOX_READY|2|700e1f611ec2",
       "payload_sha256": "sha256:700e1f611ec2338a8134d79d0f6c0e0989d6e64617d2e63b840cc89eabac8203",
       "raw_relay_sha256": "sha256:e2174d4fe355558f4aa923820a9ab5838251391f473897f173373d0774c63530"
+    },
+    {
+      "mailbox_generation": 3,
+      "logical_attempt": 1,
+      "delivery_try": 1,
+      "outcome": "relay-published",
+      "producer_last_run_time_utc": "2026-09-25T22:26:41.081678Z",
+      "mailbox_updated_at_utc": "2026-09-25T22:26:36.838073Z",
+      "mailbox_title": "ACP_MAILBOX_READY|3|2d2791d7c9ee",
+      "payload_sha256": "sha256:2d2791d7c9eeba216a200be212981af4a71f793c0db4d1c4e9ac6c191f8c0c9d",
+      "raw_relay_sha256": "sha256:7f7eddc503d7c170778798b6ba4256287207381f80db3aa04e244a60eb764bf0"
     }
   ],
   "observations": [
-    "Generation 1 and generation 2 both published successfully using the same physical producer task and the same physical mailbox task.",
+    "Generations 1, 2, and 3 all published successfully using the same physical producer task and the same physical mailbox task.",
     "The producer did not mutate itself; its one-shot execution lifecycle remained separate from mailbox mutation.",
     "The mailbox remained disabled and did not execute; its last_run_time stayed historical while updated_at/title/prompt changed.",
     "This is materially more repeatable than self-update of the currently executing Scheduled Task."
   ],
   "limitations": [
-    "Two successful generations are not yet sufficient for production readiness.",
+    "Three successful ordinary generations establish repeatability for the distinct-mailbox path, but recovery behavior and production request binding remain to be proven.",
     "These first transport-only generations did not bind a real ACP request digest/blob.",
     "Automations update exposes no compare-and-swap precondition on mailbox content.",
     "Generation tags allow stale-data detection but do not by themselves prevent an old still-running producer from overwriting a newer mailbox value."
   ],
   "required_reclamation_invariant": "Never recycle or advance a mailbox generation while any producer invocation authorized for the current generation may still be running. A mailbox is reclaimable only after the producer is known terminal, the mailbox relay has been durably accepted or the generation explicitly abandoned, and the trusted actuator records ACK/reclaim.",
-  "next_test": "Generation 3 repeatability, then generation 4 deliberate missing publication followed by same-generation delivery retry."
+  "next_test": "Generation 4 deliberate missing publication followed by same-generation delivery retry with unchanged logical_attempt, mailbox_generation, admission_nonce, relay_id and relay_nonce."
 }
