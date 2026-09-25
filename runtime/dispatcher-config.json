@@ -1,5 +1,5 @@
 {
-  "schema_version": 13,
+  "schema_version": 14,
   "lease_minutes": 45,
   "runtime_loss_quarantine_after": 3,
   "one_target_agent_per_dispatch": true,
@@ -12,7 +12,7 @@
   "scheduler_topology": "runtime/dispatcher-pool.json",
   "wake_state": "runtime/dispatcher-health.json#wake",
   "automatic_execution_activation": "registry-per-agent-explicit",
-  "scheduler_model": "fixed-agent-runtime-identity-with-suspended-scheduled-write-actuator",
+  "scheduler_model": "fixed-agent-runtime-identity-with-bounded-scheduled-runtime-relay-v3",
   "execution_worker": {
     "slot_id": "execution-worker",
     "automation_id": "6aac8b1d8888819180cc4af0c009669e",
@@ -112,10 +112,25 @@
     "recurring_worker_enabled": false,
     "fail_closed": true,
     "prohibited_workaround": "Do not weaken durable outbox, gateway fencing, task CAS, or runtime identity rules to compensate for an unavailable write actuator.",
-    "allowed_separate_runtime_use": "read-only Agent reasoning with bounded self-task result relay; no direct external writes",
-    "relay_application_rule": "Validate exact bounded relay bindings, persist the raw Agent-authored envelope unchanged, then acquire a short gateway fence only for mechanical persistence. The actuator must not reinterpret Agent judgment.",
-    "resume_gate": "Do not restore recurring autonomous Broker/Worker mutation service until the bounded relay lifecycle and a write actuator are each proven end-to-end without weakening fencing/identity invariants."
+    "allowed_separate_runtime_use": "read-only Agent reasoning in fixed Scheduled Runtime slots with bounded relay v3; no direct external writes",
+    "relay_application_rule": "Bind every delivery to a durable transport ticket. Validate exact logical_attempt/delivery_try/slot/generation/nonces/request/author/hash; transport loss retries delivery without advancing semantic task attempt. Persist exact raw Agent-authored relay before short mechanical persistence.",
+    "resume_gate": "Do not restore recurring autonomous Broker/Worker mutation service until relay v3 fixed-slot lifecycle, lossy-egress retry behavior, stale-generation rejection, mechanical actuator completion, and slot reuse/quiescence are proven end-to-end."
   },
   "result_relay_contract": "runtime/result-relay-contract.json",
-  "result_relay_protocol": "docs/BOUNDED_RUNTIME_RESULT_RELAY.md"
+  "result_relay_protocol": "docs/BOUNDED_RUNTIME_RESULT_RELAY.md",
+  "scheduled_runtime_transport": {
+    "protocol": "docs/BOUNDED_RUNTIME_RESULT_RELAY.md",
+    "contract": "runtime/result-relay-contract.json",
+    "slot_pool": "runtime/scheduled-runtime-slots.json",
+    "logical_attempt_separate_from_delivery_try": true,
+    "transport_loss_advances_task_attempt": false,
+    "max_delivery_tries_before_transport_hold": 3,
+    "publication_grace_minutes": 3,
+    "relay_deadline_minutes": 10,
+    "slot_quiescence_minutes_after_deadline": 15,
+    "last_run_time_is_terminal_evidence": false,
+    "normal_child_publication": "one final self automations.update carrying ACP_RUNTIME_RELAY_V3",
+    "admission_marker": "optional diagnostic only",
+    "direct_scheduled_runtime_external_writes": false
+  }
 }
