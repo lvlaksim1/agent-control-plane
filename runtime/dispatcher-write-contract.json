@@ -1,5 +1,5 @@
 {
-  "schema_version": 5,
+  "schema_version": 6,
   "claim": {
     "required_fields": [
       "execution_id",
@@ -86,14 +86,16 @@
   "live_carrier": {
     "canonical_location": "tasks/<task_id>/state.json#carrier",
     "acquisition": [
+      "reject live-carrier acquisition for Agent-issued work whose target_agent_id differs from issuer_agent_id; cross-Agent work requires runtime:separate-target and a fresh target runtime",
       "require state=queued and claim=null",
       "CAS the same state.json object used by scheduler claims to install carrier",
       "re-read state after CAS",
-      "before every consequential live write re-read state and authoritative gateway and validate the same fresh carrier_id",
+      "before every consequential same-Agent live write re-read state and authoritative gateway and validate the same fresh carrier_id",
       "if gateway owns the same task as reserved/active, do not perform direct-live target work until reconciled"
     ],
     "completion": [
-      "write result.json with execution_mode=live and exact carrier_id while carrier fence is fresh",
+      "new inter-Agent work must never complete through the live-carrier path",
+      "for eligible same-Agent live work, write result.json with execution_mode=live and exact carrier_id while carrier fence is fresh",
       "verify completion_contract evidence",
       "CAS state=completed with claim=null and carrier=null before carrier expiry",
       "re-read terminal state; expired carrier cannot be used to complete"
@@ -103,34 +105,22 @@
       "before scheduler claim of an expired live-carried queued task, explicitly inspect whether result.json exists",
       "when present, use authoritative Git commit chronology for the current result blob; do not trust result.completed_at for ownership timing",
       "if result.json exists but authoritative commit chronology for its current blob cannot be established, fail closed and do not execute the target",
-      "if result is a valid live success bound to the exact immutable request/blob and exact carrier_id, all completion evidence/gates are satisfied, and the result commit is not later than carrier lease expiry, CAS-repair state=completed with claim=null and carrier=null; when the request is bounded_delegation, the same repaired state must include continuation.status=pending bound to the original live carrier so caller return remains recoverable",
+      "if result is a valid pre-migration/historical live success bound to the exact immutable request/blob and exact carrier_id, all completion evidence/gates are satisfied, and the result commit is not later than carrier lease expiry, CAS-repair state=completed with claim=null and carrier=null; for historical bounded_delegation preserve/project continuation.status=pending from the original carrier so caller recovery remains possible",
       "re-read repaired terminal state and do not execute the target",
       "if result is absent, invalid, mismatched, or committed after lease expiry, ordinary expiry fallback remains eligible"
     ]
   },
-  "live_return": {
-    "terminal_projection": [
-      "bounded live completion writes a valid live result while the child carrier is fresh",
-      "the same terminal task-state CAS sets status=completed, claim=null, carrier=null and continuation.status=pending",
-      "continuation binds exact request digest/blob, result carrier, immediate caller, parent/workflow provenance and inherited live lease expiry",
-      "re-read terminal state before caller delivery"
-    ],
-    "live_delivery": [
-      "while live_lease_until is fresh, build the exact return_to_caller package from durable terminal state",
-      "reinstate the declared caller and execute its ENTRYPOINT",
-      "caller re-reads exact child state/result",
-      "CAS-acknowledge the exact continuation as consumed before consequential caller work"
-    ],
-    "autonomous_recovery": [
-      "Broker/Worker treats completed task + pending continuation as durable recovery work after live_lease_until",
-      "verify exact durable live result and continuation binding",
-      "reinstantiate caller without re-executing completed child target",
-      "ack continuation consumed before caller consequential work"
+  "legacy_return_recovery": {
+    "status": "historical-compatibility-only",
+    "creation": "new work must not create live return continuations; only already-durable historical continuations or repair of a historical pre-migration live success are admissible",
+    "delivery": [
+      "never consume a historical continuation by switching persistent agent_id inside the current runtime",
+      "fresh historical continuation lease delays recovery until expiry and grants no same-runtime authority",
+      "after expiry, a fresh Worker runtime may bind to the recorded caller, verify exact child state/result, acknowledge the continuation before consequential caller work, and never re-execute the child"
     ],
     "idempotence": [
       "consumed continuation is excluded from recovery",
-      "same-caller repeated acknowledgement is idempotent",
-      "a fresh live return lease prevents scheduler recovery before expiry"
+      "same-caller repeated acknowledgement is idempotent"
     ]
   }
 }
