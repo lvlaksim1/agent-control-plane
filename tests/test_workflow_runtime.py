@@ -306,20 +306,12 @@ class WorkflowRuntimeTests(unittest.TestCase):
   with self.assertRaises(cp.ControlPlaneError):
    wr.record_handoff_acceptance(reg,s,r,gateway,agent_id="specialist",source=source,authoritative_reader=reader,now=NOW)
 
- def test_live_handoff_acceptance_requires_exact_fresh_carrier_and_verified_source(self):
-  reg=registry(True,("manager","specialist"))
+ def test_cross_agent_handoff_cannot_use_live_carrier(self):
   r=harden_agent_task(request("HANDOFF-LIVE","specialist"),"manager","specialist",mode="explicit_handoff")
-  s=state(r)
-  s=wr.set_live_task_carrier(s,r,carrier_id="live-handoff",set_by="manager",reason="handoff",now=NOW,lease_minutes=45)
-  gateway={"state":"idle","generation":10,"execution_id":None,"task_id":None,"agent_id":None,"slot_id":None}
-  self.assertFalse(wr.live_carrier_fence_valid(s,r,gateway,carrier_id="live-handoff",now=NOW,registry=reg))
-  source,reader=self._acceptance_source(reg,r)
-  s=wr.record_handoff_acceptance(
-   reg,s,r,gateway,agent_id="specialist",source=source,authoritative_reader=reader,now=NOW,carrier_id="live-handoff"
-  )
-  self.assertTrue(wr.live_carrier_fence_valid(s,r,gateway,carrier_id="live-handoff",now=NOW,registry=reg))
-  stale=copy.deepcopy(s); stale["carrier"]["lease_until"]="2026-09-22T23:00:00Z"
-  self.assertFalse(wr.live_carrier_fence_valid(stale,r,gateway,carrier_id="live-handoff",now=NOW,registry=reg))
+  with self.assertRaises(cp.ControlPlaneError):
+   wr.set_live_task_carrier(
+    state(r),r,carrier_id="live-handoff",set_by="manager",reason="handoff",now=NOW,lease_minutes=45
+   )
 
  def test_bounded_delegation_does_not_use_handoff_acceptance_receipt(self):
   reg=registry(True,("manager","auditor"))
