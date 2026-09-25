@@ -1,14 +1,14 @@
 {
-  "schema_version": 5,
-  "purpose": "event-driven autonomous scheduler with fixed Agent runtime identity and per-task same-agent live-carrier isolation",
+  "schema_version": 6,
+  "purpose": "fixed Agent runtime identity control plane; recurring Scheduled Chat mutation transport suspended pending write-actuator proof",
   "max_concurrent_target_executions": 1,
   "authoritative_lease": "lvlaksim1/agent-control-plane-gateway@main:runtime/lease.json",
   "execution_worker": {
     "slot_id": "execution-worker",
     "automation_id": "6aac8b1d8888819180cc4af0c009669e",
     "source_automation": "ACP Dispatcher :00",
-    "mode": "reusable-hourly-retargetable",
-    "normally_dormant": false,
+    "mode": "disabled-pending-write-actuator-proof",
+    "normally_dormant": true,
     "self_rearm_allowed": false,
     "arm_owner": "wake-broker-watchdog",
     "baseline_cadence": "hourly",
@@ -19,7 +19,7 @@
     "slot_id": "wake-broker-watchdog",
     "automation_id": "6aac8b23fff4819180fb12916df071a8",
     "source_automation": "ACP Dispatcher :12",
-    "mode": "event-broker-plus-hourly-watchdog",
+    "mode": "disabled-pending-write-actuator-proof",
     "interactive_behavior": "remain available for unrelated autonomous and cross-Agent work; never execute target-agent work"
   },
   "retired_polling_slots": [
@@ -54,6 +54,17 @@
     "execution worker never schedules itself and preserves its hourly RRULE",
     "only wake-broker-watchdog arms the execution worker",
     "watchdog never performs target-agent work",
-    "direct Owner-agent conversations do not use scheduler transport"
-  ]
+    "direct Owner-agent conversations do not use scheduler transport",
+    "an unavailable Scheduled Chat GitHub write capability is a hard execution blocker, not permission to skip durable wake/gateway/task writes",
+    "recurring Broker/Worker stay disabled until the same execution environment proves required GitHub mutations end-to-end",
+    "a separate Agent runtime may author a deterministic relay package read-only; any later mechanical application must preserve explicit Agent provenance and authority"
+  ],
+  "operational_status": {
+    "state": "suspended",
+    "broker": "disabled",
+    "worker": "disabled",
+    "cause": "Scheduled Chat GitHub mutations are not a proven available capability in the observed execution environment",
+    "safety_boundary": "fail closed before any target execution when required durable precommit/fence mutation cannot be committed",
+    "separate_runtime_fallback": "read-only reasoning and deterministic relay-package authoring only; no identity switching"
+  }
 }
