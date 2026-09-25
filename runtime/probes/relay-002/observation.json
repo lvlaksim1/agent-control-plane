@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "probe_id": "RUNTIME-RELAY-PROBE-002",
+  "observation_kind": "mechanical_transport_observation",
+  "observed_by": "ecosystem-supervisor",
+  "observed_at_msk": "25.09.2026T19:06:00+03:00",
+  "transport_task_id": "6ab699efe9448191a0d85cf040ceeea3",
+  "request_blob_sha": "e8b6d61f913791900ef7e8c1dbfb5df6e0effdc1",
+  "scheduled_runtime_last_run_time": "2026-09-25T16:00:08.372592Z",
+  "scheduled_task_terminal_enabled": false,
+  "relay_received": false,
+  "prompt_mutated_by_runtime": false,
+  "canonical_result_exists": false,
+  "classification": "transport-no-output",
+  "interpretation": "The separate Scheduled Runtime reached a terminal run record but did not return the requested self-prompt relay. This is not a semantic PASS/FAIL for the requested payload and must not be treated as target-agent evidence.",
+  "next_discriminator": "Compare against minimal self-relay probe 003 and isolated GitHub write-actuator probe 001."
+}
