@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "probe_id": "RUNTIME-WRITE-ACTUATOR-PROBE-001",
+  "purpose": "Test whether a separate neutral Scheduled Runtime can perform exactly one pre-authorized mechanical GitHub create-file write in an isolated probe path.",
+  "transport_task_id": "6ab69bb14efc8191920fef1fe836547b",
+  "nonce": "WACT-001-25SEP26-A91C",
+  "source_id": "execution-worker",
+  "persistent_agent_reinstantiation_allowed": false,
+  "gateway_lease_required": false,
+  "allowed_reads": [
+    "lvlaksim1/agent-control-plane@main:runtime/probes/write-actuator-001/request.json"
+  ],
+  "allowed_write": {
+    "repository": "lvlaksim1/agent-control-plane",
+    "branch": "main",
+    "path": "runtime/probes/write-actuator-001/result.json",
+    "operation": "create_file",
+    "commit_message": "Record isolated Scheduled Runtime write actuator probe 001",
+    "content": "{\n  \"schema_version\": 1,\n  \"probe_id\": \"RUNTIME-WRITE-ACTUATOR-PROBE-001\",\n  \"status\": \"pass\",\n  \"nonce\": \"WACT-001-25SEP26-A91C\",\n  \"author_id\": \"execution-worker\",\n  \"author_kind\": \"infrastructure\",\n  \"transport_task_id\": \"6ab69bb14efc8191920fef1fe836547b\",\n  \"payload\": \"MECHANICAL-WRITE-OK\",\n  \"gateway_lease_held\": false,\n  \"persistent_agent_reinstantiated\": false\n}\n"
+  },
+  "self_report": {
+    "allowed": true,
+    "target_task_id": "6ab69bb14efc8191920fef1fe836547b",
+    "success_prompt": "WACT1|PASS|NONCE=WACT-001-25SEP26-A91C|WRITE=CREATED|AUTHOR=execution-worker",
+    "blocked_prompt": "WACT1|BLOCKED|NONCE=WACT-001-25SEP26-A91C|WRITE=NOT_CREATED|AUTHOR=execution-worker"
+  },
+  "created_at_msk": "25.09.2026T19:05:00+03:00"
+}
