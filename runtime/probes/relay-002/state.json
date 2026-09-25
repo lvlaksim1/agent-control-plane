@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "probe_id": "RUNTIME-RELAY-PROBE-002",
+  "task_id": "RUNTIME-RELAY-PROBE-002",
+  "status": "awaiting-relay",
+  "request_digest": "sha256:1db287aa397f3ea2caa5da167a8050ae4e9a71a33763184aa28cc44467ee1acb",
+  "request_blob_sha": "e8b6d61f913791900ef7e8c1dbfb5df6e0effdc1",
+  "relay_id": "RELAY-002-B7F4C91D",
+  "relay_nonce": "RLY2-25SEP26-B7F4C91D",
+  "transport_task_id": "6ab699efe9448191a0d85cf040ceeea3",
+  "expected_author_id": "execution-worker",
+  "relay_received": false,
+  "raw_relay_persisted": false,
+  "mechanical_claim": null,
+  "result_persisted": false
+}
