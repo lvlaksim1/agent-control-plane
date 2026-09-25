@@ -7,6 +7,7 @@
   "dispatcher_protocol": "docs/SCHEDULED_CHAT_DISPATCHER.md",
   "dispatcher_protocol_delta": "docs/SCHEDULED_CHAT_DISPATCHER_V5_DELTA.md",
   "runtime_identity_contract": "docs/RUNTIME_IDENTITY_AND_USER_MESSAGES.md",
+  "runtime_identity_validator": "tools/runtime_identity_policy.py",
   "user_message_policy": "runtime/user-message-policy.json",
   "scheduler_topology": "runtime/dispatcher-pool.json",
   "wake_state": "runtime/dispatcher-health.json#wake",
@@ -50,20 +51,25 @@
   "task_carrier_policy": {
     "metadata_location": "tasks/<task_id>/state.json#carrier",
     "same_agent_live_work": "allowed with existing carrier fence",
-    "agent_to_agent_v3_live_execution": "forbidden",
+    "inter_agent_live_execution": "forbidden",
     "inter_agent_execution": "separate Execution Worker runtime",
     "unrelated_autonomous_tasks": "remain scheduler-eligible",
     "explicit_hold": "per-task hold blocks only that task without expiry"
   },
-  "responsibility_v3": {
-    "new_nonterminal_agent_to_agent_required": true,
-    "interactive_default": "manual_pull",
-    "autonomous_continuation": "automatic_new_runtime",
-    "explicit_handoff": "none"
+  "responsibility": {
+    "semantics_version": 2,
+    "authority_contract_unchanged": true
+  },
+  "execution_policy": {
+    "encoding": "immutable task constraints",
+    "separate_target": "runtime:separate-target",
+    "manual_pull": "continuation:manual-pull",
+    "automatic_new_runtime": "continuation:automatic-new-runtime",
+    "caller_continuation": "runtime:caller-continuation"
   },
   "caller_continuation_policy": {
     "manual_pull": "no automatic caller continuation; caller reads durable result on later Owner interaction",
-    "automatic_new_runtime": "pending continuation is delivered by Broker/Worker in a new caller runtime",
+    "automatic_new_runtime": "caller precreates a dependent continuation task which executes in a new Worker runtime after child success",
     "same_runtime_return": "forbidden for new work"
   }
 }
