@@ -230,7 +230,7 @@ Acceptance requires exact match to the current transport ticket:
 - size limit;
 - exact UTF-8 payload SHA-256.
 
-Never infer freshness from title or `last_run_time`.
+Never infer freshness from title or `last_run_time`. For canonical acceptance, the controller also records the platform Scheduled Task metadata `updated_at` value and requires it to be no later than the ticket's `relay_deadline_at`. The child-authored `authored_at_msk` is provenance, not transport-freshness authority.
 
 Historical `ACP_RUNTIME_RELAY_V1|` and `ACP_RUNTIME_RELAY_V2|` may be parsed for diagnostics but cannot be accepted as a new v3 canonical result.
 
@@ -247,7 +247,7 @@ tasks/<task_id>/relay/<logical_attempt>/<transport_generation>/payload.txt
 
 `raw.txt` is the exact Scheduled Task prompt relay.
 `payload.txt` is the exact UTF-8 `payload_text`.
-`acceptance.json` is mechanical provenance derived from validated fields.
+`acceptance.json` is mechanical provenance derived from validated fields and includes the platform `transport_updated_at` timestamp used to prove publication was inside the ticket deadline.
 
 One logical attempt may have multiple transport ticket directories, but only one canonical accepted relay. Exact duplicate observation is an idempotent no-op. Any conflicting second relay after acceptance fails closed.
 
