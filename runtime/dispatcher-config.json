@@ -1,5 +1,5 @@
 {
-  "schema_version": 12,
+  "schema_version": 13,
   "lease_minutes": 45,
   "runtime_loss_quarantine_after": 3,
   "one_target_agent_per_dispatch": true,
@@ -12,7 +12,7 @@
   "scheduler_topology": "runtime/dispatcher-pool.json",
   "wake_state": "runtime/dispatcher-health.json#wake",
   "automatic_execution_activation": "registry-per-agent-explicit",
-  "scheduler_model": "event-wake-broker-relay-v14-fixed-agent-runtime-identity-enforced",
+  "scheduler_model": "fixed-agent-runtime-identity-with-suspended-scheduled-write-actuator",
   "execution_worker": {
     "slot_id": "execution-worker",
     "automation_id": "6aac8b1d8888819180cc4af0c009669e",
@@ -24,7 +24,8 @@
     "preserve_rrule": true,
     "no_pending_wake_behavior": "fast-noop-unless-gateway-partial",
     "interactive_mode_behavior": "deprecated-global-mode; enforce per-task carrier before claim/phase-B",
-    "persistent_agent_id_switch_allowed": false
+    "persistent_agent_id_switch_allowed": false,
+    "operational_state": "disabled-pending-write-actuator-proof"
   },
   "watchdog": {
     "slot_id": "wake-broker-watchdog",
@@ -40,7 +41,8 @@
     "arm_commit_order": "persist-before-scheduler",
     "post_scheduler_ack_required": false,
     "delivery_semantics": "outbox-precommit-to-recurring-worker",
-    "interactive_mode_behavior": "deprecated-global-mode; Broker remains available for unrelated autonomous tasks"
+    "interactive_mode_behavior": "deprecated-global-mode; Broker remains available for unrelated autonomous tasks",
+    "operational_state": "disabled-pending-write-actuator-proof"
   },
   "authoritative_lease": {
     "repository": "lvlaksim1/agent-control-plane-gateway",
@@ -102,5 +104,16 @@
     "recovery": "after historical live_lease_until expires, a fresh Worker invocation may recover the pending continuation by binding that runtime to the recorded caller; no runtime may switch persistent agent_id",
     "idempotence": "consumed continuation is never redelivered",
     "explicit_handoff": "produces no caller continuation"
+  },
+  "operational_status": {
+    "state": "suspended",
+    "reason": "Observed Scheduled Chat runs can read GitHub but consequential GitHub mutations may be blocked by the platform safety layer before submission. Required wake/gateway/task writes therefore cannot be assumed available.",
+    "recurring_broker_enabled": false,
+    "recurring_worker_enabled": false,
+    "fail_closed": true,
+    "prohibited_workaround": "Do not weaken durable outbox, gateway fencing, task CAS, or runtime identity rules to compensate for an unavailable write actuator.",
+    "allowed_separate_runtime_use": "read-only Agent reasoning / deterministic relay-package authoring when a distinct Agent runtime is required",
+    "relay_application_rule": "A separately reinstantiated Agent may author an exact deterministic relay package; an authorized live actuator may apply it mechanically with explicit provenance and without substituting its own design judgment.",
+    "resume_gate": "Do not restore autonomous mutation service until a GitHub write actuator is demonstrated end-to-end under the same execution environment and all existing fencing/identity invariants still hold."
   }
 }
