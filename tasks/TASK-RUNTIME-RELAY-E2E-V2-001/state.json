@@ -3,18 +3,27 @@
   "task_id": "TASK-RUNTIME-RELAY-E2E-V2-001",
   "status": "queued",
   "request_digest": "sha256:e697b788889b81bca40d02f2fb3b0ab9cc5f19b64cba895db4d68252bc90be00",
-  "attempt": 1,
-  "runtime_loss_count": 0,
+  "attempt": 2,
+  "runtime_loss_count": 1,
   "claim": null,
   "latest_checkpoint": null,
   "request_blob_sha": "d4ca718bbfb3c1b3ce56e7deca2ebe5162255f58",
   "relay": {
     "schema_version": 2,
-    "relay_id": "RELAY-RUNTIME-E2E-V2-001-A1",
-    "transport_task_id": "6ab6e345695c81919930fbeafc1b5b4d",
-    "relay_nonce": "RLYV2-001-A1-4F7C91",
+    "relay_id": "RELAY-RUNTIME-E2E-V2-001-A2",
+    "transport_task_id": "6ab6e36528548191a6e20a30eee138b6",
+    "relay_nonce": "RLYV2-001-A2-B82D6E",
     "expected_author_id": "execution-worker",
     "allowed_payload_kind": "relay-v2-e2e-proof",
     "status": "awaiting-publication"
-  }
+  },
+  "superseded_attempts": [
+    {
+      "attempt": 1,
+      "transport_task_id": "6ab6e345695c81919930fbeafc1b5b4d",
+      "relay_id": "RELAY-RUNTIME-E2E-V2-001-A1",
+      "relay_nonce": "RLYV2-001-A1-4F7C91",
+      "reason": "deliberate-runtime-loss-retry-proof"
+    }
+  ]
 }
