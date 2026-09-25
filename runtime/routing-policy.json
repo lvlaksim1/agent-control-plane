@@ -15,16 +15,23 @@
     "target_must_be_registered": true,
     "explicit_authority_basis_required_for_agent_issuer": true,
     "target_agent_must_validate_mandate_before_action": true,
+    "responsibility_semantics_version": 2,
     "runtime_boundary": "different persistent target agent_id requires a separate runtime",
-    "new_nonterminal_responsibility_semantics_version": 3,
-    "interactive_delegation_continuation_policy": "manual_pull",
-    "autonomous_delegation_continuation_policy": "automatic_new_runtime"
+    "execution_policy_encoding": "immutable task constraints",
+    "required_runtime_constraint": "runtime:separate-target",
+    "interactive_delegation_constraint": "continuation:manual-pull",
+    "autonomous_delegation_constraint": "continuation:automatic-new-runtime"
   },
   "interactive_runtime": {
     "identity_affinity": "fixed-for-runtime-lifetime",
     "agent_id_switch_allowed": false,
     "delegated_target_execution_in_same_runtime": false,
     "manual_result_retrieval": "caller reads exact durable GitHub result on later Owner interaction"
+  },
+  "autonomous_return": {
+    "mechanism": "precreated dependent caller-continuation task",
+    "child_result_reexecution_allowed": false,
+    "caller_runtime": "new Execution Worker runtime"
   },
   "scheduler_role": "separate-runtime-agent-execution-and-autonomous-continuation-not-human-message-transport"
 }
