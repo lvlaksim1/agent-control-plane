@@ -7,6 +7,20 @@ The scheduler uses two infrastructure automations:
 
 Direct Owner↔agent conversations remain first-class and do not use scheduler transport. A wake changes only *when* work is reconsidered. It never grants authority.
 
+## Operational suspension gate
+
+The protocol below defines the required semantics when a valid write actuator is available. It does **not** authorize assuming that Scheduled Chat can mutate GitHub.
+
+Observed 25 September 2026 Scheduled Chat runs could read the control-plane state while required consequential GitHub writes were blocked by the platform safety layer before submission. Therefore the recurring Broker and Worker are operationally suspended.
+
+Before either recurring role is re-enabled, prove in the same execution environment that it can perform the exact required durable mutations while preserving all existing fences. Until then:
+
+- inability to persist the wake outbox precommit, gateway transition, task CAS, checkpoint, result, or completion state is a hard fail-closed blocker;
+- never skip, weaken, reorder, or simulate a required durable mutation;
+- do not interpret scheduler delivery, a visible message, Registry membership, or read access as write authority/capability;
+- a separate Agent runtime may be used read-only when identity separation is required, but it must stop short of target/control-plane mutation and may return only an exact deterministic relay package for a separately authorized mechanical actuator.
+
+
 ## Per-task live-carrier gate
 
 There is no global interactive shutdown.
