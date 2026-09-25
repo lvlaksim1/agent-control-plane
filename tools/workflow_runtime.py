@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from typing import Any
 
 import control_plane as base
+import runtime_identity_policy as runtime_policy
 
 GATE_TYPES={"owner_decision","authority","external_dependency","audit","release_approval"}
 GATE_STATUSES={"waiting","satisfied","cancelled"}
@@ -111,8 +112,16 @@ def task_carrier_blocks_scheduler(state:dict[str,Any],request:dict[str,Any],*,no
     return carrier["fallback_after_expiry"] is not True
 
 def set_live_task_carrier(state:dict[str,Any],request:dict[str,Any],*,carrier_id:str,set_by:str,reason:str,now:datetime,lease_minutes:int=45)->dict[str,Any]:
-    """Prepare one CAS update on state.json. Claim-vs-carrier races resolve on the same Git object."""
+    """Prepare one CAS update for same-agent live work.
+
+    Cross-agent work cannot acquire a live carrier because a different persistent
+    target must execute in a separate runtime.
+    """
     validate_state_carrier(state,request)
+    issuer=request.get("issuer_agent_id")
+    target=request.get("target_agent_id")
+    if issuer!="owner" and target!=issuer:
+        raise base.ControlPlaneError("inter-agent task cannot acquire live carrier; runtime:separate-target is mandatory")
     if state["status"]!="queued" or state.get("claim") is not None:
         raise base.ControlPlaneError("live carrier can be acquired only from unclaimed queued state")
     if not carrier_id or not set_by or not reason or not isinstance(lease_minutes,int) or lease_minutes<1:
@@ -215,7 +224,12 @@ def normalize(bundle:tuple):
     raise base.ControlPlaneError("bundle must be request,state[,gates[,runtime]]")
 
 def validate_task_routing(registry:dict[str,Any],request:dict[str,Any],state:dict[str,Any]|None=None)->None:
-    """Validate routing identity and new-execution responsibility semantics; target mandate validation remains runtime responsibility."""
+    """Validate routing plus fixed-runtime execution policy.
+
+    Responsibility semantics v2 remain mandatory for actual inter-agent work.
+    Same-agent scheduled work is admitted only as dependency-bound
+    runtime:caller-continuation in a fresh Worker runtime.
+    """
     agents=base.registry_index(registry)
     issuer=request.get("issuer_agent_id")
     if issuer=="owner":
@@ -227,13 +241,15 @@ def validate_task_routing(registry:dict[str,Any],request:dict[str,Any],state:dic
     authority=request.get("authority_basis")
     if not isinstance(authority,dict) or not authority.get("kind") or not authority.get("reference"):
         raise base.ControlPlaneError("agent-issued task requires explicit authority basis")
-    if state is not None and state.get("status") not in {"completed","cancelled","superseded"}:
-        responsibility=request.get("responsibility")
-        if not isinstance(responsibility,dict) or responsibility.get("semantics_version")!=2:
-            raise base.ControlPlaneError("nonterminal agent-to-agent task requires responsibility semantics_version 2")
+    terminal=state is not None and state.get("status") in {"completed","cancelled","superseded"}
+    if not terminal:
+        try:
+            runtime_policy.validate_inter_agent_request(request)
+        except runtime_policy.RuntimeIdentityPolicyError as exc:
+            raise base.ControlPlaneError(str(exc)) from exc
     # A Project Manager, Service Agent, or Supervisor may route work directly when authorized.
-    # The hardened immutable task carries responsibility/authority provenance, but the
-    # reinstantiated target Agent still independently validates mandate and target rules.
+    # The immutable task carries responsibility/authority provenance and execution policy,
+    # while the reinstantiated target Agent still validates mandate and target rules.
     return
 
 def handoff_acceptance_required(request:dict[str,Any])->bool:
@@ -252,6 +268,10 @@ def _preacceptance_live_carrier_fence_valid(state:dict[str,Any],request:dict[str
     try:
         validate_state_carrier(state,request)
     except Exception:
+        return False
+    issuer=request.get("issuer_agent_id")
+    target=request.get("target_agent_id")
+    if issuer!="owner" and target!=issuer:
         return False
     if state.get("status")!="queued" or state.get("claim") is not None:
         return False
@@ -562,39 +582,28 @@ def _return_package(agent:dict[str,Any],request:dict[str,Any],continuation:dict[
       "workflow_id":continuation["workflow_id"],
       "commitment_owner_agent_id":continuation["commitment_owner_agent_id"],
       "required_sequence":[
+        "execute this recovery only in a fresh Worker runtime bound to the declared caller agent_id",
         "re-read the terminal child state and exact durable result from GitHub",
         "reinstantiate the declared caller and execute its ENTRYPOINT recovery/reinstantiation protocol",
         "acknowledge this exact continuation durably before consequential caller work",
         "restore the caller active commitment from durable state",
-        "continue the caller workflow without requiring a user reinvocation"
+        "never switch this runtime to a different persistent agent_id"
       ]
     }
 
 def build_live_return_package(registry:dict[str,Any],request:dict[str,Any],state:dict[str,Any],result:dict[str,Any],*,now:datetime)->dict[str,Any]|None:
-    """Build immediate same-runtime return only from durable terminal state."""
+    """Legacy API retained only to fail closed on same-runtime caller return."""
     base.validate_request(request)
     validate_state_carrier(state,request)
     validate_result(result,request)
     responsibility=request.get("responsibility")
-    if responsibility is None:
-        if request.get("issuer_agent_id")!="owner" and result.get("execution_mode")=="live":
-            raise base.ControlPlaneError("live agent-to-agent task requires explicit responsibility contract")
-        return None
-    if responsibility["mode"]=="explicit_handoff":
+    if isinstance(responsibility,dict) and responsibility.get("mode")=="explicit_handoff":
         if state.get("continuation") is not None:
             raise base.ControlPlaneError("explicit handoff cannot carry return continuation")
         return None
-    if state.get("status")!="completed" or state.get("claim") is not None or state.get("carrier") is not None:
-        raise base.ControlPlaneError("live return requires terminal completed task with no claim/carrier")
-    continuation=state.get("continuation")
-    validate_task_continuation(continuation,request)
-    if continuation is None or continuation["status"]!="pending":
-        raise base.ControlPlaneError("bounded delegation requires pending caller continuation")
-    if now>=base.parse_time(continuation["live_lease_until"]):
-        raise base.ControlPlaneError("live caller continuation lease expired; autonomous recovery required")
-    _validate_continuation_result(continuation,request,result)
-    agent=_return_agent(registry,continuation["return_to_agent_id"])
-    return _return_package(agent,request,continuation,delivery_mode="live")
+    if isinstance(responsibility,dict) and responsibility.get("mode")=="bounded_delegation":
+        raise base.ControlPlaneError("same-runtime caller return is forbidden; recover caller only in a fresh Worker runtime")
+    return None
 
 def build_recovery_return_package(registry:dict[str,Any],request:dict[str,Any],state:dict[str,Any],result:dict[str,Any],*,now:datetime)->dict[str,Any]|None:
     """Recover caller return after live runtime loss without re-executing child work."""
@@ -747,21 +756,13 @@ def _pending_return_continuation(request:dict[str,Any],state:dict[str,Any],carri
     }
 
 def complete_live_delegation(registry:dict[str,Any],state:dict[str,Any],request:dict[str,Any],gates:list[dict[str,Any]],result:dict[str,Any],gateway_lease:dict[str,Any],*,carrier_id:str,now:datetime)->tuple[dict[str,Any],dict[str,Any]]:
-    """Terminalize bounded live child and durably project pending caller continuation."""
-    responsibility=request.get("responsibility")
-    if not isinstance(responsibility,dict) or responsibility.get("mode")!="bounded_delegation":
-        raise base.ControlPlaneError("complete_live_delegation requires bounded_delegation")
-    validate_state_carrier(state,request)
-    carrier=copy.deepcopy(state.get("carrier"))
-    if not isinstance(carrier,dict) or carrier.get("mode")!="live" or carrier.get("carrier_id")!=carrier_id:
-        raise base.ControlPlaneError("bounded delegation requires exact live carrier")
-    completed=_complete_live_task_base(state,request,gates,result,gateway_lease,carrier_id=carrier_id,now=now)
-    completed["continuation"]=_pending_return_continuation(request,state,carrier)
-    validate_state_carrier(completed,request)
-    package=build_live_return_package(registry,request,completed,result,now=now)
-    if package is None:
-        raise base.ControlPlaneError("bounded live delegation completed without caller continuation")
-    return completed,package
+    """Reject new direct-live cross-agent completion.
+
+    Historical durable live results remain repairable through
+    repair_expired_live_completion(), after which caller recovery occurs only in
+    a fresh Worker runtime.
+    """
+    raise base.ControlPlaneError("direct-live inter-agent delegation is forbidden; target must execute in a separate runtime")
 
 def repair_completed_projection(lease:dict[str,Any],state:dict[str,Any],request:dict[str,Any],gates:list[dict[str,Any]],result:dict[str,Any])->dict[str,Any]:
     base.validate_lease(lease); base.validate_state(state,request)
