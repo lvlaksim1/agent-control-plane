@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-RUNTIME-RELAY-E2E-V3-001",
+  "failure_count": 0,
+  "retry_not_before": null,
+  "last_failure": null,
+  "transport": {
+    "protocol_version": 3,
+    "delivery_try": 1,
+    "transport_generation": 1,
+    "slot_id": "runtime-slot-1",
+    "status": "allocating"
+  }
+}
