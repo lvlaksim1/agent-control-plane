@@ -1,30 +1,80 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "protocol": "docs/BOUNDED_RUNTIME_RESULT_RELAY.md",
-  "prefix": "ACP_RUNTIME_RELAY_V2|",
+  "prefix": "ACP_RUNTIME_RELAY_V3|",
   "transport": "scheduled-task-self-prompt",
   "transport_authority": "non-canonical",
   "max_prompt_chars": 12000,
   "legacy_read_support": {
-    "prefix": "ACP_RUNTIME_RELAY_V1|",
+    "prefixes": [
+      "ACP_RUNTIME_RELAY_V2|",
+      "ACP_RUNTIME_RELAY_V1|"
+    ],
     "accept_as_new_canonical_result": false,
     "purpose": "historical diagnostics only"
   },
-  "reasoning_phase": {
-    "gateway_lease_required": false,
-    "external_writes_allowed": false,
-    "only_write": "automations.update on the same Scheduled Task prompt",
-    "runtime_loss_effect": "no gateway lease is stranded; retry increments attempt and uses a new transport_task_id + relay_id + relay_nonce"
+  "execution_model": {
+    "scheduled_runtime": "best-effort read-only compute",
+    "launch_semantics": "at-least-once-observable; scheduler run does not imply relay publication",
+    "result_egress": "lossy until exact relay observed",
+    "last_run_time_is_terminal_evidence": false,
+    "gateway_lease_required_during_reasoning": false,
+    "external_writes_allowed_during_reasoning": false,
+    "normal_publication": "one final automations.update on the same Scheduled Task",
+    "optional_admission_marker": "best-effort diagnostic only"
+  },
+  "retry_domains": {
+    "logical_attempt": "semantic task execution epoch",
+    "delivery_try": "transport retry inside the same logical_attempt",
+    "transport_generation": "unique Scheduled Runtime slot allocation generation",
+    "transport_loss_advances_logical_attempt": false,
+    "transport_loss_action": "increment delivery_try and allocate a fresh transport_generation",
+    "transport_retry_reexecutes_same_read_only_semantics": true
+  },
+  "timing_defaults": {
+    "publication_grace_minutes": 3,
+    "relay_deadline_minutes": 10,
+    "slot_quiescence_minutes_after_deadline": 15
+  },
+  "transport_ticket": {
+    "schema_version": 1,
+    "canonical_path": "tasks/<task_id>/relay/<logical_attempt>/<transport_generation>/ticket.json",
+    "required_fields": [
+      "schema_version",
+      "task_id",
+      "logical_attempt",
+      "request_digest",
+      "request_blob_sha",
+      "transport_task_id",
+      "transport_slot_id",
+      "transport_generation",
+      "delivery_try",
+      "admission_nonce",
+      "relay_id",
+      "relay_nonce",
+      "expected_author_id",
+      "allowed_payload_kind",
+      "scheduled_not_before",
+      "relay_deadline_at",
+      "slot_quiescence_until",
+      "status"
+    ],
+    "write_before_scheduler_arm": true,
+    "allocation_serialization": "CAS update of runtime/scheduled-runtime-slots.json"
   },
   "envelope": {
     "required_fields": [
       "schema_version",
       "relay_id",
       "transport_task_id",
+      "transport_slot_id",
+      "transport_generation",
       "task_id",
-      "attempt",
+      "logical_attempt",
+      "delivery_try",
       "request_digest",
       "request_blob_sha",
+      "admission_nonce",
       "relay_nonce",
       "author_id",
       "author_kind",
@@ -37,11 +87,10 @@
       "authored_at_msk"
     ],
     "fixed_values": {
-      "schema_version": 2,
+      "schema_version": 3,
       "terminal": true,
       "payload_encoding": "utf-8"
     },
-    "attempt": "positive integer bound to the currently authorized runtime attempt",
     "author_kind": [
       "persistent-agent",
       "infrastructure"
@@ -53,52 +102,44 @@
     "payload_integrity": "payload_sha256 must equal SHA-256 of exact UTF-8 bytes of payload_text"
   },
   "mechanical_acceptance": {
-    "exact_match": [
+    "exact_ticket_match": [
       "relay_id",
       "transport_task_id",
+      "transport_slot_id",
+      "transport_generation",
       "task_id",
-      "attempt",
+      "logical_attempt",
+      "delivery_try",
       "request_digest",
       "request_blob_sha",
+      "admission_nonce",
       "relay_nonce",
-      "author_id"
+      "author_id",
+      "payload_kind"
     ],
-    "current_attempt_required": true,
+    "current_generation_required": true,
     "terminal_required": true,
     "persist_raw_relay_before_semantic_writes": true,
     "reinterpret_payload": false,
-    "stale_attempt_behavior": "fail-closed",
+    "stale_generation_behavior": "fail-closed",
+    "stale_delivery_behavior": "fail-closed",
     "stale_nonce_behavior": "fail-closed",
     "payload_hash_mismatch_behavior": "fail-closed",
-    "blocked_status_behavior": "persist blocker only; never fabricate success",
+    "blocked_status_behavior": "persist semantic blocker only; never fabricate success",
     "idempotence": {
-      "receipt_scope": "one canonical acceptance receipt per task_id",
+      "receipt_scope": "one canonical accepted relay per task logical_attempt",
       "same_raw_relay_and_same_receipt": "already-accepted/no-op",
-      "different_relay_after_receipt": "conflict/fail-closed",
-      "later_attempt_after_receipt": "conflict/fail-closed because a canonical result already exists"
-    },
-    "acceptance_receipt_fields": [
-      "schema_version",
-      "task_id",
-      "attempt",
-      "relay_id",
-      "relay_nonce",
-      "transport_task_id",
-      "request_digest",
-      "request_blob_sha",
-      "author_id",
-      "status",
-      "payload_kind",
-      "raw_relay_sha256",
-      "payload_sha256"
-    ]
+      "different_relay_after_receipt": "conflict/fail-closed"
+    }
   },
   "canonical_persistence": {
-    "raw_relay": "tasks/<task_id>/relay/raw.txt",
-    "acceptance_receipt": "tasks/<task_id>/relay/acceptance.json",
-    "authored_payload": "tasks/<task_id>/relay/payload.txt",
-    "write_rule": "persist exact raw relay and exact UTF-8 payload bytes; receipt is mechanical metadata derived from validated relay",
-    "duplicate_rule": "an exact duplicate never rewrites or duplicates canonical payload/result state"
+    "generation_root": "tasks/<task_id>/relay/<logical_attempt>/<transport_generation>/",
+    "ticket": "ticket.json",
+    "raw_relay": "raw.txt",
+    "acceptance_receipt": "acceptance.json",
+    "authored_payload": "payload.txt",
+    "write_rule": "persist exact raw relay and exact UTF-8 payload bytes; receipt is mechanical metadata",
+    "duplicate_rule": "exact duplicate never rewrites or duplicates canonical payload/result state"
   },
   "persistence_phase": {
     "gateway_acquired_after_relay_received": true,
@@ -114,10 +155,23 @@
       "gateway release accepted"
     ]
   },
+  "failure_taxonomy": [
+    "launch-failed",
+    "launch-miss",
+    "admission-miss",
+    "egress-miss",
+    "relay-invalid",
+    "relay-stale",
+    "semantic-blocked",
+    "persistence-conflict",
+    "actuator-failure"
+  ],
   "identity": {
     "max_persistent_agents_per_relay_runtime": 1,
     "same_runtime_identity_switch_allowed": false,
+    "transport_retry_reinstantiates_same_target_agent_in_new_runtime": true,
     "infrastructure_probe_reinstantiates_agent": false
   },
-  "operational_state": "v2-contract-ready-pending-end-to-end-runtime-loss-proof"
+  "slot_pool": "runtime/scheduled-runtime-slots.json",
+  "operational_state": "v3-implemented-pending-end-to-end-stabilization-proof"
 }
