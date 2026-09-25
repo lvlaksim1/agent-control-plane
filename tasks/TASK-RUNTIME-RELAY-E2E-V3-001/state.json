@@ -12,10 +12,15 @@
     "logical_attempt": 1,
     "accepted_transport_generation": null,
     "accepted_receipt": null,
-    "transport_status": "armed",
+    "transport_status": "scheduled",
     "current_transport_generation": 1,
     "current_delivery_try": 1,
-    "current_ticket": "tasks/TASK-RUNTIME-RELAY-E2E-V3-001/relay/1/1/ticket.json"
+    "current_ticket": "tasks/TASK-RUNTIME-RELAY-E2E-V3-001/relay/1/1/ticket.json",
+    "scheduler_ack": {
+      "scheduled_for": "2026-09-25T21:51:02Z",
+      "transport_generation": 1,
+      "delivery_try": 1
+    }
   },
   "blocker": null
 }
