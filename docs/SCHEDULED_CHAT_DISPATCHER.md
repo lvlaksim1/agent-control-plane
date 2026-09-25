@@ -20,21 +20,25 @@ For every candidate task, read and validate its canonical `state.json#carrier` b
 
 A live carrier on TASK-A must never block unrelated TASK-B. The Broker and Worker remain operational while the Owner is online and may continue other autonomous work.
 
-For the task currently carried by the live Owner runtime, continuation is immediate and scheduler-free:
+A live carrier is valid only for work whose persistent Agent identity is already bound to that live runtime. It is an execution-ownership fence for **same-agent** work; it is never permission to change persistent identity.
+
+For cross-Agent work the interactive path is:
 
 ```
-live Owner runtime
+live caller runtime (agent_id A)
       ↓
-persist immutable request / engagement in GitHub
+persist immutable child task in GitHub
       ↓
-CAS-persist TASK-specific live carrier in state.json
-before exposing/continuing scheduler-visible queued work
+child carries runtime:separate-target
       ↓
-reinstantiate the next persistent agent directly
-in the same live runtime
+Wake Broker → Execution Worker
+      ↓
+fresh target runtime (agent_id B)
 ```
 
-If that live runtime disappears, its task becomes eligible after the carrier lease expires. This is a continuity fallback, not a scheduled delay in the interactive path.
+The caller runtime remains Agent A. It does not attach a live carrier to an Agent-B child and it never reinstantiates Agent B itself. For `continuation:manual-pull`, verified child output stays durable in GitHub until the Owner later invokes the caller and asks it to inspect the result. For `continuation:automatic-new-runtime`, the caller precreates a dependency-bound `runtime:caller-continuation` task that will later reinstate Agent A in a **new** Worker runtime.
+
+A live same-agent runtime may still use a task carrier for its own scheduler-visible task/chain. If that runtime disappears, carrier expiry permits the declared autonomous fallback for that same task. This is a continuity fence, not a cross-Agent transport mechanism.
 
 ### Direct-live acquisition and execution fence
 
@@ -66,50 +70,44 @@ If the runtime is lost before any valid success result becomes durable, carrier 
 
 If a valid live `result.json` is already durable but the runtime is lost before step 4 terminalizes `state.json`, that partial completion MUST be reconciled before scheduler claim. Use the authoritative Git commit time for the current result blob, not `result.completed_at`. When the live result is bound to the exact immutable request/blob and exact carrier_id, satisfies all completion evidence/gates, and its Git commit is not later than the carrier lease expiry, CAS-repair `state.json` to `completed`, clear claim/carrier, re-read, and do not execute the target. If the result is absent, invalid, mismatched, or authoritatively committed after expiry, normal fallback remains eligible. If a result is present but the authoritative Git commit time for its current blob cannot be established, fail closed: do not claim or execute the task until chronology is resolved.
 
-## Live delegation return contract
+## Cross-Agent runtime and continuation contract
 
-A live agent-to-agent call MUST state its responsibility semantics in immutable `request.json#responsibility`.
+Every new Agent-issued task is validated against the fixed-runtime execution policy before it can become READY or begin target execution.
 
 ### Bounded delegation
 
-`mode=bounded_delegation` means:
+`responsibility.semantics_version=2` remains authoritative for responsibility and authority. Bounded delegation means the caller keeps the commitment and project responsibility, while transport grants no additional authority.
 
-- the caller keeps the active commitment and project responsibility;
-- authority is not transferred by transport;
-- `commitment_owner_agent_id` MUST equal the caller / `issuer_agent_id`;
-- `return_to_agent_id` MUST equal that same caller;
-- verified child completion MUST atomically project `state=completed`, `claim=null`, `carrier=null`, and `continuation.status=pending` in the same task-state CAS;
-- the continuation binds the exact immutable request/blob, result carrier, immediate caller, parent/workflow provenance, and the inherited live lease expiry.
+For a different target `agent_id`, the immutable request MUST carry:
 
-While `continuation.live_lease_until` is fresh, the current live runtime consumes the pending continuation immediately: re-read terminal child state/result, reinstate the declared caller from Registry, execute its ENTRYPOINT, and CAS-acknowledge the exact continuation as `consumed` **before consequential caller work**. Only after that acknowledgement does the caller resume its durable active commitment. No user reinvocation is required.
+- `runtime:separate-target`;
+- exactly one of `continuation:manual-pull` or `continuation:automatic-new-runtime`.
 
-If the live runtime disappears after child terminalization but before acknowledgement, the pending continuation remains durable. After `live_lease_until`, Broker/Worker recovery treats that continuation as work: it reinstantiates the caller from the exact completed child/result, never re-executes the child target, and requires the same acknowledgement-before-effects rule.
+The child is always reinstantiated in a fresh target Worker runtime.
 
-A consumed continuation is not redelivered. Repeating acknowledgement by the same declared caller is idempotent. A live runtime whose continuation lease has expired must not continue caller work; autonomous recovery owns delivery after expiry.
+For `continuation:manual-pull`, child completion is terminal for automatic routing: write and verify the durable result, complete the child, and stop. No caller continuation is generated. The Owner may later invoke the caller, which reads the exact durable child result.
 
-Nested bounded delegations unwind one caller at a time through each immutable child request. `parent_task_id` and `workflow_id` preserve call-chain structure; no central Supervisor hop is required.
+For `continuation:automatic-new-runtime`, the caller precreates a distinct dependency-bound task that targets itself and carries `runtime:caller-continuation`. That task is same-Agent continuation work, not another delegation, and therefore carries no responsibility-transfer contract. It remains blocked until the exact child reaches verified terminal completion. A later Worker invocation reinstantiates the caller in a new runtime.
 
 ### Explicit handoff
 
-New executable handoffs use responsibility semantics version 2 and are a **proposed responsibility transfer**, not an already-completed transfer:
+New executable handoffs still use responsibility semantics version 2 and remain a proposed responsibility transfer requiring independently verified target-home acceptance. A handoff to a different persistent Agent also carries `runtime:separate-target`, but it carries no caller-continuation constraint. Terminal completion creates no implicit return.
 
-- `caller_agent_id` and current `commitment_owner_agent_id` MUST equal the issuer;
-- `proposed_commitment_owner_agent_id` MUST equal the target;
-- `transfer_requires_target_acceptance=true`;
-- `return_to_agent_id` MUST be null;
-- the target independently validates mandate, root/immediate authority provenance, scope, constraints and allowed/forbidden effects;
-- the target MUST persist acceptance in its own authoritative Agent state before responsibility is treated as transferred;
-- target acceptance is persisted as a structured `context-capsule-responsibility-acceptance` record under `.context/responsibility/acceptances/` in the target Agent home repository;
-- before ACP projects acceptance, the runtime MUST independently re-read that record from the target Registry `home_repository@authority_ref` at an immutable commit and verify the exact blob/content against the immutable task request;
-- ACP stores only a source-bound evidence projection `state.json#responsibility_acceptance` containing the exact request digest, target agent, immutable target-home commit/path/blob, and the exact live/autonomous execution fence that performed the projection;
-- that ACP receipt is evidence of acceptance, not a new source of authority;
-- autonomous task activation and direct-live consequential writes fail closed until the receipt exists and validates;
-- responsibility transfer never expands effective authority;
-- terminal completion creates no caller continuation and does not imply automatic return to the issuer.
+### Historical continuation compatibility
 
-Historical completed v1 handoff artifacts remain readable for provenance but are not admissible as new nonterminal agent-to-agent execution.
+Older already-durable `state.json#continuation` objects remain readable for crash-safe compatibility. They may arise from historical live bounded delegation or from repair of a historical pre-migration live result.
 
-A live agent-to-agent task without hardened responsibility semantics is invalid for new execution. Direct Owner invocation without an inter-agent task remains first-class and does not require synthetic return metadata.
+They are **recovery-only**:
+
+- no current runtime may consume them by switching persistent `agent_id`;
+- a fresh Worker invocation may recover an expired pending continuation by binding that runtime to the recorded caller;
+- the Worker verifies the exact child state/result, reinstantiates only that caller, acknowledges the continuation before consequential caller work, and never re-executes the completed child;
+- a fresh historical `live_lease_until` merely delays recovery until expiry; it does not authorize same-runtime delivery;
+- consumed continuations are never redelivered.
+
+Nested historical continuations unwind one immediate caller at a time through separate runtimes. Supervisor is not inserted as a mandatory routing hop.
+
+Direct Owner invocation remains first-class and does not require synthetic inter-Agent metadata.
 
 ## Why the relay exists
 
@@ -143,8 +141,8 @@ At every Execution Worker invocation use a **lease-first fast path**. A natural 
 2. validate wake state and capture the exact `armed_generation` that caused this invocation as `invocation_generation`; never treat a newer unarmed desired generation as served;
 3. if the gateway is `reserved` or `active`, fetch only the exact referenced task request/state/runtime/gates plus contract files needed to reconcile that execution;
 4. reconcile that exact execution before considering new work;
-5. when the gateway is idle, first inspect the captured wake key. If it has form `return:<task_id>:<continuation_id>`, fetch that completed task and exact result; deliver only the matching expired `continuation.status=pending`, reinstate its caller, require durable continuation acknowledgement before caller effects, then stop;
-6. before general READY scanning, detect any other completed tasks with expired pending caller continuations and service at most one return before claiming new child work;
+5. when the gateway is idle, first inspect the captured wake key. If it has form `return:<task_id>:<continuation_id>`, treat it only as historical recovery work: fetch that completed task and exact result; in this fresh Worker invocation bind the runtime to the recorded caller, acknowledge the exact continuation before caller effects, never switch this runtime to another persistent Agent, and never re-execute the child;
+6. before general READY scanning, detect any other completed tasks with expired historical pending caller continuations and service at most one recovery before claiming new child work;
 7. otherwise inspect `task-ready:<task_id>`, fetch that task's request/state/runtime/gates and validate its per-task carrier;
 8. before treating any **expired live-carried queued task** as scheduler-eligible, explicitly inspect whether `result.json` exists and obtain the authoritative Git commit time for its current blob. If it is an exact valid pre-expiry live success, CAS-repair the task to `completed` and do not claim it; if absent/invalid/mismatched/authoritatively post-expiry, normal fallback may proceed; if a result is present but commit chronology is unavailable, fail closed and do not execute;
 9. only after that reconciliation may the exact wake-addressed task be selected as READY; if none is available, scanning other queued tasks must apply the same expired-live result reconciliation rule and still exclude fresh live carriers and explicit holds;
@@ -252,7 +250,7 @@ Each Broker run uses a **wake-first fast path**:
 1. read `runtime/dispatcher-config.json`, `runtime/dispatcher-health.json`, scheduler topology and the authoritative gateway lease first;
 2. if `desired_generation > armed_generation`, immediately choose `desired_generation` for delivery without scanning unrelated tasks;
 3. if `armed_generation > served_generation` and that delivery is stale, immediately choose the same `armed_generation` for retry without scanning unrelated tasks;
-4. only when no unarmed/stale delivery exists, reconcile Registry and task/gate/runtime metadata to detect expired pending caller continuations, new scheduler-eligible READY work, due retry, partial reserved/active transitions or protocol-defined recovery; fresh live carriers and per-task holds exclude only their own tasks;
+4. only when no unarmed/stale delivery exists, reconcile Registry and task/gate/runtime metadata to detect expired historical pending caller continuations, dependency-ready caller-continuation tasks, new scheduler-eligible READY work, due retry, partial reserved/active transitions or protocol-defined recovery; fresh same-agent live carriers and per-task holds exclude only their own tasks;
 5. create a deterministic durable wake if such work exists but no sufficient wake is pending, then choose that new generation;
 6. a stale `armed_generation > served_generation` **forces a new Worker scheduling attempt even if the Worker automation still reports enabled or carries an old/past DTSTART**; scheduler metadata is not proof of delivery;
 7. **before any scheduler call**, CAS-persist the chosen generation as `armed_generation` with a fresh `last_armed_at`; this durable delivery intent makes an immediate/catch-up Worker invocation safe;
@@ -275,11 +273,11 @@ An event producer must never schedule the Execution Worker directly. This keeps 
 - reserved + claimed: Worker activates from the exact current claimed projection, records receipt, requests Phase-B wake, nudges Broker, then stops;
 - active + claimed without locally recorded receipt: Worker verifies canonical receipt against the exact historical claimed-state blob, records it, requests Phase-B wake if necessary, nudges Broker, then stops;
 - expired reserved/active lease: fence before requeue/quarantine, then request recovery wake if progress is possible;
-- expired live + queued/unclaimed + exact valid pre-expiry live result: CAS-repair to completed before scheduler claim; for bounded delegation the same repair MUST also durably project the pending caller continuation from the original live carrier, then recover that caller without re-executing the child;
-- expired live + queued/unclaimed + absent/invalid/mismatched/post-expiry result: ordinary fallback eligibility may proceed;
-- completed bounded-delegation task + pending continuation + fresh continuation lease: leave it to the live runtime;
-- completed bounded-delegation task + pending continuation + expired continuation lease: persist/request a deterministic `return:<task_id>:<continuation_id>` wake, reinstate the exact caller, acknowledge continuation before caller effects, and never re-execute the child;
-- completed task with consumed continuation: do not redeliver caller;
+- expired historical live + queued/unclaimed + exact valid pre-expiry live result: CAS-repair to completed before scheduler claim; for historical bounded delegation the same repair MAY preserve/project the pending caller continuation from the original live carrier, then recover that caller only in a fresh Worker runtime without re-executing the child;
+- expired same-agent live + queued/unclaimed + absent/invalid/mismatched/post-expiry result: ordinary fallback eligibility may proceed;
+- completed historical bounded-delegation task + pending continuation + fresh continuation lease: do not deliver it in the current runtime; wait for expiry;
+- completed historical bounded-delegation task + pending continuation + expired continuation lease: persist/request a deterministic `return:<task_id>:<continuation_id>` wake, then let a fresh Worker runtime reinstate the exact caller, acknowledge continuation before caller effects, and never re-execute the child;
+- completed task with consumed historical continuation: do not redeliver caller;
 - completed task with valid result and idle gateway: repair completion projection only; never execute twice.
 
 ## Authority and routing
