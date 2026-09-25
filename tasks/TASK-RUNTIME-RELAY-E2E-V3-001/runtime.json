@@ -9,9 +9,11 @@
     "delivery_try": 1,
     "transport_generation": 1,
     "slot_id": "runtime-slot-1",
-    "status": "armed",
+    "status": "scheduled",
     "ticket_blob_sha": "2f2e73f275a1400b01347bbfcd076719687cfcde",
-    "relay_deadline_at": "2026-09-25T22:00:00+00:00",
-    "slot_quiescence_until": "2026-09-25T22:15:00+00:00"
+    "relay_deadline_at": "2026-09-25T22:10:00+00:00",
+    "slot_quiescence_until": "2026-09-25T22:25:00+00:00",
+    "scheduled_for": "2026-09-25T21:51:02Z",
+    "scheduler_ack_at": "2026-09-25T21:49:02Z"
   }
 }
