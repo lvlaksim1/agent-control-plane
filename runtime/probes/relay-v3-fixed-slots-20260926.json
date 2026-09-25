@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "probe_id": "RELAY-V3-FIXED-SLOTS-20260926",
+  "observed_at_msk": "2026-09-26T01:16:00+03:00",
+  "purpose": "Empirical transport-only evidence for reusable Scheduled Runtime slots. This file does not promote relay v3 to production.",
+  "gateway": {
+    "held_during_reasoning_or_publication": false,
+    "expected_state": "idle",
+    "expected_generation": 56
+  },
+  "important_limitations": [
+    "Slot transport probes after the initial generation use all-zero request digest/blob placeholders and therefore do not prove production immutable-request binding.",
+    "Scheduled Task metadata is non-canonical transport evidence until mechanically accepted and persisted.",
+    "Direct Scheduled Runtime GitHub writes remain unsupported/unreliable and were not used.",
+    "Observed fixed-slot self-metadata publication is still non-deterministic."
+  ],
+  "slots": [
+    {
+      "slot_id": "runtime-slot-1",
+      "transport_task_id": "6ab6eaacc834819198f02949ad2b8ddc",
+      "observations": [
+        {
+          "transport_generation": 1,
+          "delivery_try": 1,
+          "outcome": "relay-published",
+          "title": "ACP_READY|1|db24c3a35158",
+          "payload_sha256": "sha256:db24c3a351588048314ce89d57bb346e063d51f2aeaa1bd37049929683848e6d",
+          "last_run_time_utc": "2026-09-25T21:49:46.208745Z"
+        },
+        {
+          "transport_generation": 2,
+          "delivery_try": 1,
+          "outcome": "relay-published",
+          "title": "ACP_READY|2|4bf06e44f234",
+          "payload_sha256": "sha256:4bf06e44f234cd08ca34e7a4d80fac6fdd11ede50d7f0ad3ba46d311f29d18ef",
+          "last_run_time_utc": "2026-09-25T22:08:36.670910Z",
+          "note": "Same physical Scheduled Task reused successfully for a later generation."
+        }
+      ]
+    },
+    {
+      "slot_id": "runtime-slot-2",
+      "transport_task_id": "6ab6eab5564c81919fee6286a3225e22",
+      "observations": [
+        {
+          "transport_generation": 1,
+          "delivery_try": 1,
+          "outcome": "relay-published",
+          "title": "ACP_READY|1|36d6108db3c5",
+          "payload_sha256": "sha256:36d6108db3c52e6c9d97df4908416ffe8dbfb7bf5274979d55c73858bbeab827",
+          "last_run_time_utc": "2026-09-25T22:09:18.066878Z",
+          "note": "Independent second physical slot published successfully."
+        },
+        {
+          "transport_generation": 2,
+          "delivery_try": 1,
+          "outcome": "no-relay-by-design",
+          "last_run_time_utc": "2026-09-25T22:12:08.325316Z",
+          "note": "Runtime deliberately evaluated a false check and was instructed to stop without metadata publication, simulating lost publication."
+        },
+        {
+          "transport_generation": 2,
+          "delivery_try": 2,
+          "outcome": "runtime-ran-no-relay",
+          "last_run_time_utc": "2026-09-25T22:15:43.788158Z",
+          "expected_title": "ACP_READY|2|244efbef7094",
+          "observed_title": "ACP Runtime Slot 2",
+          "note": "Same-generation redelivery ran but self-metadata stayed unchanged. Therefore fixed-slot self-update is not deterministic and relay v3 must not yet be promoted."
+        }
+      ]
+    }
+  ],
+  "current_conclusion": "Reusable slots remove task-creation churn and have multiple successful publications, but self-update of the executing Scheduled Task remains a non-deterministic transport operation. Next diagnostic should separate producer execution from mailbox mutation by having a worker slot update a distinct disabled mailbox task."
+}
