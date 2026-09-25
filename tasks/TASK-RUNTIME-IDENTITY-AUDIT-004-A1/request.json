@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-RUNTIME-IDENTITY-AUDIT-004-A1",
+  "issuer_agent_id": "ecosystem-supervisor",
+  "target_agent_id": "project-manager-auditor",
+  "objective": "Independently audit the pinned Agent Control Plane runtime-identity and continuation semantics only: one persistent agent_id per runtime lifetime; different persistent target requires a separate runtime; continuation:manual-pull creates no automatic caller return; autonomous continuation is only a dependency-bound caller-continuation task executed in a new caller runtime. Publish a bounded canonical stage report in Auditor home and stop without remediating targets.",
+  "authority_basis": {
+    "kind": "owner-directive",
+    "reference": "OWNER-2026-09-25-RUNTIME-IDENTITY-AFFINITY",
+    "grant": {
+      "allowed_effects": [
+        "read-targets",
+        "write-auditor-home",
+        "write-control-plane-result"
+      ],
+      "forbidden_effects": [
+        "modify-audited-implementation",
+        "release",
+        "change-agent-mandate"
+      ],
+      "scope": [
+        "lvlaksim1/agent-control-plane@652ad5e63c2a3033679c5fc0eacbd9e9baa737b4",
+        "runtime identity and continuation semantics only"
+      ],
+      "inherited_constraints": [
+        "runtime:separate-target",
+        "continuation:manual-pull",
+        "read-only toward audited implementation snapshots",
+        "do not use Work"
+      ],
+      "subdelegation": "bounded"
+    }
+  },
+  "scope": [
+    "lvlaksim1/agent-control-plane@652ad5e63c2a3033679c5fc0eacbd9e9baa737b4",
+    "runtime identity and continuation semantics only"
+  ],
+  "constraints": [
+    "runtime:separate-target",
+    "continuation:manual-pull",
+    "read-only toward audited implementation snapshots",
+    "do not use Work",
+    "protocol-defined ACP task state/result and gateway fencing are execution metadata, not audit-target remediation",
+    "preserve Auditor independence and methodology",
+    "do not weaken existing carrier, fencing, provenance, authority, responsibility, or recovery invariants",
+    "do not perform remediation",
+    "publish stage evidence in Auditor home at audits/runtime-identity-004/A1-agent-runtime-and-continuation.md",
+    "user-visible Auditor output must begin with DD.MM.YYYY · HH:MM MSK · project-manager-auditor"
+  ],
+  "target": {
+    "repository": "lvlaksim1/agent-control-plane",
+    "ref": "652ad5e63c2a3033679c5fc0eacbd9e9baa737b4"
+  },
+  "priority": "high",
+  "dependencies": [
+    "TASK-CC-RUNTIME-IDENTITY-ADOPTION-001"
+  ],
+  "workflow_id": "WF-RUNTIME-IDENTITY-AFFINITY-001",
+  "parent_task_id": null,
+  "relation": "independent-audit-stage-a1",
+  "retry_policy": {
+    "max_attempts": 2,
+    "backoff_minutes": [
+      0,
+      15
+    ],
+    "quarantine_on_exhaustion": true
+  },
+  "completion_contract": {
+    "required_evidence": [
+      {
+        "kind": "audit",
+        "minimum": 1
+      }
+    ]
+  },
+  "responsibility": {
+    "semantics_version": 2,
+    "mode": "bounded_delegation",
+    "caller_agent_id": "ecosystem-supervisor",
+    "commitment_owner_agent_id": "ecosystem-supervisor",
+    "proposed_commitment_owner_agent_id": null,
+    "return_to_agent_id": "ecosystem-supervisor",
+    "transfer_requires_target_acceptance": false,
+    "authority_chain": {
+      "root": {
+        "kind": "owner-directive",
+        "reference": "OWNER-2026-09-25-RUNTIME-IDENTITY-AFFINITY"
+      },
+      "immediate_grantor_agent_id": "ecosystem-supervisor",
+      "grant_reference": "GRANT-TASK-RUNTIME-IDENTITY-AUDIT-004-A1",
+      "delegation_depth": 1,
+      "parent_task_id": null,
+      "allowed_effects": [
+        "read-targets",
+        "write-auditor-home",
+        "write-control-plane-result"
+      ],
+      "forbidden_effects": [
+        "modify-audited-implementation",
+        "release",
+        "change-agent-mandate"
+      ],
+      "subdelegation": "forbidden"
+    }
+  },
+  "created_at": "2026-09-25T15:05:31Z"
+}
