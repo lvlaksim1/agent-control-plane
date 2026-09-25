@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-RUNTIME-RELAY-E2E-V3-001",
+  "status": "queued",
+  "request_digest": "sha256:ab24246e74cb1d3691731611e6c90fff41aa5fee6f502c66b908570a361ec4ba",
+  "attempt": 1,
+  "runtime_loss_count": 0,
+  "claim": null,
+  "latest_checkpoint": null,
+  "request_blob_sha": "89d38015048b7c2b1dc7cbbafd7f3630a3fe3bae",
+  "relay_v3": {
+    "logical_attempt": 1,
+    "accepted_transport_generation": null,
+    "accepted_receipt": null,
+    "transport_status": "allocating"
+  },
+  "blocker": null
+}
