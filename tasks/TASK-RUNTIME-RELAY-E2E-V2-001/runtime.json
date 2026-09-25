@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-RUNTIME-RELAY-E2E-V2-001",
+  "failure_count": 0,
+  "retry_not_before": null,
+  "last_failure": null,
+  "transport": "scheduled-task-self-prompt",
+  "relay_schema_version": 2
+}
