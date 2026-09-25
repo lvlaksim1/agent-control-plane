@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "model": "fixed-reusable-scheduled-runtime-slots",
+  "pool_generation": 0,
+  "allocation_rule": "CAS this file before arming a slot; ticket must be durable before scheduler arm",
+  "reuse_rule": "slot may be reused only after quiescent_until and after current ticket is terminal or transport-lost",
+  "metadata_cas_available": false,
+  "late_runtime_policy": "accept only exact current transport ticket; stale metadata never becomes canonical",
+  "slots": [
+    {
+      "slot_id": "runtime-slot-1",
+      "automation_id": "6ab6eaacc834819198f02949ad2b8ddc",
+      "state": "idle",
+      "last_transport_generation": 0,
+      "current_ticket": null,
+      "quiescent_until": null
+    },
+    {
+      "slot_id": "runtime-slot-2",
+      "automation_id": "6ab6eab5564c81919fee6286a3225e22",
+      "state": "idle",
+      "last_transport_generation": 0,
+      "current_ticket": null,
+      "quiescent_until": null
+    }
+  ],
+  "timing": {
+    "publication_grace_minutes": 3,
+    "relay_deadline_minutes": 10,
+    "slot_quiescence_minutes_after_deadline": 15
+  },
+  "delivery_retry": {
+    "max_tries_before_transport_hold": 3,
+    "advance_logical_attempt_on_transport_loss": false,
+    "preferred_retry_slot": "different idle slot"
+  },
+  "operational_state": "disabled-idle-pending-v3-e2e-proof"
+}
