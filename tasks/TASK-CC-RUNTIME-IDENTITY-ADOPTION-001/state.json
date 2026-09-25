@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "task_id": "TASK-CC-RUNTIME-IDENTITY-ADOPTION-001",
-  "status": "claimed",
+  "status": "active",
   "request_digest": "sha256:1c0cfa31e806ee9e332438a5204a86c4472a0517fafe6deae161fcd14f234d6c",
   "attempt": 1,
   "runtime_loss_count": 0,
