@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-CC-RUNTIME-IDENTITY-ADOPTION-001",
+  "issuer_agent_id": "ecosystem-supervisor",
+  "target_agent_id": "context-capsule-project-manager",
+  "objective": "Adopt the Owner-approved fixed persistent-Agent runtime identity model in Context Capsule v2 through the owning Project Manager. First reinstate context-capsule-project-manager from v2-manager-runtime and reconcile stale durable manager projections against live GitHub and canonical independent audit evidence. Then inspect the Service Agent / Project Manager Core contracts, protocols, ENTRYPOINT/templates, installer/generation model and tests for any wording or executable path that permits changing persistent agent_id inside one runtime. Implement the minimum systemic v2 development-branch changes so one runtime carries one persistent agent_id; a different persistent target requires a separate runtime; Owner-facing bounded delegation uses durable manual-pull; autonomous continuation uses a dependency-bound new caller runtime; and all user-visible persistent-Agent/infrastructure messages use DD.MM.YYYY · HH:MM MSK · <source_id> as a diagnostic header only. Preserve responsibility semantics v2, authority/provenance, target isolation, generation integrity, fencing and direct Owner-to-agent entry points. Run deterministic validation and applicable compatibility tests, update the Project Manager's own durable state coherently, and return exact immutable evidence.",
+  "authority_basis": {
+    "kind": "owner-directive",
+    "reference": "OWNER-2026-09-25-RUNTIME-IDENTITY-AFFINITY",
+    "grant": {
+      "allowed_effects": [
+        "read-context-capsule",
+        "read-agent-control-plane-policy",
+        "write-context-capsule-v2-manager-runtime",
+        "write-context-capsule-manager-state",
+        "run-context-capsule-tests"
+      ],
+      "forbidden_effects": [
+        "modify-context-capsule-main",
+        "publish-stable-v2",
+        "migrate-consumers",
+        "change-agent-mandate",
+        "weaken-authority-provenance-memory-audit-boundaries"
+      ],
+      "scope": [
+        "lvlaksim1/context-capsule@v2-manager-runtime",
+        "runtime identity adoption from lvlaksim1/agent-control-plane@56bc76cba69f05cd21ed5d06c6adb264ff05a70f",
+        "reconcile Context Capsule Project Manager durable state with canonical audit evidence"
+      ],
+      "inherited_constraints": [
+        "runtime:separate-target",
+        "continuation:manual-pull",
+        "development branch only",
+        "do not modify main",
+        "do not publish stable v2",
+        "do not migrate consumers",
+        "do not use Work"
+      ],
+      "subdelegation": "bounded"
+    }
+  },
+  "scope": [
+    "lvlaksim1/context-capsule@v2-manager-runtime",
+    "runtime identity adoption from lvlaksim1/agent-control-plane@56bc76cba69f05cd21ed5d06c6adb264ff05a70f",
+    "reconcile Context Capsule Project Manager durable state with canonical audit evidence"
+  ],
+  "constraints": [
+    "runtime:separate-target",
+    "continuation:manual-pull",
+    "development branch only",
+    "do not modify main",
+    "do not publish stable v2",
+    "do not migrate consumers",
+    "do not use Work",
+    "preserve responsibility semantics v2",
+    "preserve generation integrity and fail-closed recovery",
+    "preserve direct Owner-to-agent entry points",
+    "user-visible Project Manager output must begin with DD.MM.YYYY · HH:MM MSK · context-capsule-project-manager"
+  ],
+  "target": {
+    "repository": "lvlaksim1/context-capsule",
+    "ref": "v2-manager-runtime"
+  },
+  "priority": "high",
+  "dependencies": [],
+  "workflow_id": "WF-RUNTIME-IDENTITY-AFFINITY-001",
+  "parent_task_id": null,
+  "relation": "project-manager-adoption",
+  "retry_policy": {
+    "max_attempts": 2,
+    "backoff_minutes": [
+      0,
+      15
+    ],
+    "quarantine_on_exhaustion": true
+  },
+  "completion_contract": {
+    "required_evidence": [
+      {
+        "kind": "commit",
+        "minimum": 1
+      },
+      {
+        "kind": "test",
+        "minimum": 1
+      }
+    ]
+  },
+  "responsibility": {
+    "semantics_version": 2,
+    "mode": "bounded_delegation",
+    "caller_agent_id": "ecosystem-supervisor",
+    "commitment_owner_agent_id": "ecosystem-supervisor",
+    "proposed_commitment_owner_agent_id": null,
+    "return_to_agent_id": "ecosystem-supervisor",
+    "transfer_requires_target_acceptance": false,
+    "authority_chain": {
+      "root": {
+        "kind": "owner-directive",
+        "reference": "OWNER-2026-09-25-RUNTIME-IDENTITY-AFFINITY"
+      },
+      "immediate_grantor_agent_id": "ecosystem-supervisor",
+      "grant_reference": "GRANT-TASK-CC-RUNTIME-IDENTITY-ADOPTION-001",
+      "delegation_depth": 1,
+      "parent_task_id": null,
+      "allowed_effects": [
+        "read-context-capsule",
+        "read-agent-control-plane-policy",
+        "write-context-capsule-v2-manager-runtime",
+        "write-context-capsule-manager-state",
+        "run-context-capsule-tests"
+      ],
+      "forbidden_effects": [
+        "modify-context-capsule-main",
+        "publish-stable-v2",
+        "migrate-consumers",
+        "change-agent-mandate",
+        "weaken-authority-provenance-memory-audit-boundaries"
+      ],
+      "subdelegation": "bounded"
+    }
+  },
+  "created_at": "2026-09-25T10:40:12Z"
+}
