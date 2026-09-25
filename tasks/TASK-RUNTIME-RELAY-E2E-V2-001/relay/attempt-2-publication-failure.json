@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-RUNTIME-RELAY-E2E-V2-001",
+  "observation_kind": "stage-2-runtime-loss-retry-proof",
+  "observed_by": "ecosystem-supervisor",
+  "observed_at_msk": "2026-09-26T00:21:12+03:00",
+  "request_blob_sha": "d4ca718bbfb3c1b3ce56e7deca2ebe5162255f58",
+  "request_digest": "sha256:e697b788889b81bca40d02f2fb3b0ab9cc5f19b64cba895db4d68252bc90be00",
+  "stale_attempt_1": {
+    "scheduled_task_id": "6ab6e345695c81919930fbeafc1b5b4d",
+    "actual_run_time": "2026-09-25T21:14:19.487534Z",
+    "relay_id": "RELAY-RUNTIME-E2E-V2-001-A1",
+    "relay_nonce": "RLYV2-001-A1-4F7C91",
+    "relay_received": true,
+    "rejected": true,
+    "rejection_reason": "attempt binding mismatch; current authorized attempt was already 2",
+    "canonical_acceptance_effect": "none",
+    "durable_evidence": "tasks/TASK-RUNTIME-RELAY-E2E-V2-001/relay/stale-attempt-1-rejection.json"
+  },
+  "current_attempt_2": {
+    "scheduled_task_id": "6ab6e36528548191a6e20a30eee138b6",
+    "relay_id": "RELAY-RUNTIME-E2E-V2-001-A2",
+    "relay_nonce": "RLYV2-001-A2-B82D6E",
+    "first_run_time": "2026-09-25T21:15:25.211209Z",
+    "first_prompt_replaced": false,
+    "delivery_retry_requested": true,
+    "delivery_retry_run_time": "2026-09-25T21:18:07.454810Z",
+    "delivery_retry_prompt_replaced": false,
+    "task_terminal_enabled": false,
+    "relay_received": false,
+    "canonical_result_exists": false
+  },
+  "gateway": {
+    "state": "idle",
+    "generation": 56,
+    "lease_stranded": false
+  },
+  "decision": "stage-2-blocked",
+  "classification": "transport-publication-nondeterministic",
+  "interpretation": "The stale-output safety rule worked, but the current retry attempt could not return its authored relay despite two terminal Scheduled Runtime executions. The self-task metadata transport is not deterministic enough to complete the required end-to-end lifecycle.",
+  "next_action": "Stop at the Owner approval gate. Do not create attempt 3 or redesign transport without explicit Owner direction."
+}
