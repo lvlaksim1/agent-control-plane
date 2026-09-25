@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-RUNTIME-IDENTITY-AUDIT-001",
+  "issuer_agent_id": "ecosystem-supervisor",
+  "target_agent_id": "project-manager-auditor",
+  "objective": "Independently audit the Owner-approved persistent-Agent runtime identity migration. Verify that one Owner-facing or Scheduled Chat runtime cannot switch from one persistent agent_id to another; delegated target work is routed through GitHub and a separate runtime; interactive Supervisor-to-Auditor delegation uses durable manual-pull result retrieval with no automatic same-runtime return; autonomous continuation, where used, is represented by a separate dependency-bound caller-continuation task; proven responsibility semantics v2 and authority/fencing invariants remain intact; historical live-carrier/legacy-continuation recovery was not regressed; and user-visible ecosystem messages require a Moscow-time source header without treating that header as identity authority. Audit Agent Control Plane main and the current Context Capsule v2 templates read-only, and publish canonical Auditor evidence/findings in Auditor home.",
+  "authority_basis": {
+    "kind": "owner-directive",
+    "reference": "OWNER-2026-09-25-RUNTIME-IDENTITY-AFFINITY",
+    "grant": {
+      "allowed_effects": [
+        "read-targets",
+        "write-auditor-home",
+        "write-control-plane-result"
+      ],
+      "forbidden_effects": [
+        "modify-audit-targets",
+        "release",
+        "change-agent-mandate"
+      ],
+      "scope": [
+        "lvlaksim1/agent-control-plane@5ecaea7cc305e10baa046f0615d534795e65dcf5",
+        "lvlaksim1/context-capsule@v2-manager-runtime",
+        "independent audit of runtime identity affinity and user-visible source header migration"
+      ],
+      "inherited_constraints": [
+        "runtime:separate-target",
+        "continuation:manual-pull",
+        "read-only toward audited targets",
+        "do not use Work"
+      ],
+      "subdelegation": "bounded"
+    }
+  },
+  "scope": [
+    "lvlaksim1/agent-control-plane@5ecaea7cc305e10baa046f0615d534795e65dcf5",
+    "lvlaksim1/context-capsule@v2-manager-runtime",
+    "independent audit of runtime identity affinity and user-visible source header migration"
+  ],
+  "constraints": [
+    "runtime:separate-target",
+    "continuation:manual-pull",
+    "read-only toward audited targets",
+    "do not use Work",
+    "do not modify lvlaksim1/agent-control-plane or lvlaksim1/context-capsule",
+    "preserve Auditor independence and methodology",
+    "do not weaken existing carrier, fencing, provenance, authority, or recovery invariants",
+    "user-visible Auditor output must begin with DD.MM.YYYY · HH:MM MSK · project-manager-auditor"
+  ],
+  "target": {
+    "repository": "lvlaksim1/agent-control-plane",
+    "ref": "5ecaea7cc305e10baa046f0615d534795e65dcf5"
+  },
+  "priority": "high",
+  "dependencies": [],
+  "workflow_id": "WF-RUNTIME-IDENTITY-AFFINITY-001",
+  "parent_task_id": null,
+  "relation": "independent-audit",
+  "retry_policy": {
+    "max_attempts": 2,
+    "backoff_minutes": [
+      0,
+      15
+    ],
+    "quarantine_on_exhaustion": true
+  },
+  "completion_contract": {
+    "required_evidence": [
+      {
+        "kind": "audit",
+        "minimum": 1
+      }
+    ]
+  },
+  "responsibility": {
+    "semantics_version": 2,
+    "mode": "bounded_delegation",
+    "caller_agent_id": "ecosystem-supervisor",
+    "commitment_owner_agent_id": "ecosystem-supervisor",
+    "proposed_commitment_owner_agent_id": null,
+    "return_to_agent_id": "ecosystem-supervisor",
+    "transfer_requires_target_acceptance": false,
+    "authority_chain": {
+      "root": {
+        "kind": "owner-directive",
+        "reference": "OWNER-2026-09-25-RUNTIME-IDENTITY-AFFINITY"
+      },
+      "immediate_grantor_agent_id": "ecosystem-supervisor",
+      "grant_reference": "GRANT-TASK-RUNTIME-IDENTITY-AUDIT-001",
+      "delegation_depth": 1,
+      "parent_task_id": null,
+      "allowed_effects": [
+        "read-targets",
+        "write-auditor-home",
+        "write-control-plane-result"
+      ],
+      "forbidden_effects": [
+        "modify-audit-targets",
+        "release",
+        "change-agent-mandate"
+      ],
+      "subdelegation": "forbidden"
+    }
+  },
+  "created_at": "2026-09-25T09:47:00Z"
+}
