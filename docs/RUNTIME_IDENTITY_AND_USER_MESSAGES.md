@@ -1,3 +1,3 @@
 # Runtime identity and user-visible messages
 
-Draft branch for Owner-approved runtime identity affinity migration.
+An Owner-facing runtime keeps one persistent agent_id for its lifetime.
