@@ -12,7 +12,10 @@
     "logical_attempt": 1,
     "accepted_transport_generation": null,
     "accepted_receipt": null,
-    "transport_status": "allocating"
+    "transport_status": "armed",
+    "current_transport_generation": 1,
+    "current_delivery_try": 1,
+    "current_ticket": "tasks/TASK-RUNTIME-RELAY-E2E-V3-001/relay/1/1/ticket.json"
   },
   "blocker": null
 }
