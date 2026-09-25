@@ -1,5 +1,5 @@
 {
-  "schema_version": 11,
+  "schema_version": 12,
   "lease_minutes": 45,
   "runtime_loss_quarantine_after": 3,
   "one_target_agent_per_dispatch": true,
@@ -12,7 +12,7 @@
   "scheduler_topology": "runtime/dispatcher-pool.json",
   "wake_state": "runtime/dispatcher-health.json#wake",
   "automatic_execution_activation": "registry-per-agent-explicit",
-  "scheduler_model": "event-wake-broker-relay-v13-fixed-agent-runtime-identity",
+  "scheduler_model": "event-wake-broker-relay-v14-fixed-agent-runtime-identity-enforced",
   "execution_worker": {
     "slot_id": "execution-worker",
     "automation_id": "6aac8b1d8888819180cc4af0c009669e",
@@ -64,7 +64,7 @@
     "live_write_fence": "fresh matching carrier_id + queued/unclaimed state + no same-task reserved/active gateway ownership",
     "live_completion": "evidence-backed live result terminalizes state=completed and clears carrier before lease expiry",
     "same_agent_live_work": "allowed with existing carrier fence",
-    "inter_agent_live_execution": "forbidden for new work",
+    "inter_agent_live_execution": "forbidden; historical live results are repair-only after carrier expiry",
     "inter_agent_execution": "separate Execution Worker runtime",
     "unrelated_autonomous_tasks": "remain scheduler-eligible",
     "fallback_after_expiry": true,
@@ -90,15 +90,16 @@
     "caller_continuation": "runtime:caller-continuation"
   },
   "caller_continuation_policy": {
-    "manual_pull": "no automatic caller continuation; caller reads durable result on later Owner interaction",
-    "automatic_new_runtime": "caller precreates a dependent continuation task which executes in a new Worker runtime after child success",
-    "same_runtime_return": "forbidden for new work"
+    "manual_pull": "no automatic caller continuation; verified child result stays durable until later Owner/caller retrieval",
+    "automatic_new_runtime": "caller precreates a dependency-bound runtime:caller-continuation task; it targets the caller itself and executes only in a new Worker runtime after child success",
+    "same_runtime_return": "forbidden",
+    "historical_live_return": "recovery-only after historical lease expiry in a fresh Worker runtime bound to the recorded caller"
   },
   "legacy_live_return_policy": {
     "status": "historical-compatibility-only",
     "state_location": "tasks/<task_id>/state.json#continuation",
-    "creation": "historical bounded live completion may already contain state=completed plus continuation.status=pending",
-    "recovery": "a fresh Worker invocation may recover a pending historical continuation, but a runtime that has already reinstantiated one persistent agent must not switch to another agent_id",
+    "creation": "no new live return continuation may be created; only already-durable historical state or repair of a pre-migration live result is admissible",
+    "recovery": "after historical live_lease_until expires, a fresh Worker invocation may recover the pending continuation by binding that runtime to the recorded caller; no runtime may switch persistent agent_id",
     "idempotence": "consumed continuation is never redelivered",
     "explicit_handoff": "produces no caller continuation"
   }
