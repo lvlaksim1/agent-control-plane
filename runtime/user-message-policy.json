@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "timezone": "Europe/Moscow",
+  "timezone_label": "MSK",
+  "header_format": "DD.MM.YYYY · HH:MM MSK · <source_id>",
+  "persistent_agent_source_id": "exact agent_id",
+  "infrastructure_source_id": "stable component_id",
+  "applies_to": ["interactive-runtime", "scheduled-chat-runtime", "infrastructure-user-visible-message"],
+  "protocol_violation_on_missing_or_mismatched_header": true,
+  "identity_authority": false
+}
