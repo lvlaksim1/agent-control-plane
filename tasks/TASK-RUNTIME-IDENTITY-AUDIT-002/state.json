@@ -8,7 +8,15 @@
   "claim": null,
   "latest_checkpoint": null,
   "request_blob_sha": "43a0f2e1cf27ef3d9f7eb0e741de3cc435b4fc50",
-  "carrier": null,
+  "carrier": {
+    "mode": "hold",
+    "carrier_id": "owner-clean-chat-transition-20260925",
+    "set_by": "ecosystem-supervisor",
+    "reason": "Owner requested Supervisor state persistence and clean-chat reinstantiation; pause this audit until the restored Supervisor explicitly resumes it after architectural cleanup.",
+    "heartbeat_at": null,
+    "lease_until": null,
+    "fallback_after_expiry": false
+  },
   "continuation": null,
   "responsibility_acceptance": null
 }
