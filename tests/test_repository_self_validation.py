@@ -1,3 +1,4 @@
+import copy
 import json
 import sys
 import unittest
@@ -27,11 +28,21 @@ class RuntimeIdentityPilotProjectionTests(unittest.TestCase):
         self.assertEqual(request["target_agent_id"],"project-manager-auditor")
         self.assertIn("continuation:manual-pull",request["constraints"])
 
-    def test_runtime_identity_audit_task_is_scheduler_ready(self):
+    def test_runtime_identity_audit_task_hold_blocks_until_explicit_release(self):
         registry=json.loads((ROOT/"registry"/"agents.json").read_text(encoding="utf-8"))
+        bundle=self.bundle()
         ready=wr.scheduler_ready_tasks(
             registry,
-            [self.bundle()],
+            [bundle],
+            datetime(2026,9,25,10,0,tzinfo=timezone.utc),
+        )
+        self.assertEqual(ready,[])
+        request,state,gates,runtime=bundle
+        released=copy.deepcopy(state)
+        released["carrier"]=None
+        ready=wr.scheduler_ready_tasks(
+            registry,
+            [(request,released,gates,runtime)],
             datetime(2026,9,25,10,0,tzinfo=timezone.utc),
         )
         self.assertEqual([x["task_id"] for x in ready],["TASK-RUNTIME-IDENTITY-AUDIT-002"])
