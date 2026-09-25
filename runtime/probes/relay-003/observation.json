@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "probe_id": "RUNTIME-RELAY-PROBE-003",
+  "observation_kind": "mechanical_transport_observation",
+  "observed_by": "ecosystem-supervisor",
+  "observed_at_msk": "25.09.2026T19:07:00+03:00",
+  "transport_task_id": "6ab69acbec9481919a7866b44786b2e4",
+  "request_blob_sha": "f365a3b320ad2f3a6ea5930b506395242003ffa4",
+  "scheduled_runtime_last_run_time": "2026-09-25T16:05:33.418608Z",
+  "scheduled_task_terminal_enabled": false,
+  "relay_received": false,
+  "prompt_mutated_by_runtime": false,
+  "canonical_result_exists": false,
+  "classification": "transport-no-output",
+  "interpretation": "The minimal separate Scheduled Runtime reached a terminal run record but did not return the requested self-prompt relay. Together with probe 002, this shows the same-task prompt relay is not deterministic enough to serve as the sole durable cross-runtime transport.",
+  "comparison": {
+    "relay_001": "pass",
+    "relay_002": "transport-no-output",
+    "relay_003": "transport-no-output"
+  },
+  "next_discriminator": "Use isolated GitHub write-actuator probe 001 to determine whether a separate Runtime can durably persist one exact pre-authorized payload directly."
+}
