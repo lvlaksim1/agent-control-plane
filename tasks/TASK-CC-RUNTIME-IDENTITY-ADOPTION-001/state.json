@@ -1,11 +1,16 @@
 {
   "schema_version": 1,
   "task_id": "TASK-CC-RUNTIME-IDENTITY-ADOPTION-001",
-  "status": "queued",
+  "status": "claimed",
   "request_digest": "sha256:1c0cfa31e806ee9e332438a5204a86c4472a0517fafe6deae161fcd14f234d6c",
-  "attempt": 0,
+  "attempt": 1,
   "runtime_loss_count": 0,
-  "claim": null,
+  "claim": {
+    "execution_id": "5f8f0cf7-3c56-4bbb-a2ea-f51cbcc90562",
+    "generation": 49,
+    "slot_id": "execution-worker",
+    "claimed_at": "2026-09-25T11:53:23Z"
+  },
   "latest_checkpoint": null,
   "request_blob_sha": "819eeeab9b5382207b6dbac9b9dfbd58bf1e2465",
   "carrier": null,
