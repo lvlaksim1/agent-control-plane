@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-RUNTIME-RELAY-E2E-V2-001",
+  "issuer_agent_id": "owner",
+  "target_agent_id": "execution-worker",
+  "objective": "Neutral end-to-end proof of bounded runtime result relay v2, including deliberate stale-attempt rejection, exact relay persistence, terminal completion ordering, and gateway release. No persistent Agent is reinstantiated.",
+  "authority_basis": {
+    "kind": "owner-directive",
+    "reference": "OWNER-2026-09-26-RELAY-V2-STAGE-2"
+  },
+  "scope": [
+    "lvlaksim1/agent-control-plane@main task bundle TASK-RUNTIME-RELAY-E2E-V2-001",
+    "lvlaksim1/agent-control-plane-gateway@main opaque lease for short mechanical persistence only",
+    "two one-shot Scheduled Runtime transport attempts bound only to this probe"
+  ],
+  "constraints": [
+    "Do not reinstate any persistent Agent.",
+    "Do not use Auditor.",
+    "Do not modify any client project.",
+    "Reasoning runtime may only update its own Scheduled Task prompt.",
+    "Attempt 1 is deliberately superseded before publication and any later output from it must be rejected.",
+    "Attempt 2 is the only current attempt eligible for canonical acceptance.",
+    "Persist exact authored UTF-8 payload bytes without semantic reinterpretation.",
+    "Completion must be durable and re-read before gateway release.",
+    "Do not use Work."
+  ],
+  "target": {
+    "repository": "lvlaksim1/agent-control-plane",
+    "ref": "main"
+  },
+  "priority": "normal",
+  "dependencies": [],
+  "workflow_id": "WF-RUNTIME-RELAY-E2E-V2-001",
+  "parent_task_id": null,
+  "relation": "infrastructure-transport-proof",
+  "retry_policy": {
+    "max_attempts": 2,
+    "backoff_minutes": [
+      0,
+      0
+    ],
+    "quarantine_on_exhaustion": true
+  },
+  "completion_contract": {
+    "required_evidence": [
+      {
+        "kind": "relay",
+        "minimum": 1
+      },
+      {
+        "kind": "stale-rejection",
+        "minimum": 1
+      },
+      {
+        "kind": "state",
+        "minimum": 1
+      }
+    ]
+  },
+  "created_at": "2026-09-25T21:10:00Z"
+}
