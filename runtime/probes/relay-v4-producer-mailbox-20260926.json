@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "probe_id": "RELAY-V4-PRODUCER-MAILBOX-20260926",
+  "observed_at_msk": "2026-09-26T01:20:00+03:00",
+  "purpose": "Transport-only evidence that a Scheduled Runtime producer can publish a bounded result into a distinct disabled Scheduled Task used as a passive mailbox.",
+  "production_ready": false,
+  "producer": {
+    "task_id": "6ab6eab5564c81919fee6286a3225e22",
+    "title": "ACP Runtime Producer 1",
+    "last_run_time_utc": "2026-09-25T22:20:01.156572Z",
+    "self_update_allowed": false
+  },
+  "mailbox": {
+    "task_id": "6ab6eaacc834819198f02949ad2b8ddc",
+    "mailbox_id": "relay-mailbox-1",
+    "is_enabled": false,
+    "last_run_time_utc": "2026-09-25T22:08:36.670910Z",
+    "updated_at_utc": "2026-09-25T22:19:56.624749Z",
+    "title": "ACP_MAILBOX_READY|1|270ebe0fed86",
+    "raw_relay_sha256": "sha256:53f7fb39d15020e4fcec63394db397bc4c23aff83a4b6d061b744ed88baeda30",
+    "payload_sha256": "sha256:270ebe0fed8674e0cde59826e9d403acc0c7584fdf5cecfb9056838b12dc09ed"
+  },
+  "exact_raw_relay": "ACP_RUNTIME_RELAY_V4_PROBE|{\"admission_nonce\":\"ADM-MBX-001-G1-3E7A\",\"author_id\":\"execution-worker\",\"author_kind\":\"infrastructure\",\"authored_at_msk\":\"2026-09-26T01:18:00+03:00\",\"delivery_try\":1,\"logical_attempt\":1,\"mailbox_generation\":1,\"mailbox_id\":\"relay-mailbox-1\",\"mailbox_task_id\":\"6ab6eaacc834819198f02949ad2b8ddc\",\"payload_encoding\":\"utf-8\",\"payload_kind\":\"producer-distinct-mailbox-proof\",\"payload_sha256\":\"sha256:270ebe0fed8674e0cde59826e9d403acc0c7584fdf5cecfb9056838b12dc09ed\",\"payload_text\":\"RESULT=PASS\\nCHECK=59*61=3599\\nNOTE=Scheduled Runtime producer wrote to a distinct disabled mailbox task.\",\"producer_task_id\":\"6ab6eab5564c81919fee6286a3225e22\",\"relay_id\":\"RELAY-MBX-001-G1\",\"relay_nonce\":\"RLY-MBX-001-G1-3E7A\",\"schema_version\":1,\"status\":\"complete\",\"terminal\":true}",
+  "observations": [
+    "The producer Scheduled Runtime ran and did not mutate its own task metadata.",
+    "The distinct mailbox task remained disabled and did not execute; its last_run_time stayed historical.",
+    "The mailbox title and prompt were updated before the producer invocation terminal timestamp.",
+    "The exact expected relay appeared in the mailbox.",
+    "This separates producer execution lifecycle/auto-disable from result mailbox mutation."
+  ],
+  "limitations": [
+    "One successful producer-to-distinct-mailbox publication does not establish repeatability.",
+    "This transport-only probe did not bind a real ACP request digest/blob.",
+    "Automations update exposes no compare-and-swap precondition on mailbox content; mailbox reuse therefore needs a strict reclamation rule to prevent stale overwrite."
+  ],
+  "next_test": "Repeat on mailbox generations 2 and 3, then simulate a missing delivery and same-generation delivery retry. Do not recycle a mailbox while a producer invocation for its current generation may still exist."
+}
