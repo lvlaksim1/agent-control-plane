@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "human_entry_points": {
     "owner_may_directly_invoke_any_persistent_agent": true,
     "supervisor_is_mandatory_human_gateway": false,
@@ -14,7 +14,17 @@
     ],
     "target_must_be_registered": true,
     "explicit_authority_basis_required_for_agent_issuer": true,
-    "target_agent_must_validate_mandate_before_action": true
+    "target_agent_must_validate_mandate_before_action": true,
+    "runtime_boundary": "different persistent target agent_id requires a separate runtime",
+    "new_nonterminal_responsibility_semantics_version": 3,
+    "interactive_delegation_continuation_policy": "manual_pull",
+    "autonomous_delegation_continuation_policy": "automatic_new_runtime"
   },
-  "scheduler_role": "autonomous-continuation-only-not-human-message-transport"
+  "interactive_runtime": {
+    "identity_affinity": "fixed-for-runtime-lifetime",
+    "agent_id_switch_allowed": false,
+    "delegated_target_execution_in_same_runtime": false,
+    "manual_result_retrieval": "caller reads exact durable GitHub result on later Owner interaction"
+  },
+  "scheduler_role": "separate-runtime-agent-execution-and-autonomous-continuation-not-human-message-transport"
 }
