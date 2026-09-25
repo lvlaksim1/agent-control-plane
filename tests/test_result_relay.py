@@ -7,6 +7,9 @@ sys.path.insert(0, str(ROOT / "tools"))
 import result_relay as rr
 
 
+OBSERVED_AT = "2026-09-25T18:05:00+00:00"
+
+
 def ticket(**overrides):
     base = {
         "schema_version": 1,
@@ -185,22 +188,33 @@ class RelayV3Tests(unittest.TestCase):
     def test_exact_duplicate_is_idempotent(self):
         t = ticket()
         raw = rr.encode_relay(envelope(t))
-        first = rr.plan_acceptance(raw, ticket=t)
-        second = rr.plan_acceptance(raw, ticket=t, existing_receipt=first["receipt"])
+        first = rr.plan_acceptance(raw, ticket=t, transport_updated_at=OBSERVED_AT)
+        second = rr.plan_acceptance(raw, ticket=t, transport_updated_at=OBSERVED_AT, existing_receipt=first["receipt"])
         self.assertEqual(first["decision"], "accept-new")
         self.assertEqual(second["decision"], "already-accepted")
 
     def test_conflicting_relay_after_receipt_rejected(self):
         t = ticket()
         raw = rr.encode_relay(envelope(t))
-        first = rr.plan_acceptance(raw, ticket=t)
+        first = rr.plan_acceptance(raw, ticket=t, transport_updated_at=OBSERVED_AT)
         changed = envelope(t, payload_text="different")
         changed["payload_sha256"] = rr.sha256_utf8(changed["payload_text"])
         with self.assertRaisesRegex(rr.RelayError, "already exists"):
             rr.plan_acceptance(
                 rr.encode_relay(changed),
                 ticket=t,
+                transport_updated_at=OBSERVED_AT,
                 existing_receipt=first["receipt"],
+            )
+
+    def test_publication_after_deadline_rejected(self):
+        t = ticket()
+        raw = rr.encode_relay(envelope(t))
+        with self.assertRaisesRegex(rr.RelayError, "after relay_deadline_at"):
+            rr.plan_acceptance(
+                raw,
+                ticket=t,
+                transport_updated_at="2026-09-25T18:10:01+00:00",
             )
 
     def test_v2_is_parseable_but_not_accepted_as_v3(self):
