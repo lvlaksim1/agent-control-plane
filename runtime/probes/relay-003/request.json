@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "probe_id": "RUNTIME-RELAY-PROBE-003",
+  "relay_id": "RELAY-003-MINIMAL",
+  "relay_nonce": "RLY3-25SEP26-91AF",
+  "transport_task_id": "6ab69acbec9481919a7866b44786b2e4",
+  "challenge": "MINIMAL-SELF-RELAY-003",
+  "expected_author_id": "execution-worker",
+  "expected_answer": "OK",
+  "created_at": "2026-09-25T16:01:40Z"
+}
