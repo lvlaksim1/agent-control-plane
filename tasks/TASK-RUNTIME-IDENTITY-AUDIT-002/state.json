@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-RUNTIME-IDENTITY-AUDIT-002",
+  "status": "queued",
+  "request_digest": "sha256:fdb852310a3368739ee6a873d1736a77ec14d0c69715c3e0fb089c1132a21d9c",
+  "attempt": 0,
+  "runtime_loss_count": 0,
+  "claim": null,
+  "latest_checkpoint": null,
+  "request_blob_sha": "43a0f2e1cf27ef3d9f7eb0e741de3cc435b4fc50",
+  "carrier": null,
+  "continuation": null,
+  "responsibility_acceptance": null
+}
