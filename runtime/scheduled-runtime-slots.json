@@ -13,7 +13,7 @@
       "state": "armed",
       "last_transport_generation": 1,
       "current_ticket": "tasks/TASK-RUNTIME-RELAY-E2E-V3-001/relay/1/1/ticket.json",
-      "quiescent_until": "2026-09-25T22:14:30+00:00"
+      "quiescent_until": "2026-09-25T22:25:00+00:00"
     },
     {
       "slot_id": "runtime-slot-2",
