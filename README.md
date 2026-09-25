@@ -120,17 +120,19 @@ See `docs/DISPATCHER_POOL.md` and `docs/SCHEDULED_CHAT_DISPATCHER.md`.
 
 Agent Catalog / Agent Factory / item 20 remain out of scope and inactive.
 
-## Live delegation return chain
+## Fixed Agent runtime identity
 
-New pre-scaling work distinguishes bounded delegation from explicit responsibility handoff.
+Persistent Agent identity is now runtime-affine: one live or Scheduled Chat runtime carries at most one persistent `agent_id`.
 
-For live bounded agent-to-agent delegation, immutable task intent records:
+For Agent-to-Agent work:
 
-- `responsibility.mode=bounded_delegation`;
-- the caller as `commitment_owner_agent_id`;
-- the same caller as `return_to_agent_id`.
+- responsibility/authority remains semantics version 2;
+- a different target Agent requires `runtime:separate-target` and a fresh target runtime;
+- interactive bounded delegation uses `continuation:manual-pull` by default, leaving the verified child result durable in GitHub for later caller inspection;
+- autonomous continuation uses `continuation:automatic-new-runtime` plus a precreated dependency-bound `runtime:caller-continuation` task, so the caller resumes in a later fresh Worker runtime;
+- explicit handoff remains distinct and creates no implicit caller return;
+- historical pending live-return continuation objects remain recovery-compatible, but they may be consumed only by a fresh Worker runtime bound to the recorded caller, never by changing identity inside the current runtime.
 
-After verified terminal live completion, the current runtime deterministically reinstantiates that caller from Registry and continues the caller's durable commitment without requiring a user reinvocation. Nested calls unwind one caller at a time. Explicit handoff instead transfers commitment ownership to the target and has no implicit return.
+Every user-visible Agent/infrastructure message follows the Moscow-time source header contract in `docs/RUNTIME_IDENTITY_AND_USER_MESSAGES.md`. The header is diagnostic only; repository-backed reinstantiation remains identity authority.
 
 This mechanism does not make Supervisor a mandatory dispatcher and does not affect unrelated autonomous scheduler work.
-
