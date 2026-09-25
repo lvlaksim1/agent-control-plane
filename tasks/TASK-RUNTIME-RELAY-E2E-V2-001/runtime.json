@@ -1,9 +1,17 @@
 {
   "schema_version": 1,
   "task_id": "TASK-RUNTIME-RELAY-E2E-V2-001",
-  "failure_count": 0,
+  "failure_count": 2,
   "retry_not_before": null,
-  "last_failure": null,
-  "transport": "scheduled-task-self-prompt",
-  "relay_schema_version": 2
+  "last_failure": {
+    "kind": "transport-no-output",
+    "attempt": 2,
+    "scheduled_task_id": "6ab6e36528548191a6e20a30eee138b6",
+    "observed_run_time": "2026-09-25T21:18:07.454810Z",
+    "prompt_replaced": false,
+    "relay_received": false,
+    "gateway_state": "idle",
+    "gateway_generation": 56,
+    "action": "quarantined-after-max-attempts"
+  }
 }
