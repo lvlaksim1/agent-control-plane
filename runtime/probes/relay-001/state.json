@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "probe_id": "RUNTIME-RELAY-PROBE-001",
+  "status": "armed",
+  "challenge": "RELAY-001-7E39C4",
+  "jawbone_id": "6ab69890187c81919c8d10c01cbf8ee2",
+  "relay_received": false,
+  "result_persisted": false
+}
