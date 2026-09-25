@@ -9,7 +9,8 @@
     "execution_id": "5f8f0cf7-3c56-4bbb-a2ea-f51cbcc90562",
     "generation": 49,
     "slot_id": "execution-worker",
-    "claimed_at": "2026-09-25T11:53:23Z"
+    "claimed_at": "2026-09-25T11:53:23Z",
+    "activation_projection_blob_sha": "7c43f547b5f944c781b15684d9d67844306f0217"
   },
   "latest_checkpoint": null,
   "request_blob_sha": "819eeeab9b5382207b6dbac9b9dfbd58bf1e2465",
