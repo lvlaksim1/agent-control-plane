@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-RUNTIME-RELAY-E2E-V3-001",
+  "issuer_agent_id": "owner",
+  "target_agent_id": "execution-worker",
+  "objective": "Neutral end-to-end proof of Scheduled Runtime relay v3 using a fixed runtime slot, a durable transport ticket, lossy-egress retry semantics, exact UTF-8 relay persistence, and no persistent Agent reinstantiation.",
+  "authority_basis": {
+    "kind": "owner-directive",
+    "reference": "OWNER-2026-09-26-SCHEDULED-RUNTIME-STABILIZATION"
+  },
+  "scope": [
+    "lvlaksim1/agent-control-plane@relay-v3-transport-stabilization task bundle TASK-RUNTIME-RELAY-E2E-V3-001",
+    "fixed Scheduled Runtime slot runtime-slot-1",
+    "mechanical persistence by ecosystem-supervisor only after a valid relay"
+  ],
+  "constraints": [
+    "Do not reinstate any persistent Agent.",
+    "Do not use Auditor.",
+    "Do not modify any client project.",
+    "Reasoning runtime must not write GitHub, Drive, Dropbox or acquire gateway lease.",
+    "The only reasoning-runtime publication is one final self automations.update on its assigned Scheduled Task.",
+    "Transport loss must not advance logical_attempt.",
+    "Persist exact authored UTF-8 payload bytes without semantic reinterpretation.",
+    "Do not use Work."
+  ],
+  "target": {
+    "repository": "lvlaksim1/agent-control-plane",
+    "ref": "relay-v3-transport-stabilization"
+  },
+  "priority": "normal",
+  "dependencies": [],
+  "workflow_id": "WF-RUNTIME-RELAY-E2E-V3-001",
+  "parent_task_id": null,
+  "relation": "infrastructure-transport-proof",
+  "semantic_retry_policy": {
+    "max_logical_attempts": 2,
+    "quarantine_on_exhaustion": true
+  },
+  "transport_retry_policy": {
+    "max_delivery_tries": 3,
+    "advance_logical_attempt_on_transport_loss": false
+  },
+  "completion_contract": {
+    "required_evidence": [
+      {
+        "kind": "relay",
+        "minimum": 1
+      },
+      {
+        "kind": "transport-ticket",
+        "minimum": 1
+      },
+      {
+        "kind": "state",
+        "minimum": 1
+      }
+    ]
+  },
+  "created_at": "2026-09-25T21:47:00Z"
+}
