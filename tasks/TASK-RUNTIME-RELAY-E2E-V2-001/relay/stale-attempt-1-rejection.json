@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-RUNTIME-RELAY-E2E-V2-001",
+  "observed_transport_task_id": "6ab6e345695c81919930fbeafc1b5b4d",
+  "observed_attempt": 1,
+  "observed_relay_id": "RELAY-RUNTIME-E2E-V2-001-A1",
+  "observed_relay_nonce": "RLYV2-001-A1-4F7C91",
+  "observed_last_run_time": "2026-09-25T21:14:19.487534Z",
+  "observed_raw_relay_sha256": "sha256:a507a87f66d27239f25f992f2ecaaade948cc8b81dd397e72f4c88cbaa5b62ad",
+  "current_authorized_attempt": 2,
+  "current_transport_task_id": "6ab6e36528548191a6e20a30eee138b6",
+  "current_relay_id": "RELAY-RUNTIME-E2E-V2-001-A2",
+  "current_relay_nonce": "RLYV2-001-A2-B82D6E",
+  "decision": "rejected",
+  "reason": "attempt binding mismatch: observed attempt 1 is superseded; current authorized attempt is 2",
+  "canonical_acceptance_effect": "none",
+  "verified_by": "ecosystem-supervisor",
+  "evidence_state_blob_sha": "304e3b499bcb6c5141e476b27fa7d354ab389424"
+}
