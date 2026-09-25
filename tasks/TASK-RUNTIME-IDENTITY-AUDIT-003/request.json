@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-RUNTIME-IDENTITY-AUDIT-003",
+  "issuer_agent_id": "ecosystem-supervisor",
+  "target_agent_id": "project-manager-auditor",
+  "objective": "Independently audit the final Owner-approved persistent-Agent runtime identity migration after Context Capsule adoption and ACP closeout. Verify one persistent agent_id per Owner-facing or Scheduled target runtime; mandatory separate runtime for a different target agent_id; interactive continuation:manual-pull with durable child result and no automatic caller return; autonomous continuation only through a distinct dependency-bound caller runtime; unchanged responsibility semantics v2 and authority/fencing/provenance/carrier invariants; safe historical continuation recovery; Moscow-time user-visible source headers as diagnostic rather than identity authority; and final Context Capsule v2 adoption with no conflicting same-runtime identity-switch instructions. Publish canonical Auditor evidence/findings in Auditor home without remediating audited targets.",
+  "authority_basis": {
+    "kind": "owner-directive",
+    "reference": "OWNER-2026-09-25-RUNTIME-IDENTITY-AFFINITY",
+    "grant": {
+      "allowed_effects": [
+        "read-targets",
+        "write-auditor-home",
+        "write-control-plane-result"
+      ],
+      "forbidden_effects": [
+        "modify-audited-implementation",
+        "release",
+        "change-agent-mandate"
+      ],
+      "scope": [
+        "lvlaksim1/agent-control-plane@652ad5e63c2a3033679c5fc0eacbd9e9baa737b4",
+        "lvlaksim1/context-capsule@v2-manager-runtime:5538327ac70b81b4f56f46a545547452c8477994",
+        "final independent audit of runtime identity affinity and Context Capsule adoption"
+      ],
+      "inherited_constraints": [
+        "runtime:separate-target",
+        "continuation:manual-pull",
+        "read-only toward audited implementation snapshots",
+        "do not use Work"
+      ],
+      "subdelegation": "bounded"
+    }
+  },
+  "scope": [
+    "lvlaksim1/agent-control-plane@652ad5e63c2a3033679c5fc0eacbd9e9baa737b4",
+    "lvlaksim1/context-capsule@v2-manager-runtime:5538327ac70b81b4f56f46a545547452c8477994",
+    "final independent audit of runtime identity affinity and Context Capsule adoption"
+  ],
+  "constraints": [
+    "runtime:separate-target",
+    "continuation:manual-pull",
+    "read-only toward audited implementation snapshots",
+    "do not use Work",
+    "protocol-defined ACP task state/result and gateway fencing are execution metadata, not audit-target remediation",
+    "preserve Auditor independence and methodology",
+    "do not weaken existing carrier, fencing, provenance, authority, responsibility, or recovery invariants",
+    "do not perform remediation",
+    "user-visible Auditor output must begin with DD.MM.YYYY · HH:MM MSK · project-manager-auditor"
+  ],
+  "target": {
+    "repository": "lvlaksim1/agent-control-plane",
+    "ref": "652ad5e63c2a3033679c5fc0eacbd9e9baa737b4"
+  },
+  "priority": "high",
+  "dependencies": [
+    "TASK-CC-RUNTIME-IDENTITY-ADOPTION-001"
+  ],
+  "workflow_id": "WF-RUNTIME-IDENTITY-AFFINITY-001",
+  "parent_task_id": null,
+  "relation": "final-independent-audit",
+  "retry_policy": {
+    "max_attempts": 2,
+    "backoff_minutes": [
+      0,
+      15
+    ],
+    "quarantine_on_exhaustion": true
+  },
+  "completion_contract": {
+    "required_evidence": [
+      {
+        "kind": "audit",
+        "minimum": 1
+      }
+    ]
+  },
+  "responsibility": {
+    "semantics_version": 2,
+    "mode": "bounded_delegation",
+    "caller_agent_id": "ecosystem-supervisor",
+    "commitment_owner_agent_id": "ecosystem-supervisor",
+    "proposed_commitment_owner_agent_id": null,
+    "return_to_agent_id": "ecosystem-supervisor",
+    "transfer_requires_target_acceptance": false,
+    "authority_chain": {
+      "root": {
+        "kind": "owner-directive",
+        "reference": "OWNER-2026-09-25-RUNTIME-IDENTITY-AFFINITY"
+      },
+      "immediate_grantor_agent_id": "ecosystem-supervisor",
+      "grant_reference": "GRANT-TASK-RUNTIME-IDENTITY-AUDIT-003",
+      "delegation_depth": 1,
+      "parent_task_id": null,
+      "allowed_effects": [
+        "read-targets",
+        "write-auditor-home",
+        "write-control-plane-result"
+      ],
+      "forbidden_effects": [
+        "modify-audited-implementation",
+        "release",
+        "change-agent-mandate"
+      ],
+      "subdelegation": "forbidden"
+    }
+  },
+  "created_at": "2026-09-25T12:00:30Z"
+}
