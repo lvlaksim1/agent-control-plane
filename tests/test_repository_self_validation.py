@@ -10,7 +10,7 @@ import runtime_identity_policy as rp
 
 class RuntimeIdentityPilotProjectionTests(unittest.TestCase):
     def test_runtime_identity_audit_task_is_valid_and_separate_runtime(self):
-        task=ROOT/"tasks"/"TASK-RUNTIME-IDENTITY-AUDIT-001"
+        task=ROOT/"tasks"/"TASK-RUNTIME-IDENTITY-AUDIT-002"
         request=json.loads((task/"request.json").read_text(encoding="utf-8"))
         state=json.loads((task/"state.json").read_text(encoding="utf-8"))
         cp.validate_request(request)
