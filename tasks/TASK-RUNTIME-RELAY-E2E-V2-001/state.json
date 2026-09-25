@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
   "task_id": "TASK-RUNTIME-RELAY-E2E-V2-001",
-  "status": "queued",
+  "status": "quarantined",
   "request_digest": "sha256:e697b788889b81bca40d02f2fb3b0ab9cc5f19b64cba895db4d68252bc90be00",
   "attempt": 2,
-  "runtime_loss_count": 1,
+  "runtime_loss_count": 2,
   "claim": null,
   "latest_checkpoint": null,
   "request_blob_sha": "d4ca718bbfb3c1b3ce56e7deca2ebe5162255f58",
@@ -15,7 +15,7 @@
     "relay_nonce": "RLYV2-001-A2-B82D6E",
     "expected_author_id": "execution-worker",
     "allowed_payload_kind": "relay-v2-e2e-proof",
-    "status": "awaiting-publication"
+    "status": "transport-failed-no-relay"
   },
   "superseded_attempts": [
     {
@@ -25,5 +25,19 @@
       "relay_nonce": "RLYV2-001-A1-4F7C91",
       "reason": "deliberate-runtime-loss-retry-proof"
     }
-  ]
+  ],
+  "blocker": {
+    "kind": "transport-no-output",
+    "stage": "relay-publication",
+    "attempt": 2,
+    "scheduled_task_id": "6ab6e36528548191a6e20a30eee138b6",
+    "first_run_time": "2026-09-25T21:15:25.211209Z",
+    "delivery_retry_run_time": "2026-09-25T21:18:07.454810Z",
+    "prompt_replaced": false,
+    "canonical_relay_received": false,
+    "gateway_state": "idle",
+    "gateway_generation": 56,
+    "retry_policy_exhausted": true,
+    "reason": "Current attempt executed twice (initial delivery plus same-attempt delivery retry) without publishing the required self-metadata relay."
+  }
 }
