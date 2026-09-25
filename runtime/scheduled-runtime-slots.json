@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "model": "fixed-reusable-scheduled-runtime-slots",
-  "pool_generation": 0,
+  "pool_generation": 1,
   "allocation_rule": "CAS this file before arming a slot; ticket must be durable before scheduler arm",
   "reuse_rule": "slot may be reused only after quiescent_until and after current ticket is terminal or transport-lost",
   "metadata_cas_available": false,
@@ -10,10 +10,10 @@
     {
       "slot_id": "runtime-slot-1",
       "automation_id": "6ab6eaacc834819198f02949ad2b8ddc",
-      "state": "idle",
-      "last_transport_generation": 0,
-      "current_ticket": null,
-      "quiescent_until": null
+      "state": "armed",
+      "last_transport_generation": 1,
+      "current_ticket": "tasks/TASK-RUNTIME-RELAY-E2E-V3-001/relay/1/1/ticket.json",
+      "quiescent_until": "2026-09-25T22:14:30+00:00"
     },
     {
       "slot_id": "runtime-slot-2",
