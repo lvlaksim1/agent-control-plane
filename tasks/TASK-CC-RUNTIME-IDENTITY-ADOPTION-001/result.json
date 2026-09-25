@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-CC-RUNTIME-IDENTITY-ADOPTION-001",
+  "request_digest": "sha256:1c0cfa31e806ee9e332438a5204a86c4472a0517fafe6deae161fcd14f234d6c",
+  "request_blob_sha": "819eeeab9b5382207b6dbac9b9dfbd58bf1e2465",
+  "execution_id": "5f8f0cf7-3c56-4bbb-a2ea-f51cbcc90562",
+  "generation": 49,
+  "outcome": "success",
+  "summary": "Context Capsule fixed-runtime identity adoption is complete on v2-manager-runtime. The implementation is bound to Core snapshot 65a99617fea931858a15eabe737a705e39570a8a, durable manager state is coherently sealed at generation 3 by closure commit 5538327ac70b81b4f56f46a545547452c8477994, and exact-commit Context Capsule CI run 36131126620 succeeded. Stable main and consumers were not migrated or changed by this task.",
+  "evidence": [
+    {
+      "kind": "commit",
+      "reference": "lvlaksim1/context-capsule@v2-manager-runtime:5538327ac70b81b4f56f46a545547452c8477994; Core implementation 65a99617fea931858a15eabe737a705e39570a8a; manager-state integrity generation 3",
+      "verified": true,
+      "verified_by": "context-capsule-project-manager",
+      "verified_at": "2026-09-25T11:58:45Z"
+    },
+    {
+      "kind": "test",
+      "reference": "lvlaksim1/context-capsule GitHub Actions Context Capsule CI run 36131126620 (run 484); head 5538327ac70b81b4f56f46a545547452c8477994; conclusion success",
+      "verified": true,
+      "verified_by": "context-capsule-project-manager",
+      "verified_at": "2026-09-25T11:58:45Z"
+    }
+  ],
+  "completed_at": "2026-09-25T11:58:45Z"
+}
