@@ -6,7 +6,7 @@
   "last_observed_head": "2f1e49e24b130f34461ad18d1720e2f5f7b25a6f",
   "last_reason": "Captured wake generation 11 addressed TASK-AUDIT-EVENT-WAKE-002, which is superseded by TASK-AUDIT-EVENT-WAKE-003; the replacement task is already completed. Gateway is idle generation 46. No queued task or expired pending continuation was discovered in this bounded cycle.",
   "wake": {
-    "desired_generation": 13,
+    "desired_generation": 14,
     "armed_generation": 13,
     "served_generation": 11,
     "recent_request_keys": [
@@ -22,14 +22,15 @@
       "phase-b:TASK-EVENT-WAKE-RELAY-E2E-001-g45",
       "task-ready:TASK-AUDIT-EVENT-WAKE-002",
       "task-ready:TASK-RUNTIME-IDENTITY-AUDIT-001",
-      "task-ready:TASK-RUNTIME-IDENTITY-AUDIT-002"
+      "task-ready:TASK-RUNTIME-IDENTITY-AUDIT-002",
+      "task-ready:TASK-CC-RUNTIME-IDENTITY-ADOPTION-001"
     ],
     "last_request": {
-      "generation": 13,
-      "request_key": "task-ready:TASK-RUNTIME-IDENTITY-AUDIT-002",
-      "reason": "task-ready-replacement",
+      "generation": 14,
+      "request_key": "task-ready:TASK-CC-RUNTIME-IDENTITY-ADOPTION-001",
+      "reason": "context-capsule-runtime-identity-adoption-ready",
       "requested_by": "ecosystem-supervisor",
-      "requested_at": "2026-09-25T09:56:00Z"
+      "requested_at": "2026-09-25T10:41:36Z"
     },
     "last_armed_at": "2026-09-25T09:59:45Z",
     "last_served_at": "2026-09-24T00:42:08Z",
