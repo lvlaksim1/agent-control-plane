@@ -120,6 +120,23 @@ See `docs/DISPATCHER_POOL.md` and `docs/SCHEDULED_CHAT_DISPATCHER.md`.
 
 Agent Catalog / Agent Factory / item 20 remain out of scope and inactive.
 
+## Current execution capability boundary
+
+The fixed-runtime control-plane semantics remain valid, but the recurring Scheduled Chat mutation transport is currently **suspended**.
+
+Live 25 September 2026 delivery probes established a capability boundary in the observed Scheduled Chat environment: repository reads can succeed while consequential GitHub mutations are blocked by the platform safety layer before submission. That prevents required durable wake precommit, task-state CAS, and gateway-request steps from being treated as reliably available.
+
+Fail-closed consequence:
+
+- recurring Wake Broker and Execution Worker are disabled;
+- no target execution may proceed by skipping or weakening the durable outbox, gateway fence, task CAS, or runtime-identity rules;
+- retrying the same blocked write is not a substitute for a proven actuator;
+- a distinct Agent runtime may still be used for read-only reinstantiation/reasoning and may produce an exact deterministic relay package;
+- an authorized live actuator may apply such a package mechanically only with explicit provenance and without replacing the Agent's project-design judgment;
+- autonomous mutation service may resume only after the same execution environment proves the required GitHub write path end-to-end under the existing invariants.
+
+This is an execution-capability suspension, not a rollback of the event-driven design or the one-Agent-per-runtime architecture.
+
 ## Fixed Agent runtime identity
 
 Persistent Agent identity is now runtime-affine: one live or Scheduled Chat runtime carries at most one persistent `agent_id`.
