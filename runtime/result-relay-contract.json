@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "protocol": "docs/BOUNDED_RUNTIME_RESULT_RELAY.md",
+  "prefix": "ACP_RUNTIME_RELAY_V1|",
+  "transport": "scheduled-task-self-prompt",
+  "transport_authority": "non-canonical",
+  "max_prompt_chars": 12000,
+  "reasoning_phase": {
+    "gateway_lease_required": false,
+    "external_writes_allowed": false,
+    "only_write": "automations.update on the same Scheduled Task prompt",
+    "runtime_loss_effect": "no gateway lease is stranded; retry uses a new transport_task_id + relay_id + relay_nonce"
+  },
+  "envelope": {
+    "required_fields": [
+      "schema_version",
+      "relay_id",
+      "transport_task_id",
+      "task_id",
+      "request_digest",
+      "request_blob_sha",
+      "relay_nonce",
+      "author_id",
+      "author_kind",
+      "status",
+      "payload_kind",
+      "payload",
+      "authored_at_msk"
+    ],
+    "fixed_values": {
+      "schema_version": 1
+    },
+    "author_kind": [
+      "persistent-agent",
+      "infrastructure"
+    ],
+    "status": [
+      "complete",
+      "blocked"
+    ]
+  },
+  "mechanical_acceptance": {
+    "exact_match": [
+      "relay_id",
+      "transport_task_id",
+      "task_id",
+      "request_digest",
+      "request_blob_sha",
+      "relay_nonce",
+      "author_id"
+    ],
+    "persist_raw_relay_before_semantic_writes": true,
+    "reinterpret_payload": false,
+    "stale_base_behavior": "fail-closed",
+    "blocked_status_behavior": "persist blocker only; never fabricate success"
+  },
+  "persistence_phase": {
+    "gateway_acquired_after_relay_received": true,
+    "gateway_scope": "short mechanical persistence only",
+    "completion_order": [
+      "raw relay durable",
+      "gateway claim/activation if required",
+      "exact authored operations applied under current base preconditions",
+      "canonical result durable",
+      "terminal state durable and re-read",
+      "gateway release accepted"
+    ]
+  },
+  "identity": {
+    "max_persistent_agents_per_relay_runtime": 1,
+    "same_runtime_identity_switch_allowed": false,
+    "infrastructure_probe_reinstantiates_agent": false
+  },
+  "operational_state": "experimental-pending-end-to-end-proof"
+}

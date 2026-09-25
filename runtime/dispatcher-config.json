@@ -112,8 +112,10 @@
     "recurring_worker_enabled": false,
     "fail_closed": true,
     "prohibited_workaround": "Do not weaken durable outbox, gateway fencing, task CAS, or runtime identity rules to compensate for an unavailable write actuator.",
-    "allowed_separate_runtime_use": "read-only Agent reasoning / deterministic relay-package authoring when a distinct Agent runtime is required",
-    "relay_application_rule": "A separately reinstantiated Agent may author an exact deterministic relay package; an authorized live actuator may apply it mechanically with explicit provenance and without substituting its own design judgment.",
-    "resume_gate": "Do not restore autonomous mutation service until a GitHub write actuator is demonstrated end-to-end under the same execution environment and all existing fencing/identity invariants still hold."
-  }
+    "allowed_separate_runtime_use": "read-only Agent reasoning with bounded self-task result relay; no direct external writes",
+    "relay_application_rule": "Validate exact bounded relay bindings, persist the raw Agent-authored envelope unchanged, then acquire a short gateway fence only for mechanical persistence. The actuator must not reinterpret Agent judgment.",
+    "resume_gate": "Do not restore recurring autonomous Broker/Worker mutation service until the bounded relay lifecycle and a write actuator are each proven end-to-end without weakening fencing/identity invariants."
+  },
+  "result_relay_contract": "runtime/result-relay-contract.json",
+  "result_relay_protocol": "docs/BOUNDED_RUNTIME_RESULT_RELAY.md"
 }

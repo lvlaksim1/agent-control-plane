@@ -18,7 +18,7 @@ Before either recurring role is re-enabled, prove in the same execution environm
 - inability to persist the wake outbox precommit, gateway transition, task CAS, checkpoint, result, or completion state is a hard fail-closed blocker;
 - never skip, weaken, reorder, or simulate a required durable mutation;
 - do not interpret scheduler delivery, a visible message, Registry membership, or read access as write authority/capability;
-- a separate Agent runtime may be used read-only when identity separation is required, but it must stop short of target/control-plane mutation and may return only an exact deterministic relay package for a separately authorized mechanical actuator.
+- a separate Agent runtime may be used read-only when identity separation is required, but it must stop short of target/control-plane mutation and may return only an exact deterministic relay package for a separately authorized mechanical actuator.\n- bounded read-only relay execution follows `docs/BOUNDED_RUNTIME_RESULT_RELAY.md`: the reasoning runtime holds no gateway lease; after its exact relay is received and durably persisted, an authorized actuator may acquire a short fence solely for mechanical persistence.
 
 
 ## Per-task live-carrier gate
