@@ -7,7 +7,7 @@
   "last_reason": "Captured wake generation 11 addressed TASK-AUDIT-EVENT-WAKE-002, which is superseded by TASK-AUDIT-EVENT-WAKE-003; the replacement task is already completed. Gateway is idle generation 46. No queued task or expired pending continuation was discovered in this bounded cycle.",
   "wake": {
     "desired_generation": 13,
-    "armed_generation": 11,
+    "armed_generation": 13,
     "served_generation": 11,
     "recent_request_keys": [
       "validation-wake-001",
@@ -31,7 +31,7 @@
       "requested_by": "ecosystem-supervisor",
       "requested_at": "2026-09-25T09:56:00Z"
     },
-    "last_armed_at": "2026-09-23T23:41:36Z",
+    "last_armed_at": "2026-09-25T09:59:45Z",
     "last_served_at": "2026-09-24T00:42:08Z",
     "last_worker_run_id": "execution-worker-generation-11-superseded-no-work"
   }
