@@ -8,15 +8,7 @@
   "claim": null,
   "latest_checkpoint": null,
   "request_blob_sha": "819eeeab9b5382207b6dbac9b9dfbd58bf1e2465",
-  "carrier": {
-    "mode": "hold",
-    "carrier_id": "supervisor-validation-hold-20260925",
-    "set_by": "ecosystem-supervisor",
-    "reason": "Hold Context Capsule adoption until the newly created ACP task bundle passes exact-commit deterministic validation.",
-    "heartbeat_at": null,
-    "lease_until": null,
-    "fallback_after_expiry": false
-  },
+  "carrier": null,
   "continuation": null,
   "responsibility_acceptance": null
 }
