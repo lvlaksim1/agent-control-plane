@@ -1,10 +1,21 @@
 {
   "schema_version": 1,
   "probe_id": "RUNTIME-RELAY-PROBE-003",
-  "status": "awaiting-relay",
+  "status": "transport-failed-no-relay",
   "request_blob_sha": "f365a3b320ad2f3a6ea5930b506395242003ffa4",
   "relay_id": "RELAY-003-MINIMAL",
   "relay_nonce": "RLY3-25SEP26-91AF",
   "transport_task_id": "6ab69acbec9481919a7866b44786b2e4",
-  "relay_received": false
+  "relay_received": false,
+  "observation": {
+    "scheduled_task_id": "6ab69acbec9481919a7866b44786b2e4",
+    "scheduled_for": "2026-09-25T16:03:15Z",
+    "actual_run_time": "2026-09-25T16:05:33.418608Z",
+    "delay_seconds": 138,
+    "prompt_replaced": false,
+    "gateway_observed_state": "idle",
+    "gateway_observed_generation": 56,
+    "conclusion": "Minimal runtime executed but did not publish the requested self-task relay. No gateway lease was held or stranded."
+  },
+  "completed_at": "2026-09-25T16:08:50Z"
 }
