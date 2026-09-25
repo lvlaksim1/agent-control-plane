@@ -15,34 +15,38 @@ A scheduler-visible task carried by the live Owner-facing runtime MUST record a 
 
 The key invariant is isolation: **a live carrier blocks only its own task/chain**. Broker and Worker remain available to service unrelated autonomous tasks while the Owner is online.
 
-When the Owner is online, an inter-agent handoff for the current chain is:
+When the Owner is online, a live carrier applies only to scheduler-visible work of the **same persistent Agent already bound to that runtime**. Cross-Agent work always crosses a runtime boundary:
 
 ```
-live Owner runtime
+live caller runtime (agent_id A)
       ↓
-persist task / handoff in GitHub
+persist child task in GitHub
       ↓
-attach/renew live carrier on that task
+runtime:separate-target
       ↓
-reinstantiate the next persistent agent immediately
-in the same live runtime
+Broker / Worker
+      ↓
+fresh target runtime (agent_id B)
 ```
 
-No scheduler wait is introduced into the interactive path. Scheduler slots are fallback delivery for unattended tasks and for live-carried tasks whose carrier lease later expires.
+The caller does not become the target. Interactive bounded delegation normally uses `continuation:manual-pull`: the child result stays durable until the Owner later invokes the caller to inspect it. Autonomous chains use a precreated dependency-bound `runtime:caller-continuation` task so the caller resumes only in a later fresh Worker runtime.
+
+Scheduler slots therefore provide the mandatory cross-Agent execution boundary as well as unattended recovery. Live carriers remain useful for same-Agent continuity and task-scoped scheduler exclusion only.
 
 ### Live-carrier ownership transition
 
 Carrier acquisition is an execution-ownership transition, not advisory metadata.
 
-- for a new live-carried task, publish the immutable request first and create the queued state with the live carrier already present; do not expose a carrier-free queued state;
-- for an existing queued task, install the carrier by CAS-updating the exact same `state.json` object a Worker would CAS to `claimed`;
+- live-carrier acquisition is forbidden for Agent-issued work whose `target_agent_id` differs from the runtime's persistent Agent; such work must use `runtime:separate-target`;
+- for eligible same-Agent live work, publish the immutable request first and create the queued state with the live carrier already present; do not expose a carrier-free queued state;
+- for an existing eligible queued task, install the carrier by CAS-updating the exact same `state.json` object a Worker would CAS to `claimed`;
 - acquisition is valid only from `status=queued`, `claim=null`;
 - if scheduler claim and carrier acquisition race, only one CAS may win; the loser re-reads and stops/reconciles;
 - before each consequential direct-live write, re-read task state and the authoritative gateway and verify the same fresh `carrier_id`; if the gateway owns this same task as reserved/active, do not perform direct-live target work until that scheduler ownership is reconciled.
 
 ### Live completion and fallback
 
-Successful live execution MUST terminalize the ACP projection before carrier expiry:
+Successful **same-Agent** live execution MUST terminalize the ACP projection before carrier expiry. New inter-Agent work is never executed through this path:
 
 1. persist evidence-backed `result.json` with `execution_mode=live` and exact `carrier_id`;
 2. while the same live-carrier fence is still fresh, CAS `state.json` to `status=completed`, `claim=null`, `carrier=null`;
