@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-RUNTIME-RELAY-E2E-V3-001",
+  "logical_attempt": 1,
+  "request_digest": "sha256:ab24246e74cb1d3691731611e6c90fff41aa5fee6f502c66b908570a361ec4ba",
+  "request_blob_sha": "89d38015048b7c2b1dc7cbbafd7f3630a3fe3bae",
+  "transport_task_id": "6ab6eaacc834819198f02949ad2b8ddc",
+  "transport_slot_id": "runtime-slot-1",
+  "transport_generation": 1,
+  "delivery_try": 1,
+  "admission_nonce": "ADM-V3-001-G1-A7C4",
+  "relay_id": "RELAY-V3-E2E-001-G1",
+  "relay_nonce": "RLY-V3-001-G1-91FD",
+  "expected_author_id": "execution-worker",
+  "allowed_payload_kind": "relay-v3-e2e-proof",
+  "scheduled_not_before": "2026-09-25T21:50:00+00:00",
+  "relay_deadline_at": "2026-09-25T22:00:00+00:00",
+  "slot_quiescence_until": "2026-09-25T22:15:00+00:00",
+  "status": "armed"
+}
