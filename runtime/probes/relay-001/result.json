@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "probe_id": "RUNTIME-RELAY-PROBE-001",
+  "status": "pass",
+  "challenge": "RELAY-001-7E39C4",
+  "source_id": "execution-worker",
+  "request_blob_sha": "8c4e8e0a8ffef5b9412b5b02d515d7615d31dd2d",
+  "transport": {
+    "kind": "scheduled-task-self-prompt",
+    "jawbone_id": "6ab69890187c81919c8d10c01cbf8ee2",
+    "canonical_authority": false
+  },
+  "raw_relay": "RUNTIME_RELAY_RESULT_V1|STATUS=PASS|PROBE=RUNTIME-RELAY-PROBE-001|CHALLENGE=RELAY-001-7E39C4|GATEWAY=idle|GEN=56|AUTHOR=execution-worker|MSK=25.09.2026T18:52:32+03:00",
+  "relayed_at_msk": "25.09.2026T18:52:32+03:00",
+  "mechanically_persisted_by": "ecosystem-supervisor",
+  "persistence_semantics": "The separate runtime authored the relay. ecosystem-supervisor persisted the exact relay mechanically without changing its semantic result.",
+  "conclusion": "A bounded read-only separate Scheduled Runtime successfully returned an authored result through its own task metadata without direct GitHub mutation."
+}
