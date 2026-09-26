@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-RUNTIME-MAILBOX-ACP-E2E-001",
+  "failure_count": 0,
+  "retry_not_before": null,
+  "last_failure": null,
+  "transport": {
+    "kind": "scheduled-disabled-mailbox-pool",
+    "contract": "runtime/mailbox-relay-contract.json",
+    "current_logical_attempt": 1,
+    "current_mailbox": null
+  }
+}

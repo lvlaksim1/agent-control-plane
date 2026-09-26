@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-RUNTIME-MAILBOX-ACP-E2E-001",
+  "issuer_agent_id": "owner",
+  "target_agent_id": "execution-worker",
+  "objective": "Neutral end-to-end proof that the proven Scheduled Runtime mailbox-pool transport is correctly bound to an actual Agent Control Plane task/request/execution fence, exact mechanical GitHub persistence, stale-attempt rejection, terminal completion ordering, and gateway release. No persistent Agent is reinstantiated.",
+  "authority_basis": {
+    "kind": "owner-directive",
+    "reference": "OWNER-2026-09-26-MAILBOX-ACP-E2E-CONTINUE"
+  },
+  "scope": [
+    "lvlaksim1/agent-control-plane@main task bundle TASK-RUNTIME-MAILBOX-ACP-E2E-001",
+    "lvlaksim1/agent-control-plane-gateway@main lease for this bounded neutral proof only",
+    "fresh disabled Scheduled Task mailboxes and one-shot neutral execution-worker producers created only for this proof"
+  ],
+  "constraints": [
+    "Do not reinstate any persistent Agent.",
+    "Do not use Auditor.",
+    "Keep recurring Wake Broker and Execution Worker disabled.",
+    "Do not modify any client project.",
+    "Scheduled producer runtimes may only read scheduler metadata and write their specifically assigned disabled mailbox task.",
+    "Every relay must bind exact task_id, request_digest, request_blob_sha, logical_attempt, execution_id/generation, author_id, producer_task_id, mailbox_task_id/generation, admission_nonce and payload digest.",
+    "Any mailbox known to a lost or suspect producer is quarantined and must not be reassigned.",
+    "Retry uses a different physical mailbox and a higher logical_attempt.",
+    "Persist exact authored relay bytes to GitHub without semantic reinterpretation.",
+    "Complete state only after durable relay/result verification; release gateway only after completed-state re-read.",
+    "Do not use Work."
+  ],
+  "target": {
+    "repository": "lvlaksim1/agent-control-plane",
+    "ref": "main"
+  },
+  "priority": "normal",
+  "dependencies": [],
+  "workflow_id": "WF-RUNTIME-MAILBOX-ACP-E2E-001",
+  "parent_task_id": null,
+  "relation": "infrastructure-transport-proof",
+  "retry_policy": {
+    "max_attempts": 2,
+    "backoff_minutes": [
+      0,
+      0
+    ],
+    "quarantine_on_exhaustion": true
+  },
+  "completion_contract": {
+    "required_evidence": [
+      {
+        "kind": "relay",
+        "minimum": 1
+      },
+      {
+        "kind": "stale-rejection",
+        "minimum": 1
+      },
+      {
+        "kind": "state",
+        "minimum": 1
+      }
+    ]
+  },
+  "created_at": "2026-09-26T00:06:06Z"
+}
