@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "prefix": "ACP_MAILBOX_RELAY_V1|",
+  "purpose": "Bind a separate disabled Scheduled Task mailbox result to one exact ACP task/request/execution/logical-attempt and one exact physical mailbox admission.",
+  "required_bindings": [
+    "task_id",
+    "request_digest",
+    "request_blob_sha",
+    "logical_attempt",
+    "execution_id",
+    "execution_generation",
+    "author_id",
+    "producer_task_id",
+    "mailbox_task_id",
+    "mailbox_id",
+    "mailbox_generation",
+    "admission_nonce",
+    "relay_id",
+    "relay_nonce"
+  ],
+  "acceptance": [
+    "mailbox must have been armed for the exact producer_task_id, mailbox_id, mailbox_generation and admission_nonce",
+    "relay must match current ACP task_id/request_digest/request_blob_sha",
+    "relay must match current active execution_id/execution_generation",
+    "relay logical_attempt must equal the current transport attempt",
+    "author_id must equal the expected infrastructure author",
+    "terminal must be true and exact UTF-8 payload SHA-256 must match",
+    "mailbox known to any lost or suspect producer is quarantined and never reassigned"
+  ],
+  "persistence_order": [
+    "validate exact mailbox relay",
+    "persist exact raw authored relay bytes to canonical GitHub",
+    "re-read and verify raw relay SHA-256 and binding",
+    "persist result.json",
+    "persist state=completed and re-read",
+    "release gateway only after completed-state re-read"
+  ],
+  "retry_rule": "advance logical_attempt and allocate a different physical mailbox; reject any later output from older logical_attempt even if structurally valid"
+}
