@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-RUNTIME-MAILBOX-ACP-E2E-001",
+  "request_digest": "sha256:82f0433bc0b867a2ca554d05b8d13664e6fb602de8fa2f276216c261dabba82d",
+  "request_blob_sha": "5883d88c3c72d3ceb04ecd7b894204b2d2de01df",
+  "execution_id": "exec-mailbox-e2e-001-20260926T0007Z",
+  "generation": 57,
+  "execution_mode": "autonomous",
+  "outcome": "success",
+  "summary": "Neutral ACP mailbox-pool end-to-end proof passed: logical attempt 2 from mailbox D was exactly bound, validated and persisted; quarantined logical attempt 1 from mailbox C was later replayed and rejected as stale without changing the accepted D relay.",
+  "evidence": [
+    {
+      "kind": "relay",
+      "reference": "tasks/TASK-RUNTIME-MAILBOX-ACP-E2E-001/relay/attempt-2-receipt.json",
+      "verified": true,
+      "verified_by": "ecosystem-supervisor",
+      "verified_at": "2026-09-26T03:22:10+03:00"
+    },
+    {
+      "kind": "stale-rejection",
+      "reference": "tasks/TASK-RUNTIME-MAILBOX-ACP-E2E-001/relay/stale-attempt-1-rejection.json",
+      "verified": true,
+      "verified_by": "ecosystem-supervisor",
+      "verified_at": "2026-09-26T03:22:10+03:00"
+    },
+    {
+      "kind": "state",
+      "reference": "tasks/TASK-RUNTIME-MAILBOX-ACP-E2E-001/relay/lifecycle-evidence.json",
+      "verified": true,
+      "verified_by": "ecosystem-supervisor",
+      "verified_at": "2026-09-26T03:22:10+03:00"
+    }
+  ],
+  "completed_at": "2026-09-26T03:22:10+03:00"
+}
