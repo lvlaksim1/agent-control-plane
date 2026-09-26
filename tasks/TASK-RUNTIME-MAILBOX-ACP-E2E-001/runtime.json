@@ -30,8 +30,21 @@
         "producer_task_id": "6ab70d7865148191a2df8eecd804da79",
         "admission_nonce": "ADM-E2E-C-G1-A1-5B73",
         "reason": "deliberate-loss-simulation-before-late-runtime",
-        "status": "quarantined-awaiting-late-output"
+        "status": "late-output-rejected",
+        "stale_raw_relay_sha256": "sha256:f8b193260d62a41488ec8f85e648268635a26f1d5411cb28b79d39755b10c5a8",
+        "rejection_evidence": "tasks/TASK-RUNTIME-MAILBOX-ACP-E2E-001/relay/stale-attempt-1-rejection.json"
       }
-    ]
+    ],
+    "status": "accepted-current-relay",
+    "accepted": {
+      "logical_attempt": 2,
+      "mailbox_id": "relay-mailbox-D",
+      "mailbox_task_id": "6ab70d44bd3081918645a550999ade86",
+      "producer_task_id": "6ab70d80e08881918398cf11fbfd7dff",
+      "raw_relay_path": "tasks/TASK-RUNTIME-MAILBOX-ACP-E2E-001/relay/attempt-2.raw.txt",
+      "raw_relay_sha256": "sha256:53577e9d4fbdc9a1a3fa1495e6406b913c30b353868eff3001bc223b2d33cbb8",
+      "payload_sha256": "sha256:cf96d34ea1657a4361add113a2ec3de089b9419da66ee6ca0161bc45aa88652b",
+      "receipt": "tasks/TASK-RUNTIME-MAILBOX-ACP-E2E-001/relay/attempt-2-receipt.json"
+    }
   }
 }
