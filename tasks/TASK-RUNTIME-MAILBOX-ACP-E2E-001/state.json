@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "task_id": "TASK-RUNTIME-MAILBOX-ACP-E2E-001",
-  "status": "claimed",
+  "status": "active",
   "request_digest": "sha256:82f0433bc0b867a2ca554d05b8d13664e6fb602de8fa2f276216c261dabba82d",
   "attempt": 1,
   "runtime_loss_count": 0,
@@ -9,7 +9,8 @@
     "execution_id": "exec-mailbox-e2e-001-20260926T0007Z",
     "generation": 57,
     "slot_id": "execution-worker",
-    "claimed_at": "2026-09-26T00:06:58Z"
+    "claimed_at": "2026-09-26T00:06:58Z",
+    "activation_projection_blob_sha": "4ee72870dee02eab3a13c26735ab4fb5f3996c03"
   },
   "latest_checkpoint": null,
   "request_blob_sha": "5883d88c3c72d3ceb04ecd7b894204b2d2de01df",
@@ -17,7 +18,7 @@
   "mailbox_transport": {
     "schema_version": 1,
     "current_logical_attempt": 1,
-    "status": "awaiting-mailbox-allocation",
+    "status": "allocating-attempt-1",
     "expected_author_id": "execution-worker",
     "quarantined_mailboxes": []
   }
