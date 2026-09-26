@@ -8,6 +8,13 @@
     "kind": "scheduled-disabled-mailbox-pool",
     "contract": "runtime/mailbox-relay-contract.json",
     "current_logical_attempt": 1,
-    "current_mailbox": null
+    "current_mailbox": {
+      "mailbox_id": "relay-mailbox-C",
+      "mailbox_task_id": "6ab70cdae9e88191be2e292b0afd2b8e",
+      "mailbox_generation": 1,
+      "producer_task_id": "6ab70d7865148191a2df8eecd804da79",
+      "admission_nonce": "ADM-E2E-C-G1-A1-5B73",
+      "relay_nonce": "RLY-E2E-A1-C-7A21"
+    }
   }
 }
