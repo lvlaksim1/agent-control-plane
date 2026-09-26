@@ -35,7 +35,7 @@
         "rejection_evidence": "tasks/TASK-RUNTIME-MAILBOX-ACP-E2E-001/relay/stale-attempt-1-rejection.json"
       }
     ],
-    "status": "accepted-current-relay",
+    "status": "completed",
     "accepted": {
       "logical_attempt": 2,
       "mailbox_id": "relay-mailbox-D",
@@ -45,6 +45,15 @@
       "raw_relay_sha256": "sha256:53577e9d4fbdc9a1a3fa1495e6406b913c30b353868eff3001bc223b2d33cbb8",
       "payload_sha256": "sha256:cf96d34ea1657a4361add113a2ec3de089b9419da66ee6ca0161bc45aa88652b",
       "receipt": "tasks/TASK-RUNTIME-MAILBOX-ACP-E2E-001/relay/attempt-2-receipt.json"
+    },
+    "completed": {
+      "result_path": "tasks/TASK-RUNTIME-MAILBOX-ACP-E2E-001/result.json",
+      "result_blob_sha": "f530506b22d016fa27f507770c8e542e3a837944",
+      "completed_state_blob_sha": "9aca129ea6e6d6744b3df333ddc9f00236624e94",
+      "task_completed_commit": "6cfaf715b766d38bb1bd92ac78eee3e735be8da7",
+      "gateway_release_commit": "a1ea4e8c807e012b55fa4982332987ffbcaf04bc",
+      "gateway_idle_generation": 58,
+      "gateway_idle_blob_sha": "54739136a4ebf724d9316349a54e79996f6539f9"
     }
   }
 }

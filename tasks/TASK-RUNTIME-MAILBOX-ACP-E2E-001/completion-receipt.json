@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-RUNTIME-MAILBOX-ACP-E2E-001",
+  "verdict": "PASS",
+  "request_digest": "sha256:82f0433bc0b867a2ca554d05b8d13664e6fb602de8fa2f276216c261dabba82d",
+  "request_blob_sha": "5883d88c3c72d3ceb04ecd7b894204b2d2de01df",
+  "execution_id": "exec-mailbox-e2e-001-20260926T0007Z",
+  "execution_generation": 57,
+  "accepted_attempt": {
+    "logical_attempt": 2,
+    "mailbox_id": "relay-mailbox-D",
+    "raw_relay_sha256": "sha256:53577e9d4fbdc9a1a3fa1495e6406b913c30b353868eff3001bc223b2d33cbb8",
+    "exact_git_readback": true
+  },
+  "stale_attempt": {
+    "logical_attempt": 1,
+    "mailbox_id": "relay-mailbox-C",
+    "raw_relay_sha256": "sha256:f8b193260d62a41488ec8f85e648268635a26f1d5411cb28b79d39755b10c5a8",
+    "producer_replay_last_run_utc": "2026-09-26T00:20:43.666541+00:00",
+    "rejection": "logical_attempt=1 rejected against current logical_attempt=2",
+    "current_mailbox_D_unchanged_after_replay": true
+  },
+  "completion_order": {
+    "result_blob_sha": "f530506b22d016fa27f507770c8e542e3a837944",
+    "completed_state_blob_sha": "9aca129ea6e6d6744b3df333ddc9f00236624e94",
+    "task_completed_commit": "6cfaf715b766d38bb1bd92ac78eee3e735be8da7",
+    "task_completed_commit_time_utc": "2026-09-26T00:23:52Z",
+    "gateway_release_issue": 81,
+    "gateway_release_commit": "a1ea4e8c807e012b55fa4982332987ffbcaf04bc",
+    "gateway_release_commit_time_utc": "2026-09-26T00:24:07Z",
+    "gateway_final_state": "idle",
+    "gateway_final_generation": 58,
+    "gateway_idle_blob_sha": "54739136a4ebf724d9316349a54e79996f6539f9",
+    "completion_preceded_release": true
+  },
+  "recorded_at_msk": "2026-09-26T03:25:00+03:00"
+}
