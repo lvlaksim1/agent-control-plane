@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "task_id": "TASK-RUNTIME-MAILBOX-ACP-E2E-001",
+  "status": "relay-validated-before-result",
+  "request_digest": "sha256:82f0433bc0b867a2ca554d05b8d13664e6fb602de8fa2f276216c261dabba82d",
+  "request_blob_sha": "5883d88c3c72d3ceb04ecd7b894204b2d2de01df",
+  "gateway": {
+    "state": "active",
+    "generation": 57,
+    "execution_id": "exec-mailbox-e2e-001-20260926T0007Z",
+    "lease_blob_sha": "606abf0471c6b431edcfbe6421a07882ccc11392"
+  },
+  "current_attempt": {
+    "logical_attempt": 2,
+    "mailbox_id": "relay-mailbox-D",
+    "decision": "accepted",
+    "raw_relay_sha256": "sha256:53577e9d4fbdc9a1a3fa1495e6406b913c30b353868eff3001bc223b2d33cbb8"
+  },
+  "stale_attempt": {
+    "logical_attempt": 1,
+    "mailbox_id": "relay-mailbox-C",
+    "decision": "rejected-stale",
+    "raw_relay_sha256": "sha256:f8b193260d62a41488ec8f85e648268635a26f1d5411cb28b79d39755b10c5a8"
+  },
+  "verified_at_msk": "2026-09-26T03:21:09+03:00"
+}
